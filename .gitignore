@@ -57,6 +57,6 @@ ECQ V1.0/Release/
 # Other
 UpgradeLog.htm
 
-# # Google API credentials — DO NOT commit
-# ECQ_Soft/credential.json
-# credential.json
+# Google API credentials — DO NOT commit
+ECQ_Soft/credential.json
+credential.json
