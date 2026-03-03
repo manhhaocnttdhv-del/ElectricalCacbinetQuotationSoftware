@@ -4,7 +4,6 @@ using ECQ_Soft.Model;
 using ECQ_Soft.Services;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -14,6 +13,7 @@ namespace ECQ_Soft
 {
     public partial class FrmMain : Form
     {
+
 
         #region Khai báo biến
 
@@ -859,6 +859,61 @@ namespace ECQ_Soft
         }
 
         private void txtGiaVon_TextChanged(object sender, EventArgs e) { }
+
+        // ── Navigation handlers ───────────────────────────────────────────
+
+        /// <summary>Chuyển sang trang Báo giá.</summary>
+        private void btnNavQuotation_Click(object sender, EventArgs e)
+        {
+            pnlQuotation.Visible = true;
+            pnlObjects.Visible   = false;
+            SetActiveNav(btnNavQuotation);
+        }
+
+        /// <summary>Chuyển sang trang Đối tượng.</summary>
+        private void btnNavObjects_Click(object sender, EventArgs e)
+        {
+            pnlQuotation.Visible = false;
+            pnlObjects.Visible   = true;
+            SetActiveNav(btnNavObjects);
+        }
+
+        /// <summary>Làm nổi bật nav button đang active.</summary>
+        private void SetActiveNav(Button active)
+        {
+            var activeColor   = Color.FromArgb(0, 120, 215);
+            var inactiveColor = Color.FromArgb(30, 30, 60);
+            var activeFG      = Color.White;
+            var inactiveFG    = Color.FromArgb(200, 200, 200);
+            var activeFont    = new Font("Segoe UI", 11F, FontStyle.Bold);
+            var inactiveFont  = new Font("Segoe UI", 11F, FontStyle.Regular);
+
+            foreach (Button btn in new[] { btnNavQuotation, btnNavObjects })
+            {
+                bool isActive  = btn == active;
+                btn.BackColor  = isActive ? activeColor   : inactiveColor;
+                btn.ForeColor  = isActive ? activeFG      : inactiveFG;
+                btn.Font       = isActive ? activeFont    : inactiveFont;
+            }
+        }
+
+        // ── Đối tượng panel handlers ──────────────────────────────────────
+
+        /// <summary>Thêm một đối tượng mới vào bảng.</summary>
+        private void btnAddObject_Click(object sender, EventArgs e)
+        {
+            // TODO: mở dialog nhập thông tin đối tượng mới
+            MessageBox.Show("Chức năng Thêm đối tượng đang được phát triển.",
+                "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        /// <summary>Mở cấu hình hệ thống.</summary>
+        private void btnCauHinh_Click(object sender, EventArgs e)
+        {
+            // TODO: mở form cấu hình
+            MessageBox.Show("Chức năng Cấu hình đang được phát triển.",
+                "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
 
         #endregion
     }
