@@ -108,15 +108,19 @@
             // ════════════════════════════════════════════════════════════════
             // panelHeader — thanh điều hướng trên cùng
             // ════════════════════════════════════════════════════════════════
+            // Thứ tự Controls.Add quan trọng với docking:
+            // control được add SAU sẽ dock TRƯỚC (z-order cao hơn = docked first).
+            // Mong muốn: [Logo][BaoGia][DoiTuong]...[Username]...[DangXuat]
+            // → add button2 first (docks last = RIGHT), add pictureBox1 last (docks first = LEFT)
             this.panelHeader.BackColor = System.Drawing.Color.FromArgb(30, 30, 60);
             this.panelHeader.Dock      = System.Windows.Forms.DockStyle.Top;
             this.panelHeader.Height    = 56;
             this.panelHeader.Name      = "panelHeader";
-            this.panelHeader.Controls.Add(this.button2);        // Đăng xuất (Dock Right)
-            this.panelHeader.Controls.Add(this.lbUserName);     // Fill
-            this.panelHeader.Controls.Add(this.btnNavObjects);  // sau logo
-            this.panelHeader.Controls.Add(this.btnNavQuotation);
-            this.panelHeader.Controls.Add(this.pictureBox1);    // Dock Left
+            this.panelHeader.Controls.Add(this.button2);         // 1st → docked last  (Dock Right)
+            this.panelHeader.Controls.Add(this.lbUserName);      // 2nd → Fill after right/left
+            this.panelHeader.Controls.Add(this.btnNavObjects);   // 3rd → Dock Left (after NavQuotation)
+            this.panelHeader.Controls.Add(this.btnNavQuotation); // 4th → Dock Left (after Logo)
+            this.panelHeader.Controls.Add(this.pictureBox1);     // 5th → docked first (Dock Left = Logo)
 
             // pictureBox1 – logo
             this.pictureBox1.Dock      = System.Windows.Forms.DockStyle.Left;
@@ -126,8 +130,8 @@
             this.pictureBox1.TabStop   = false;
             this.pictureBox1.Name      = "pictureBox1";
 
-            // btnNavQuotation – "Báo giá"
-            this.btnNavQuotation.Text      = "📋  Báo giá";
+            // btnNavQuotation – "Báo giá" (Dock Left, ngay sau logo)
+            this.btnNavQuotation.Text      = "  Bao gia";
             this.btnNavQuotation.Name      = "btnNavQuotation";
             this.btnNavQuotation.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnNavQuotation.FlatAppearance.BorderSize = 0;
@@ -135,13 +139,13 @@
             this.btnNavQuotation.ForeColor = System.Drawing.Color.White;
             this.btnNavQuotation.Font      = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.btnNavQuotation.Size      = new System.Drawing.Size(140, 56);
-            this.btnNavQuotation.Location  = new System.Drawing.Point(165, 0);
+            this.btnNavQuotation.Dock      = System.Windows.Forms.DockStyle.Left;
             this.btnNavQuotation.TabIndex  = 1;
             this.btnNavQuotation.Cursor    = System.Windows.Forms.Cursors.Hand;
             this.btnNavQuotation.Click    += new System.EventHandler(this.btnNavQuotation_Click);
 
-            // btnNavObjects – "Đối tượng"
-            this.btnNavObjects.Text      = "🗂️  Đối tượng";
+            // btnNavObjects – "Đối tượng" (Dock Left, sau btnNavQuotation)
+            this.btnNavObjects.Text      = "  Doi tuong";
             this.btnNavObjects.Name      = "btnNavObjects";
             this.btnNavObjects.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnNavObjects.FlatAppearance.BorderSize = 0;
@@ -149,7 +153,7 @@
             this.btnNavObjects.ForeColor = System.Drawing.Color.FromArgb(200, 200, 200);
             this.btnNavObjects.Font      = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Regular);
             this.btnNavObjects.Size      = new System.Drawing.Size(150, 56);
-            this.btnNavObjects.Location  = new System.Drawing.Point(310, 0);
+            this.btnNavObjects.Dock      = System.Windows.Forms.DockStyle.Left;
             this.btnNavObjects.TabIndex  = 2;
             this.btnNavObjects.Cursor    = System.Windows.Forms.Cursors.Hand;
             this.btnNavObjects.Click    += new System.EventHandler(this.btnNavObjects_Click);
