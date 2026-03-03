@@ -1,0 +1,62 @@
+## Visual Studio / C# .gitignore
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options directory
+.vs/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NuGet packages — keep packages.config but ignore downloaded packages
+packages/
+!packages/repositories.config
+
+# Publish
+publish/
+*PublishSettings
+*.pubxml
+*.pubxml.user
+
+# Backup & temp files
+*.bak
+*.bak2
+*.tmp
+*~
+
+# ClickOnce publish
+*.application
+*.manifest
+
+# Setup project build output
+ECQ V1.0/Debug/
+ECQ V1.0/Release/
+
+# Other
+UpgradeLog.htm
+
+# # Google API credentials — DO NOT commit
+# ECQ_Soft/credential.json
+# credential.json
