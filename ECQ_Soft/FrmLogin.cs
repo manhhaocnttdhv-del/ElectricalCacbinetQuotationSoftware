@@ -102,11 +102,11 @@ namespace ECQ_Soft
 
                     UserInfo user = new UserInfo
                     {
-                        Stt = i + 1,
-                        UserName = ggusername,
-                        Password = ggpassword,
-                        FullName = ggfullname,
-                        Role = ggrole,
+                       Stt = i + 1,
+                       UserName = ggusername,
+                       Password = ggpassword,
+                       FullName = ggfullname,
+                       Role = ggrole,
                     };
 
                     userInfors.Add(user);
