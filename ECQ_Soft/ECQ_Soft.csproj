@@ -110,12 +110,25 @@
     <Compile Include="FrmLogin.Designer.cs">
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmQuotation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmQuotation.Designer.cs">
+      <DependentUpon>FrmQuotation.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmSplashScreen.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmSplashScreen.Designer.cs">
       <DependentUpon>FrmSplashScreen.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmConfig.Designer.cs">
+      <DependentUpon>FrmConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\GoogleSheetsService.cs" />
     <Compile Include="Model\CabinetType.cs" />
     <Compile Include="Model\MarketPrice.cs" />
     <Compile Include="Model\Material.cs" />
@@ -136,11 +149,17 @@
     <None Include="Resources\showEye.jpg" />
     <None Include="Resources\hideEye.jpg" />
     <None Include="Resources\userimage.jpg" />
+    <EmbeddedResource Include="FrmConfig.resx">
+      <DependentUpon>FrmConfig.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FrmMain.resx">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmLogin.resx">
       <DependentUpon>FrmLogin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmQuotation.resx">
+      <DependentUpon>FrmQuotation.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmSplashScreen.resx">
       <DependentUpon>FrmSplashScreen.cs</DependentUpon>
@@ -155,9 +174,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <Content Include="credential.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

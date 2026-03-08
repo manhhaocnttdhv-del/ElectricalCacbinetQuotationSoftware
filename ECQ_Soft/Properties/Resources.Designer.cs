@@ -61,6 +61,34 @@ namespace ECQ_Soft.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 
+        ///    {
+        ///  &quot;type&quot;: &quot;service_account&quot;,
+        ///  &quot;project_id&quot;: &quot;grounded-atrium-467409-e7&quot;,
+        ///  &quot;private_key_id&quot;: &quot;98928bc2c7041ffbdb0b372c6952461c21e11423&quot;,
+        ///  &quot;private_key&quot;: &quot;-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC6uEx3M68W3hB5\nVIea4XalMA/UQw896q9kNr2clDz1tnpkT/6yU1xbhK2AGky7X+fGf4KShvzr7UCs\nWQd/AE1S66sqQcvxzaEBYZbbJoQKSjptqrhLvJFoPomHRPNJVLAmfba3DXUeyOw8\noBU82/kP/S8a3wwZFg/Z/taK8s/J0hTP1p1KKpDTqNje1K4GeFSMzXqvyXlFE0HK\nhYYtW7LIpWdlKxhfR8fpqVewkI5bUpAdagh1DuQVQtFqK+gwLlT [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string GoogleCredentialJson1 {
+            get {
+                return ResourceManager.GetString("GoogleCredentialJson1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 
+        ///    {
+        ///  &quot;type&quot;: &quot;service_account&quot;,
+        ///  &quot;project_id&quot;: &quot;lateral-origin-489215-c6&quot;,
+        ///  &quot;private_key_id&quot;: &quot;ded47593e3f817529e7018c93521f7e492f4ea71&quot;,
+        ///  &quot;private_key&quot;: &quot;-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCu39Zjd++gfa1I\noElukhjrCJh+u6CIf/D2WfkftJ1CZUnP6RPRRirZhUNTilZVwRLkt1qT1cwRHKMz\n9i77ZO+C12U71YPBWshulOXitr2p+w9VgBxXGFAElhLu2WGYUXOPfJfd/fdddnYR\nMyrNXvLfxVKlsInzsQtcJfbgD17wry+7/o72wZQiZnOqaHoSAcYSzeBiapgCJNNk\nMDaEf54jNHRXZ4ePe0N1OJ4Uc6tC/zYsX5JqlzJ59n3/Oq2i/phg [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string GoogleCredentialJson2 {
+            get {
+                return ResourceManager.GetString("GoogleCredentialJson2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap hideEye {

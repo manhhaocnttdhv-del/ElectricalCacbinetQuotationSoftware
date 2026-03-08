@@ -1,4 +1,4 @@
-﻿using ECQ_Soft.Model;
+using ECQ_Soft.Model;
 using ECQ_Soft.Properties;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
@@ -38,14 +38,45 @@ namespace ECQ_Soft
         {
             try
             {
-                GoogleCredential credential;
+                string jsonCredentials = Properties.Resources.GoogleCredentialJson1;
+                
+                GoogleCredential credential = null;
 
-                using (var stream = new FileStream("credential.json", FileMode.Open, FileAccess.Read))
+                // Nếu resource chứa một array JSON (nhiều credential), thử từng cái
+                var trimmed = jsonCredentials.Trim();
+                if (trimmed.StartsWith("["))
                 {
-                    credential = GoogleCredential.FromStream(stream)
-                        .CreateScoped(SheetsService.Scope.Spreadsheets);
-                }
+                    var arr = Newtonsoft.Json.Linq.JArray.Parse(trimmed);
+                    Exception lastEx = null;
+                    foreach (var item in arr)
+                    {
+                        try
+                        {
+                            var tempCred = GoogleCredential.FromJson(item.ToString())
+                                            .CreateScoped(SheetsService.Scope.Spreadsheets);
+                            
+                            var tempService = new SheetsService(new BaseClientService.Initializer()
+                            {
+                                HttpClientInitializer = tempCred,
+                                ApplicationName = "GSheetUpdater",
+                            });
 
+                            // Test quyền truy cập vào Sheet của form này
+                            var testReq = tempService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A1:B1");
+                            testReq.Execute(); // Nếu không có quyền sẽ quăng lỗi và sang catch
+
+                            credential = tempCred;
+                            break; // credential này có quyền, dừng vòng lặp
+                        }
+                        catch (Exception ex) { lastEx = ex; credential = null; }
+                    }
+                    if (credential == null) throw lastEx ?? new Exception("Không có credential hợp lệ.");
+                }
+                else
+                {
+                    credential = GoogleCredential.FromJson(trimmed)
+                                    .CreateScoped(SheetsService.Scope.Spreadsheets);
+                }
 
                 _sheetsService = new SheetsService(new BaseClientService.Initializer()
                 {

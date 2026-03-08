@@ -1,8 +1,10 @@
 using ECQ_Soft.Model;
+using ECQ_Soft.Properties;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,12 +33,63 @@ namespace ECQ_Soft.Services
         {
             try
             {
-                GoogleCredential credential;
-                using (var stream = new FileStream("credential.json", FileMode.Open, FileAccess.Read))
+                GoogleCredential credential = null;
+                Exception lastEx = null;
+
+                string[] credentialsToTry = {
+                    Resources.GoogleCredentialJson1,
+                    Resources.GoogleCredentialJson2
+                };
+
+                foreach (var jsonStr in credentialsToTry)
                 {
-                    credential = GoogleCredential.FromStream(stream)
-                        .CreateScoped(SheetsService.Scope.Spreadsheets);
+                    if (string.IsNullOrWhiteSpace(jsonStr)) continue;
+
+                    string trimmed = jsonStr.Trim();
+                    try
+                    {
+                        if (trimmed.StartsWith("["))
+                        {
+                            var arr = JArray.Parse(trimmed);
+                            foreach (var item in arr)
+                            {
+                                try
+                                {
+                                    var tempCredential = GoogleCredential.FromJson(item.ToString())
+                                                    .CreateScoped(SheetsService.Scope.Spreadsheets);
+                                    
+                                    var tempService = new SheetsService(new BaseClientService.Initializer()
+                                    {
+                                        HttpClientInitializer = tempCredential,
+                                        ApplicationName       = "GSheetUpdater",
+                                    });
+
+                                    // Do mỗi sheet gọi từ trang khác nhau (credential khác nhau), ta phải kiểm tra xem credential này có quyền không
+                                    var testRequest = tempService.Spreadsheets.Values.Get(_spreadsheetId, $"{_sheetName}!A1");
+                                    testRequest.Execute(); // Nếu không có quyền, sẽ throw Exception và chuyển sang catch
+
+                                    // Nếu execute thành công, giữ lại credential và dừng vòng lặp
+                                    credential = tempCredential;
+                                    break;
+                                }
+                                catch (Exception ex) { lastEx = ex; credential = null; }
+                            }
+                        }
+                        else
+                        {
+                            credential = GoogleCredential.FromJson(trimmed)
+                                            .CreateScoped(SheetsService.Scope.Spreadsheets);
+                        }
+
+                        if (credential != null) break; // Khởi tạo thành công thì dừng
+                    }
+                    catch (Exception ex)
+                    {
+                        lastEx = ex;
+                    }
                 }
+
+                if (credential == null) throw lastEx ?? new Exception("Không có credential nào trong mảng có quyền truy cập vào bảng tính này.");
 
                 _sheetsService = new SheetsService(new BaseClientService.Initializer()
                 {
