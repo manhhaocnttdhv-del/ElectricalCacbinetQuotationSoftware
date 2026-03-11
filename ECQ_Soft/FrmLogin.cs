@@ -22,7 +22,7 @@ namespace ECQ_Soft
 {
     public partial class FrmLogin : Form
     {
-        
+
         private SheetsService _sheetsService;
 
         string spreadsheetId = "1swdiFIwhoZaXf4c5R_Lzp2pgZng5RcdOKii2DYkN_Uc";
@@ -38,45 +38,14 @@ namespace ECQ_Soft
         {
             try
             {
-                string jsonCredentials = Properties.Resources.GoogleCredentialJson1;
-                
-                GoogleCredential credential = null;
+                GoogleCredential credential;
 
-                // Nếu resource chứa một array JSON (nhiều credential), thử từng cái
-                var trimmed = jsonCredentials.Trim();
-                if (trimmed.StartsWith("["))
+                using (var stream = new FileStream("credential.json", FileMode.Open, FileAccess.Read))
                 {
-                    var arr = Newtonsoft.Json.Linq.JArray.Parse(trimmed);
-                    Exception lastEx = null;
-                    foreach (var item in arr)
-                    {
-                        try
-                        {
-                            var tempCred = GoogleCredential.FromJson(item.ToString())
-                                            .CreateScoped(SheetsService.Scope.Spreadsheets);
-                            
-                            var tempService = new SheetsService(new BaseClientService.Initializer()
-                            {
-                                HttpClientInitializer = tempCred,
-                                ApplicationName = "GSheetUpdater",
-                            });
-
-                            // Test quyền truy cập vào Sheet của form này
-                            var testReq = tempService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A1:B1");
-                            testReq.Execute(); // Nếu không có quyền sẽ quăng lỗi và sang catch
-
-                            credential = tempCred;
-                            break; // credential này có quyền, dừng vòng lặp
-                        }
-                        catch (Exception ex) { lastEx = ex; credential = null; }
-                    }
-                    if (credential == null) throw lastEx ?? new Exception("Không có credential hợp lệ.");
+                    credential = GoogleCredential.FromStream(stream)
+                        .CreateScoped(SheetsService.Scope.Spreadsheets);
                 }
-                else
-                {
-                    credential = GoogleCredential.FromJson(trimmed)
-                                    .CreateScoped(SheetsService.Scope.Spreadsheets);
-                }
+
 
                 _sheetsService = new SheetsService(new BaseClientService.Initializer()
                 {
@@ -119,10 +88,10 @@ namespace ECQ_Soft
                 if (rows == null || rows.Count == 0)
                 {
                     MessageBox.Show("Không có dữ liệu người dùng trong Google Sheet!",
-                        "Lỗi đăng nhập", MessageBoxButtons.OK, MessageBoxIcon.Warning);                    
+                        "Lỗi đăng nhập", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
-                for(int i = 0; i< rows.Count; i++)
+                for (int i = 0; i < rows.Count; i++)
                 {
                     var row = rows[i];
 
@@ -133,16 +102,16 @@ namespace ECQ_Soft
 
                     UserInfo user = new UserInfo
                     {
-                       Stt = i + 1,
-                       UserName = ggusername,
-                       Password = ggpassword,
-                       FullName = ggfullname,
-                       Role = ggrole,
+                        Stt = i + 1,
+                        UserName = ggusername,
+                        Password = ggpassword,
+                        FullName = ggfullname,
+                        Role = ggrole,
                     };
 
                     userInfors.Add(user);
                 }
-                    
+
             }
             catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
             {
@@ -186,7 +155,7 @@ namespace ECQ_Soft
                 }
             }
             return false;
-            
+
         }
 
         private void btnLogin_Click_1(object sender, EventArgs e)
@@ -194,8 +163,8 @@ namespace ECQ_Soft
             if (LoginCheck(txtUserName.Text, txtPassword.Text))
             {
                 this.Hide();
-                FrmMain _frm1 = new FrmMain();
-                _frm1.Show();
+                FrmSplashScreen splashScreen = new FrmSplashScreen();
+                splashScreen.ShowDialog();
             }
             else
             {
@@ -212,15 +181,15 @@ namespace ECQ_Soft
 
         private void ckShowHidePassword_CheckedChanged(object sender, EventArgs e)
         {
-            if(ckShowHidePassword.Checked)
+            if (ckShowHidePassword.Checked)
             {
                 txtPassword.PasswordChar = '\0';
             }
             else
             {
                 txtPassword.PasswordChar = '*';
-                
-            }    
+
+            }
         }
 
         private void FrmLogin_FormClosed(object sender, FormClosedEventArgs e)

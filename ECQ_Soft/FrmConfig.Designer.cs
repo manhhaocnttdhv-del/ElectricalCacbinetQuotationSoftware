@@ -28,161 +28,95 @@ namespace ECQ_Soft
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
-            this.textBox1 = new System.Windows.Forms.TextBox();
             this.btnSearch = new System.Windows.Forms.Button();
-            this.btnAddParent = new System.Windows.Forms.Button();
-            this.btnAddChild = new System.Windows.Forms.Button();
             this.dgvParentProducts = new System.Windows.Forms.DataGridView();
-            this.dgvChildProducts = new System.Windows.Forms.DataGridView();
-            this.lblParentList = new System.Windows.Forms.Label();
-            this.lblChildList = new System.Windows.Forms.Label();
-            this.btnSaveRelation = new System.Windows.Forms.Button();
             this.dgvAllProducts = new System.Windows.Forms.DataGridView();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button2 = new System.Windows.Forms.Button();
+            this.comboBox5 = new System.Windows.Forms.ComboBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.button1 = new System.Windows.Forms.Button();
+            this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.button3 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
+            this.button5 = new System.Windows.Forms.Button();
+            this.label6 = new System.Windows.Forms.Label();
+            this.comboBox3 = new System.Windows.Forms.ComboBox();
+            this.button6 = new System.Windows.Forms.Button();
+            this.button7 = new System.Windows.Forms.Button();
+            this.button8 = new System.Windows.Forms.Button();
+            this.button9 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvChildProducts)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
+            this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 9);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(92, 16);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Tìm sản phẩm";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(237, 9);
+            this.label2.Location = new System.Drawing.Point(45, 28);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(92, 16);
+            this.label2.Size = new System.Drawing.Size(75, 13);
             this.label2.TabIndex = 1;
-            this.label2.Text = "Hãng sản xuất";
+            this.label2.Text = "Tên sản phẩm";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(460, 7);
+            this.label3.Location = new System.Drawing.Point(304, 26);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(67, 16);
+            this.label3.Size = new System.Drawing.Size(74, 13);
             this.label3.TabIndex = 2;
-            this.label3.Text = "Danh mục";
+            this.label3.Text = "Danh mục PR";
             // 
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(463, 30);
+            this.comboBox1.Location = new System.Drawing.Point(307, 49);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(200, 24);
+            this.comboBox1.Size = new System.Drawing.Size(200, 21);
             this.comboBox1.TabIndex = 3;
             // 
             // comboBox2
             // 
             this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(240, 30);
+            this.comboBox2.Location = new System.Drawing.Point(48, 49);
             this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(200, 24);
+            this.comboBox2.Size = new System.Drawing.Size(200, 21);
             this.comboBox2.TabIndex = 4;
-            // 
-            // textBox1
-            // 
-            this.textBox1.Location = new System.Drawing.Point(15, 30);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(200, 22);
-            this.textBox1.TabIndex = 5;
             // 
             // btnSearch
             // 
-            this.btnSearch.Location = new System.Drawing.Point(683, 31);
+            this.btnSearch.Location = new System.Drawing.Point(537, 47);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(75, 23);
             this.btnSearch.TabIndex = 6;
             this.btnSearch.Text = "Tìm kiếm";
             this.btnSearch.UseVisualStyleBackColor = true;
             // 
-            // btnAddParent
-            // 
-            this.btnAddParent.Location = new System.Drawing.Point(602, 71);
-            this.btnAddParent.Name = "btnAddParent";
-            this.btnAddParent.Size = new System.Drawing.Size(75, 23);
-            this.btnAddParent.TabIndex = 8;
-            this.btnAddParent.Text = "+ Cha";
-            this.btnAddParent.UseVisualStyleBackColor = true;
-            // 
-            // btnAddChild
-            // 
-            this.btnAddChild.Location = new System.Drawing.Point(683, 71);
-            this.btnAddChild.Name = "btnAddChild";
-            this.btnAddChild.Size = new System.Drawing.Size(75, 23);
-            this.btnAddChild.TabIndex = 9;
-            this.btnAddChild.Text = "+ Con";
-            this.btnAddChild.UseVisualStyleBackColor = true;
-            // 
             // dgvParentProducts
             // 
-            this.dgvParentProducts.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.dgvParentProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvParentProducts.Location = new System.Drawing.Point(780, 100);
+            this.dgvParentProducts.Location = new System.Drawing.Point(779, 356);
             this.dgvParentProducts.Name = "dgvParentProducts";
             this.dgvParentProducts.RowHeadersWidth = 51;
             this.dgvParentProducts.RowTemplate.Height = 24;
-            this.dgvParentProducts.Size = new System.Drawing.Size(743, 223);
+            this.dgvParentProducts.Size = new System.Drawing.Size(948, 197);
             this.dgvParentProducts.TabIndex = 10;
-            // 
-            // dgvChildProducts
-            // 
-            this.dgvChildProducts.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
-            this.dgvChildProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvChildProducts.Location = new System.Drawing.Point(780, 361);
-            this.dgvChildProducts.Name = "dgvChildProducts";
-            this.dgvChildProducts.RowHeadersWidth = 51;
-            this.dgvChildProducts.RowTemplate.Height = 24;
-            this.dgvChildProducts.Size = new System.Drawing.Size(743, 223);
-            this.dgvChildProducts.TabIndex = 11;
-            // 
-            // lblParentList
-            // 
-            this.lblParentList.AutoSize = true;
-            this.lblParentList.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblParentList.Location = new System.Drawing.Point(780, 78);
-            this.lblParentList.Name = "lblParentList";
-            this.lblParentList.Size = new System.Drawing.Size(206, 18);
-            this.lblParentList.TabIndex = 12;
-            this.lblParentList.Text = "Danh sách sản phẩm Cha:";
-            // 
-            // lblChildList
-            // 
-            this.lblChildList.AutoSize = true;
-            this.lblChildList.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblChildList.Location = new System.Drawing.Point(780, 339);
-            this.lblChildList.Name = "lblChildList";
-            this.lblChildList.Size = new System.Drawing.Size(207, 18);
-            this.lblChildList.TabIndex = 13;
-            this.lblChildList.Text = "Danh sách sản phẩm Con:";
-            // 
-            // btnSaveRelation
-            // 
-            this.btnSaveRelation.Location = new System.Drawing.Point(1448, 71);
-            this.btnSaveRelation.Name = "btnSaveRelation";
-            this.btnSaveRelation.Size = new System.Drawing.Size(75, 23);
-            this.btnSaveRelation.TabIndex = 14;
-            this.btnSaveRelation.Text = "Lưu";
-            this.btnSaveRelation.UseVisualStyleBackColor = true;
             // 
             // dgvAllProducts
             // 
             this.dgvAllProducts.AllowUserToAddRows = false;
             this.dgvAllProducts.AllowUserToDeleteRows = false;
-            this.dgvAllProducts.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.dgvAllProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvAllProducts.Location = new System.Drawing.Point(15, 100);
+            this.dgvAllProducts.Location = new System.Drawing.Point(27, 69);
             this.dgvAllProducts.Name = "dgvAllProducts";
             this.dgvAllProducts.ReadOnly = true;
             this.dgvAllProducts.RowHeadersWidth = 51;
@@ -190,44 +124,204 @@ namespace ECQ_Soft
             this.dgvAllProducts.Size = new System.Drawing.Size(743, 484);
             this.dgvAllProducts.TabIndex = 15;
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.button8);
+            this.groupBox1.Controls.Add(this.comboBox2);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.comboBox1);
+            this.groupBox1.Controls.Add(this.btnSearch);
+            this.groupBox1.Location = new System.Drawing.Point(779, 3);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(754, 75);
+            this.groupBox1.TabIndex = 23;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Cấu hình theo sản phẩm";
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(517, 40);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.TabIndex = 30;
+            this.button2.Text = "Tìm kiếm";
+            this.button2.UseVisualStyleBackColor = true;
+            // 
+            // comboBox5
+            // 
+            this.comboBox5.FormattingEnabled = true;
+            this.comboBox5.Location = new System.Drawing.Point(288, 40);
+            this.comboBox5.Name = "comboBox5";
+            this.comboBox5.Size = new System.Drawing.Size(200, 21);
+            this.comboBox5.TabIndex = 27;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(285, 17);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(56, 13);
+            this.label4.TabIndex = 26;
+            this.label4.Text = "Danh mục";
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(697, 40);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 31;
+            this.button1.Text = "Thêm vào cấu hình";
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // dataGridView1
+            // 
+            this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridView1.Location = new System.Drawing.Point(779, 100);
+            this.dataGridView1.Name = "dataGridView1";
+            this.dataGridView1.RowHeadersWidth = 51;
+            this.dataGridView1.RowTemplate.Height = 24;
+            this.dataGridView1.Size = new System.Drawing.Size(948, 197);
+            this.dataGridView1.TabIndex = 33;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(779, 81);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(101, 13);
+            this.label1.TabIndex = 34;
+            this.label1.Text = "Danh sách quan hệ";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(776, 340);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(103, 13);
+            this.label5.TabIndex = 35;
+            this.label5.Text = "Danh sách cấu hình";
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(1649, 69);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(75, 23);
+            this.button3.TabIndex = 7;
+            this.button3.Text = "Thêm";
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(1649, 330);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(75, 23);
+            this.button4.TabIndex = 36;
+            this.button4.Text = "Xóa";
+            this.button4.UseVisualStyleBackColor = true;
+            // 
+            // button5
+            // 
+            this.button5.Location = new System.Drawing.Point(1568, 330);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(75, 23);
+            this.button5.TabIndex = 37;
+            this.button5.Text = "Lưu";
+            this.button5.UseVisualStyleBackColor = true;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(1158, 309);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(146, 13);
+            this.label6.TabIndex = 7;
+            this.label6.Text = "Tìm kiếm danh sách cấu hình";
+            // 
+            // comboBox3
+            // 
+            this.comboBox3.FormattingEnabled = true;
+            this.comboBox3.Location = new System.Drawing.Point(1161, 332);
+            this.comboBox3.Name = "comboBox3";
+            this.comboBox3.Size = new System.Drawing.Size(200, 21);
+            this.comboBox3.TabIndex = 8;
+            // 
+            // button6
+            // 
+            this.button6.Location = new System.Drawing.Point(1391, 330);
+            this.button6.Name = "button6";
+            this.button6.Size = new System.Drawing.Size(75, 23);
+            this.button6.TabIndex = 9;
+            this.button6.Text = "Tìm kiếm";
+            this.button6.UseVisualStyleBackColor = true;
+            // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(1487, 330);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(75, 23);
+            this.button7.TabIndex = 38;
+            this.button7.Text = "Cập nhật";
+            this.button7.UseVisualStyleBackColor = true;
+            // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(629, 46);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(75, 23);
+            this.button8.TabIndex = 39;
+            this.button8.Text = "Cập nhật";
+            this.button8.UseVisualStyleBackColor = true;
+            // 
+            // button9
+            // 
+            this.button9.Location = new System.Drawing.Point(608, 40);
+            this.button9.Name = "button9";
+            this.button9.Size = new System.Drawing.Size(75, 23);
+            this.button9.TabIndex = 39;
+            this.button9.Text = "Cập nhật";
+            this.button9.UseVisualStyleBackColor = true;
+            this.button9.Click += new System.EventHandler(this.button9_Click);
+            // 
             // FrmConfig
             // 
             this.AutoScroll = true;
-            this.ClientSize = new System.Drawing.Size(1924, 1055);
-            this.Controls.Add(this.dgvAllProducts);
-            this.Controls.Add(this.btnSaveRelation);
-            this.Controls.Add(this.lblChildList);
-            this.Controls.Add(this.lblParentList);
-            this.Controls.Add(this.dgvChildProducts);
-            this.Controls.Add(this.dgvParentProducts);
-            this.Controls.Add(this.btnAddChild);
-            this.Controls.Add(this.btnAddParent);
-            this.Controls.Add(this.btnSearch);
-            this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.comboBox2);
-            this.Controls.Add(this.comboBox1);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.button9);
+            this.Controls.Add(this.button7);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.button5);
+            this.Controls.Add(this.comboBox3);
+            this.Controls.Add(this.button6);
+            this.Controls.Add(this.button4);
+            this.Controls.Add(this.button3);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.label1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Controls.Add(this.dataGridView1);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.comboBox5);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.dgvAllProducts);
+            this.Controls.Add(this.dgvParentProducts);
+            this.Controls.Add(this.groupBox1);
             this.Name = "FrmConfig";
+            this.Size = new System.Drawing.Size(1435, 595);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvChildProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.ComboBox comboBox2;
-        private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button btnSearch;
 
         // LEFT SIDE
@@ -246,7 +340,6 @@ namespace ECQ_Soft
         private System.Windows.Forms.ListBox lstParent;
         private System.Windows.Forms.Label lblChildSelected;
         private System.Windows.Forms.ListBox lstChild;
-        private System.Windows.Forms.Button btnApply;
 
         // BOTTOM SECTION
         private System.Windows.Forms.Panel panelBottom;
@@ -258,13 +351,24 @@ namespace ECQ_Soft
         private System.Windows.Forms.Label lblPhanLoai;
         private System.Windows.Forms.DataGridView dgvPhanLoai;
         private System.Windows.Forms.SplitContainer splitMain;
-        private System.Windows.Forms.Button btnAddParent;
-        private System.Windows.Forms.Button btnAddChild;
         private System.Windows.Forms.DataGridView dgvParentProducts;
-        private System.Windows.Forms.DataGridView dgvChildProducts;
-        private System.Windows.Forms.Label lblParentList;
-        private System.Windows.Forms.Label lblChildList;
-        private System.Windows.Forms.Button btnSaveRelation;
         private System.Windows.Forms.DataGridView dgvAllProducts;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.ComboBox comboBox5;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.DataGridView dataGridView1;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button button5;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.ComboBox comboBox3;
+        private System.Windows.Forms.Button button6;
+        private System.Windows.Forms.Button button8;
+        private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.Button button9;
     }
 }

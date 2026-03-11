@@ -111,10 +111,16 @@
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmQuotation.cs">
-      <SubType>Form</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="FrmQuotation.Designer.cs">
       <DependentUpon>FrmQuotation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmConfig.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="FrmConfig.Designer.cs">
+      <DependentUpon>FrmConfig.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmSplashScreen.cs">
       <SubType>Form</SubType>
@@ -122,13 +128,19 @@
     <Compile Include="FrmSplashScreen.Designer.cs">
       <DependentUpon>FrmSplashScreen.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmConfig.cs">
-      <SubType>Form</SubType>
+    <Compile Include="FrmRelation.cs">
+      <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="FrmConfig.Designer.cs">
-      <DependentUpon>FrmConfig.cs</DependentUpon>
+    <Compile Include="FrmRelation.Designer.cs">
+      <DependentUpon>FrmRelation.cs</DependentUpon>
     </Compile>
+    <Compile Include="Model\Category.cs" />
+    <Compile Include="Model\CategoryItem.cs" />
+    <Compile Include="Model\ConfigProductItem.cs" />
+    <Compile Include="Model\Products.cs" />
+    <Compile Include="Model\RelationItem.cs" />
     <Compile Include="Services\GoogleSheetsService.cs" />
+    <Compile Include="Helper\CategoryParser.cs" />
     <Compile Include="Model\CabinetType.cs" />
     <Compile Include="Model\MarketPrice.cs" />
     <Compile Include="Model\Material.cs" />
@@ -151,6 +163,9 @@
     <None Include="Resources\userimage.jpg" />
     <EmbeddedResource Include="FrmConfig.resx">
       <DependentUpon>FrmConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmRelation.resx">
+      <DependentUpon>FrmRelation.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmMain.resx">
       <DependentUpon>FrmMain.cs</DependentUpon>

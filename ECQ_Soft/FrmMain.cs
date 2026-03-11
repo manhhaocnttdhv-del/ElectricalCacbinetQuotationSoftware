@@ -25,6 +25,7 @@ namespace ECQ_Soft
     public partial class FrmMain : Form
     {
         private FrmQuotation _frmQuotation;
+        private FrmRelation  _frmRelation;
         private FrmConfig    _frmConfig;
 
         public FrmMain()
@@ -32,33 +33,49 @@ namespace ECQ_Soft
             InitializeComponent();
         }
 
+        public async Task LoadDataAsync()
+        {
+            // Buộc tạo handle để đảm bảo các control được khởi tạo
+            var h1 = tabPage1.Handle;
+            var h2 = tabPage2.Handle;
+            var h3 = tabPage3.Handle;
+
+            _frmQuotation = new FrmQuotation();
+            _frmQuotation.Dock = DockStyle.Fill;
+            tabPage1.Controls.Add(_frmQuotation);
+
+            _frmRelation = new FrmRelation();
+            _frmRelation.Dock = DockStyle.Fill;
+            tabPage2.Controls.Add(_frmRelation);
+
+            _frmConfig = new FrmConfig();
+            _frmConfig.Dock = DockStyle.Fill;
+            tabPage3.Controls.Add(_frmConfig);
+
+            // Chạy tất cả các tác vụ tải dữ liệu song song
+            var loadTasks = new List<Task>
+            {
+                _frmQuotation.LoadDataAsync(),
+                _frmRelation.LoadDataAsync(),
+                _frmConfig.LoadDataAsync()
+            };
+
+            await Task.WhenAll(loadTasks);
+
+            _frmQuotation.Show();
+            _frmRelation.Show();
+            _frmConfig.Show();
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.Visible = false;
-            FrmSplashScreen frmSplash = new FrmSplashScreen();
-
-            // Tên người đăng nhập
             string userName = Settings.Default.Name;
             lbUserName.Text = "Xin chào, " + userName;
 
-            // Nhúng FrmQuotation vào Tab 1
-            _frmQuotation = new FrmQuotation();
-            _frmQuotation.TopLevel        = false;
-            _frmQuotation.FormBorderStyle = FormBorderStyle.None;
-            _frmQuotation.Dock            = DockStyle.Fill;
-            tabPage1.Controls.Add(_frmQuotation);
-            _frmQuotation.Show();
-
-            // Nhúng FrmConfig vào Tab 2
-            _frmConfig = new FrmConfig();
-            _frmConfig.TopLevel        = false;
-            _frmConfig.FormBorderStyle = FormBorderStyle.None;
-            _frmConfig.Dock            = DockStyle.Fill;
-            tabPage2.Controls.Add(_frmConfig);
-            _frmConfig.Show();
-
-            frmSplash.Close();
-            this.Visible = true;           
+            tabPage1.Text = "Báo giá";
+            tabPage2.Text = "Đối tượng";
+            tabPage3.Text = "Cấu hình";
+            tabControl1.SelectedTab = tabPage1;
         }
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {

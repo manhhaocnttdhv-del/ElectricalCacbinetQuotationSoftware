@@ -17,7 +17,7 @@ using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
 namespace ECQ_Soft
 {
-    public partial class FrmQuotation : Form
+    public partial class FrmQuotation : UserControl
     {
 
         private SheetsService _sheetsService;
@@ -30,8 +30,8 @@ namespace ECQ_Soft
         private List<Record> records = new List<Record>();
         private List<MarketPrice> marketPrices = new List<MarketPrice>();
         private int _selectedRecordRowIndex;
-        string spreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
-        string sheetName = "Products_Table";
+        string spreadsheetId = "1swdiFIwhoZaXf4c5R_Lzp2pgZng5RcdOKii2DYkN_Uc";
+        string sheetName = "Sheet1";
         private int _selectedCoatingTypeId;
         string formula;
         float weight;
@@ -51,88 +51,21 @@ namespace ECQ_Soft
         public FrmQuotation()
         {
             InitializeComponent();
+            this.Load += Form1_Load;
         }
+
         private void InitGoogleSheetsService()
         {
-            //try
-            //{
-            //    GoogleCredential credential;
-
-            //    using (var stream = new FileStream("credential.json", FileMode.Open, FileAccess.Read))
-            //    {
-            //        credential = GoogleCredential.FromStream(stream)
-            //            .CreateScoped(SheetsService.Scope.Spreadsheets);
-            //    }
-
-
-            //    _sheetsService = new SheetsService(new BaseClientService.Initializer()
-            //    {
-            //        HttpClientInitializer = credential,
-            //        ApplicationName = "Products_Table",
-            //    });
-            //}
-            //catch (FileNotFoundException ex)
-            //{
-            //    MessageBox.Show("Không tìm thấy file 'credentials.json'.\n\n" + ex.Message,
-            //        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //}
-            //catch (IOException ex)
-            //{
-            //    MessageBox.Show("Lỗi khi đọc file credentials.\n\n" + ex.Message,
-            //        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //}
-            //catch (Google.GoogleApiException ex)
-            //{
-            //    MessageBox.Show("Lỗi xác thực với Google API.\n\n" + ex.Message,
-            //        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //}
-            //catch (Exception ex)
-            //{
-            //    MessageBox.Show("Lỗi không xác định khi kết nối Google Sheets.\n\n" + ex.Message,
-            //        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //}
-
             try
             {
-                string jsonCredentials = Properties.Resources.GoogleCredentialJson1;
+                GoogleCredential credential;
 
-                GoogleCredential credential = null;
-
-                // Nếu resource chứa một array JSON (nhiều credential), thử từng cái
-                var trimmed = jsonCredentials.Trim();
-                if (trimmed.StartsWith("["))
+                using (var stream = new FileStream("credential.json", FileMode.Open, FileAccess.Read))
                 {
-                    var arr = Newtonsoft.Json.Linq.JArray.Parse(trimmed);
-                    Exception lastEx = null;
-                    foreach (var item in arr)
-                    {
-                        try
-                        {
-                            var tempCred = GoogleCredential.FromJson(item.ToString())
-                                            .CreateScoped(SheetsService.Scope.Spreadsheets);
-                            
-                            var tempService = new SheetsService(new BaseClientService.Initializer()
-                            {
-                                HttpClientInitializer = tempCred,
-                                ApplicationName = "GSheetUpdater",
-                            });
-
-                            // Test quyền truy cập vào Sheet của form này
-                            var testReq = tempService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A1:B1");
-                            testReq.Execute(); // Nếu không có quyền sẽ quăng lỗi và sang catch
-
-                            credential = tempCred;
-                            break; // credential này có quyền, dừng vòng lặp
-                        }
-                        catch (Exception ex) { lastEx = ex; credential = null; }
-                    }
-                    if (credential == null) throw lastEx ?? new Exception("Không có credential hợp lệ.");
+                    credential = GoogleCredential.FromStream(stream)
+                        .CreateScoped(SheetsService.Scope.Spreadsheets);
                 }
-                else
-                {
-                    credential = GoogleCredential.FromJson(trimmed)
-                                    .CreateScoped(SheetsService.Scope.Spreadsheets);
-                }
+
 
                 _sheetsService = new SheetsService(new BaseClientService.Initializer()
                 {
@@ -159,6 +92,202 @@ namespace ECQ_Soft
             {
                 MessageBox.Show("Lỗi không xác định khi kết nối Google Sheets.\n\n" + ex.Message,
                     "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+
+        private void GetMaterialInfor()
+        {
+            try
+            {
+                // Đọc dữ liệu từ Google Sheet
+                string range = $"{sheetName}!B2:H"; // Bỏ dòng tiêu đề
+                var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
+                var response = request.Execute();
+                IList<IList<object>> rows = response.Values;
+
+                int Stt = 0;
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    Stt++;
+                    // Lấy dữ liệu cần cập nhật
+                    var row = rows[i];
+                    if (row.Count < 7) continue; // tránh lỗi thiếu dữ liệu
+
+                    string type = row[0].ToString();
+                    string thickStr = row[1].ToString().Split(' ')[0];
+                    string qStr = row[2].ToString().Trim();
+                    string priceStr = row[3].ToString().Trim().Replace(".", "");
+                    string PCFeeStr = row[4].ToString().Trim().Replace(".", "");
+                    string HDGFeeStr = row[5].ToString().Trim().Replace(".", "");
+                    string OtherFeeStr = row[6].ToString().Trim().Replace(".", "");
+
+                    if (float.TryParse(qStr, out float Q)
+                        && int.TryParse(priceStr, out int price)
+                        && int.TryParse(PCFeeStr, out int PCFee)
+                        && int.TryParse(HDGFeeStr, out int HDGFee)
+                        && int.TryParse(OtherFeeStr, out int OtherFee)
+                        && float.TryParse(thickStr, out float t))
+
+                    {
+                        var m = new Material
+                        {
+                            Id = Stt,
+                            Name = type + ", dày " + thickStr + " mm",
+                            DisplayName = " dày " + thickStr + " mm, " + type,
+                            Q = Q,
+                            Thick = t,
+                            Price = price,
+                            PCFee = PCFee,
+                            HDGFee = HDGFee,
+                            OrtherFee = OtherFee,
+                        };
+                        materials.Add(m);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            $"Giá trị không hợp lệ tại dòng {i + 2}",
+                            "Lỗi dữ liệu bảng Vật liệu",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning
+                        );
+                    }
+                }
+            }
+            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
+            {
+                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Google.GoogleApiException ex)
+            {
+                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+        }
+
+        private void GetCabinetType()
+        {
+            try
+            {
+                // Đọc dữ liệu từ Google Sheet
+                string range = $"{sheetName}!K2:M"; // Bỏ dòng tiêu đề
+                var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
+                var response = request.Execute();
+                IList<IList<object>> rows = response.Values;
+
+                int Stt = 0;
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    Stt++;
+                    // Lấy dữ liệu cần cập nhật
+                    var row = rows[i];
+                    if (row.Count < 2) continue; // tránh lỗi thiếu dữ liệu
+
+                    string name = row[0].ToString();
+                    string formula = row[1].ToString().Trim();
+                    string formulaType = row[2].ToString().Trim();
+
+                    CabinetType f = new CabinetType
+                    {
+                        Id = Stt,
+                        Name = name,
+                        Formula = formula,
+                        FormulaType = formulaType
+                    };
+                    cabinetTypes.Add(f);
+                }
+            }
+            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
+            {
+                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Google.GoogleApiException ex)
+            {
+                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void GetMarketPrice()
+        {
+            try
+            {
+                // Đọc dữ liệu từ Google Sheet
+                string range = $"{sheetName}!W2:AA"; // Bỏ dòng tiêu đề
+                var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
+                var response = request.Execute();
+                IList<IList<object>> rows = response.Values;
+
+                int Stt = 0;
+
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    Stt++;
+                    var row = rows[i];
+                    string materialStr = row[0].ToString().Trim();
+                    string CabinetStr = row[1].ToString().Trim();
+                    string CoatingTypeStr = row[2].ToString().Trim();
+                    string marketPriceStr = row[3].ToString().Trim().Replace(".", "");
+                    string VPAPriceStr = row[4].ToString().Trim().Replace(".", "");
+
+                    if (int.TryParse(materialStr, out int materialId)
+                        && int.TryParse(CabinetStr, out int cabinetId)
+                        && int.TryParse(CoatingTypeStr, out int coatingTypeId)
+                        && int.TryParse(marketPriceStr, out int marketprice)
+                        && int.TryParse(VPAPriceStr, out int VPAprice)
+                        )
+                    {
+                        MarketPrice mPrice = new MarketPrice
+                        {
+                            Stt = Stt,
+                            MaterialId = materialId,
+                            CabinetId = cabinetId,
+                            CoatingTypeId = coatingTypeId,
+                            CommonPrice = marketprice,
+                            VPAPrice = VPAprice,
+                        };
+                        marketPrices.Add(mPrice);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            $"Giá trị không hợp lệ tại dòng {i + 2}",
+                            "Lỗi dữ liệu Bảng giá bán",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning
+                        );
+                    }
+                }
+            }
+            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
+            {
+                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Google.GoogleApiException ex)
+            {
+                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -322,6 +451,101 @@ namespace ECQ_Soft
             }
         }
 
+        public float EvaluateFormula(string formula, int H, int W, int D, float T)
+        {
+            try
+            {
+                if (formula == null)
+                {
+                    MessageBox.Show(
+                        "Hãy chọn loại tủ điện",
+                        "Thông báo",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+
+                    return 0;
+                }
+                // Dùng CultureInfo.InvariantCulture để đảm bảo dấu chấm thập phân
+                var ci = CultureInfo.InvariantCulture;
+
+                formula = formula.Replace("a", H.ToString(ci))
+                                 .Replace("b", W.ToString(ci))
+                                 .Replace("c", D.ToString(ci))
+                                 .Replace("d", T.ToString(ci));
+
+
+                DataTable dt = new DataTable();
+                var result = dt.Compute(formula, "");            // tính toán chuỗi công thức
+                float w = Convert.ToSingle(result);
+                return w;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi tính công thức: " + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return 0;
+            }
+        }
+
+        private void ExportToExcel(DataGridView dgv)
+        {
+            try
+            {
+                // Khởi tạo Excel
+                Excel.Application excelApp = new Excel.Application();
+                excelApp.Visible = true; // mở Excel luôn để xem
+                excelApp.DisplayAlerts = false;
+
+                Excel.Workbook workbook = excelApp.Workbooks.Add(Type.Missing);
+                Excel.Worksheet worksheet = workbook.ActiveSheet;
+                worksheet.Name = "ExportData";
+
+                // ---- 1. Xuất Header ----
+                for (int i = 0; i < dgv.Columns.Count; i++)
+                {
+                    worksheet.Cells[1, i + 1] = dgv.Columns[i].HeaderText;
+                }
+
+                // Format hàng header
+                Excel.Range headerRange = worksheet.Range[
+                    worksheet.Cells[1, 1],
+                    worksheet.Cells[1, dgv.Columns.Count]
+                ];
+                headerRange.Font.Bold = true;
+                //headerRange.Interior.Color = System.Drawing.ColorTranslator.ToOle(Color.LightGray); // nền xám
+                headerRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter; // căn giữa
+                headerRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+
+                // ---- 2. Xuất Dữ Liệu ----
+                for (int i = 0; i < dgv.Rows.Count; i++)
+                {
+                    for (int j = 0; j < dgv.Columns.Count; j++)
+                    {
+                        if (dgv.Rows[i].Cells[j].Value != null)
+                        {
+                            worksheet.Cells[i + 2, j + 1] = dgv.Rows[i].Cells[j].Value.ToString();
+                        }
+                    }
+                }
+
+                // ---- 3. Format toàn bộ bảng ----
+                Excel.Range usedRange = worksheet.Range[
+                    worksheet.Cells[1, 1],
+                    worksheet.Cells[dgv.Rows.Count + 1, dgv.Columns.Count]
+                ];
+
+                usedRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous; // kẻ viền
+                usedRange.Columns.AutoFit(); // tự chỉnh độ rộng cột
+                usedRange.Rows.AutoFit();    // tự chỉnh chiều cao hàng
+                usedRange.WrapText = true;   // cho phép xuống dòng trong ô
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi: " + ex.Message);
+            }
+        }
+
         private void GetAdditionFee(int type)
         {
             if (_selectedMaterialId != 0)
@@ -407,6 +631,85 @@ namespace ECQ_Soft
                 rbNone.Checked = false;
                 return;
             }
+        }
+
+        public void GoogleSheetUpdate(int rowIndex1, int rowIndex2, string col, int value1, int value2, int value3, int value4)
+        {
+            InitGoogleSheetsService();
+            try
+            {
+                int sheetRow1 = rowIndex1 + 1;
+                int sheetRow2 = rowIndex2 + 1;
+                string time = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+
+                var data = new List<ValueRange>
+                {
+
+                     new ValueRange
+                    {
+                        Range = $"{sheetName}!H{sheetRow1}",
+                        Values = new List<IList<object>> { new List<object> { value2 } }
+                    },
+                      new ValueRange
+                    {
+                        Range = $"{sheetName}!Z{sheetRow2}",
+                        Values = new List<IList<object>> { new List<object> { value3 } }
+                    },
+                        new ValueRange
+                    {
+                        Range = $"{sheetName}!AA{sheetRow2}",
+                        Values = new List<IList<object>> { new List<object> { value4 } }
+                    },
+                };
+
+                if (col != "")
+                {
+                    var newValue = new ValueRange
+                    {
+                        Range = $"{sheetName}!{col}{sheetRow1}",
+                        Values = new List<IList<object>> { new List<object> { value1 } }
+                    };
+
+                    data.Add(newValue);
+                }
+
+                var batchUpdateRequest = new BatchUpdateValuesRequest
+                {
+                    ValueInputOption = "RAW",
+                    Data = data
+                };
+
+                var request = _sheetsService.Spreadsheets.Values.BatchUpdate(batchUpdateRequest, spreadsheetId);
+                request.Execute();
+            }
+            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
+            {
+                MessageBox.Show(
+                    $"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\nChi tiết: {ex.Message}",
+                    "Lỗi Google Sheets",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+            catch (Google.GoogleApiException ex)
+            {
+                MessageBox.Show(
+                    $"Lỗi truy cập Google Sheets:\n\n{ex.Message}",
+                    "Lỗi Google Sheets",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Lỗi không xác định khi cập nhật Google Sheet:\n\n{ex.Message}",
+                    "Lỗi không xác định",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                    );
+            }
+
         }
 
         private void cboMaterial_SelectedIndexChanged(object sender, EventArgs e)
@@ -1004,11 +1307,11 @@ namespace ECQ_Soft
             materials.Clear();
             cabinetTypes.Clear();
             marketPrices.Clear();
-            //GetMaterialInfor();
+            GetMaterialInfor();
             LoadMaterialtoCombobox();
-            //GetCabinetType();
+            GetCabinetType();
             LoadCabinetTypetoCombobox();
-            //GetMarketPrice();
+            GetMarketPrice();
             _selectedCabinetTypeId = 0;
             _selectedMaterialId = 0;
             _selectedCoatingTypeId = 0;
@@ -1158,264 +1461,44 @@ namespace ECQ_Soft
             }
         }
 
-        public float EvaluateFormula(string formula, int H, int W, int D, float T)
+        public async Task LoadDataAsync()
         {
-            try
+            await Task.Run(() =>
             {
-                if (formula == null)
-                {
-                    MessageBox.Show(
-                        "Hãy chọn loại tủ điện",
-                        "Thông báo",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                InitGoogleSheetsService();
+                GetMaterialInfor();
+                GetCabinetType();
+                GetMarketPrice();
+            });
 
-                    return 0;
-                }
-                // Dùng CultureInfo.InvariantCulture để đảm bảo dấu chấm thập phân
-                var ci = CultureInfo.InvariantCulture;
-
-                formula = formula.Replace("a", H.ToString(ci))
-                                 .Replace("b", W.ToString(ci))
-                                 .Replace("c", D.ToString(ci))
-                                 .Replace("d", T.ToString(ci));
-
-
-                DataTable dt = new DataTable();
-                var result = dt.Compute(formula, "");            // tính toán chuỗi công thức
-                float w = Convert.ToSingle(result);
-                return w;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi khi tính công thức: " + ex.Message,
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return 0;
-            }
+            // Sau khi Thread background chạy xong, ta cập nhật lại Control (UI Thread)
+            LoadMaterialtoCombobox();
+            LoadCabinetTypetoCombobox();
         }
 
-        private void ExportToExcel(DataGridView dgv)
+        private void Form1_Load(object sender, EventArgs e)
         {
             try
             {
-                // Khởi tạo Excel
-                Excel.Application excelApp = new Excel.Application();
-                excelApp.Visible = true; // mở Excel luôn để xem
-                excelApp.DisplayAlerts = false;
-
-                Excel.Workbook workbook = excelApp.Workbooks.Add(Type.Missing);
-                Excel.Worksheet worksheet = workbook.ActiveSheet;
-                worksheet.Name = "ExportData";
-
-                // ---- 1. Xuất Header ----
-                for (int i = 0; i < dgv.Columns.Count; i++)
+                if (Settings.Default.isAdmin == false)
                 {
-                    worksheet.Cells[1, i + 1] = dgv.Columns[i].HeaderText;
-                }
+                    gbGiaVon.Visible = false;
+                    btnUpdate.Visible = false;
 
-                // Format hàng header
-                Excel.Range headerRange = worksheet.Range[
-                    worksheet.Cells[1, 1],
-                    worksheet.Cells[1, dgv.Columns.Count]
-                ];
-                headerRange.Font.Bold = true;
-                //headerRange.Interior.Color = System.Drawing.ColorTranslator.ToOle(Color.LightGray); // nền xám
-                headerRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter; // căn giữa
-                headerRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
-
-                // ---- 2. Xuất Dữ Liệu ----
-                for (int i = 0; i < dgv.Rows.Count; i++)
-                {
-                    for (int j = 0; j < dgv.Columns.Count; j++)
+                    if (!string.IsNullOrEmpty(Settings.Default.Role) && Settings.Default.Role.ToLower() == "vnecco")
                     {
-                        if (dgv.Rows[i].Cells[j].Value != null)
-                        {
-                            worksheet.Cells[i + 2, j + 1] = dgv.Rows[i].Cells[j].Value.ToString();
-                        }
+                        lbDonGiaHME.Visible = false;
+                        lbHME.Visible = false;
+                        lbGiabanTTText.Text = "Giá bán thị trường (VNĐ):";
+                        lbGiabanVPAText.Text = "Giá nhập VPA (VNĐ):";
                     }
                 }
-
-                // ---- 3. Format toàn bộ bảng ----
-                Excel.Range usedRange = worksheet.Range[
-                    worksheet.Cells[1, 1],
-                    worksheet.Cells[dgv.Rows.Count + 1, dgv.Columns.Count]
-                ];
-
-                usedRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous; // kẻ viền
-                usedRange.Columns.AutoFit(); // tự chỉnh độ rộng cột
-                usedRange.Rows.AutoFit();    // tự chỉnh chiều cao hàng
-                usedRange.WrapText = true;   // cho phép xuống dòng trong ô
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Lỗi: " + ex.Message);
+                MessageBox.Show("Lỗi khi tải FrmQuotation: " + ex.Message, "Lỗi UI", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        //private void GetAdditionFee(int type)
-        //{
-        //    if (_selectedMaterialId != 0)
-        //    {
-        //        var m = materials.Where(t => t.Id == _selectedMaterialId).FirstOrDefault();
-        //        if (m == null)
-        //        {
-        //            MessageBox.Show(
-        //                "Không tìm thấy vật liệu",
-        //                "Lỗi dữ liệu. Bảng vật liệu",
-        //                MessageBoxButtons.OK,
-        //                MessageBoxIcon.Error
-        //            );
-
-        //            return;
-        //        }
-
-        //        if (type == 1)
-        //        {
-        //            txtSonMa.Text = m.PCFee.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-        //            int Von = m.PCFee + m.OrtherFee + m.Price;
-        //            txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-        //        }
-        //        if (type == 2)
-        //        {
-        //            txtSonMa.Text = m.HDGFee.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-        //            int Von = m.HDGFee + m.OrtherFee + m.Price;
-        //            txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-        //        }
-        //        if (type == 3)
-        //        {
-        //            txtSonMa.Text = "0";
-        //            int Von = m.OrtherFee + m.Price;
-        //            txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-        //        }
-
-        //        if (_selectedCabinetTypeId != 0)
-        //        {
-        //            var cabinettype = cabinetTypes.Where(t => t.Id == _selectedCabinetTypeId).FirstOrDefault();
-        //            if (cabinettype == null)
-        //            {
-        //                MessageBox.Show(
-        //                   "Không tìm thấy Loại tủ điện, thang, máng cáp",
-        //                   "Lỗi dữ liệu. Bảng Loại tủ điện, thang, máng cáp",
-        //                   MessageBoxButtons.OK,
-        //                   MessageBoxIcon.Error
-        //                );
-        //                return;
-        //            }
-
-        //            var marketPrice = marketPrices
-        //                        .Where(t => t.MaterialId == _selectedMaterialId || t.MaterialId == 0)
-        //                        .Where(t => t.CabinetId == _selectedCabinetTypeId)
-        //                        .Where(t => t.CoatingTypeId == _selectedCoatingTypeId || t.CoatingTypeId == 4)
-        //                        .FirstOrDefault();
-        //            if (marketPrice == null)
-        //            {
-        //                MessageBox.Show(
-        //                    "Chọn lại nguyên vật liệu và loại tủ điện, thang máng cáp",
-        //                    "Lỗi Google Sheet. Bảng giá thị trường",
-        //                    MessageBoxButtons.OK,
-        //                    MessageBoxIcon.Error
-        //                );
-        //                return;
-        //            }
-
-        //            _selectedMarketPriceId = marketPrice.Stt;
-        //            txtGiaBan.Text = marketPrice.CommonPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-        //            txtGiaBanVPA.Text = marketPrice.VPAPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-
-        //        }
-        //    }
-        //    else
-        //    {
-        //        MessageBox.Show(
-        //            "Hãy chọn vật liệu",
-        //            "Thông báo",
-        //            MessageBoxButtons.OK,
-        //            MessageBoxIcon.Warning
-        //        );
-        //        rbSon.Checked = false;
-        //        rbMa.Checked = false;
-        //        rbNone.Checked = false;
-        //        return;
-        //    }
-        //}
-        public void GoogleSheetUpdate(int rowIndex1, int rowIndex2, string col, int value1, int value2, int value3, int value4)
-        {
-            InitGoogleSheetsService();
-            try
-            {
-                int sheetRow1 = rowIndex1 + 1;
-                int sheetRow2 = rowIndex2 + 1;
-                string time = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
-
-                var data = new List<ValueRange>
-                {
-
-                     new ValueRange
-                    {
-                        Range = $"{sheetName}!H{sheetRow1}",
-                        Values = new List<IList<object>> { new List<object> { value2 } }
-                    },
-                      new ValueRange
-                    {
-                        Range = $"{sheetName}!Z{sheetRow2}",
-                        Values = new List<IList<object>> { new List<object> { value3 } }
-                    },
-                        new ValueRange
-                    {
-                        Range = $"{sheetName}!AA{sheetRow2}",
-                        Values = new List<IList<object>> { new List<object> { value4 } }
-                    },
-                };
-
-                if (col != "")
-                {
-                    var newValue = new ValueRange
-                    {
-                        Range = $"{sheetName}!{col}{sheetRow1}",
-                        Values = new List<IList<object>> { new List<object> { value1 } }
-                    };
-
-                    data.Add(newValue);
-                }
-
-                var batchUpdateRequest = new BatchUpdateValuesRequest
-                {
-                    ValueInputOption = "RAW",
-                    Data = data
-                };
-
-                var request = _sheetsService.Spreadsheets.Values.BatchUpdate(batchUpdateRequest, spreadsheetId);
-                request.Execute();
-            }
-            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
-            {
-                MessageBox.Show(
-                    $"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\nChi tiết: {ex.Message}",
-                    "Lỗi Google Sheets",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-            catch (Google.GoogleApiException ex)
-            {
-                MessageBox.Show(
-                    $"Lỗi truy cập Google Sheets:\n\n{ex.Message}",
-                    "Lỗi Google Sheets",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Lỗi không xác định khi cập nhật Google Sheet:\n\n{ex.Message}",
-                    "Lỗi không xác định",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                    );
-            }
-
-        }
     }
 }
