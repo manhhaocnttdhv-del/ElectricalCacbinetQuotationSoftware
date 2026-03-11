@@ -28,6 +28,13 @@ namespace ECQ_Soft
         private FrmRelation  _frmRelation;
         private FrmConfig    _frmConfig;
 
+        // Tab index của tab "Cấu hình" (tabPage3)
+        private const int CONFIG_TAB_INDEX = 2;
+        // Lưu tab trước đó để rollback nếu người dùng bấm Cancel trong modal
+        private int _previousTabIndex = 0;
+        // Cờ để tránh xử lý sự kiện SelectedIndexChanged đệ quy
+        private bool _isHandlingTabChange = false;
+
         public FrmMain()
         {
             InitializeComponent();
@@ -65,6 +72,9 @@ namespace ECQ_Soft
             _frmQuotation.Show();
             _frmRelation.Show();
             _frmConfig.Show();
+
+            // Gán event sau khi mọi thứ đã tải xong
+            tabControl1.SelectedIndexChanged += TabControl1_SelectedIndexChanged;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -77,6 +87,45 @@ namespace ECQ_Soft
             tabPage3.Text = "Cấu hình";
             tabControl1.SelectedTab = tabPage1;
         }
+
+        private async void TabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Chỉ bắt khi chuyển sang tab Cấu hình
+            if (_isHandlingTabChange) return;
+            if (tabControl1.SelectedIndex != CONFIG_TAB_INDEX) 
+            {
+                _previousTabIndex = tabControl1.SelectedIndex;
+                return;
+            }
+
+            _isHandlingTabChange = true;
+            try
+            {
+                // Hiển thị modal chọn/tạo tab Google Sheet
+                var service = _frmConfig.GetSheetsService();
+                var spreadsheetId = _frmConfig.GetSpreadsheetId();
+
+                using (var selector = new FrmSheetSelector(spreadsheetId, service))
+                {
+                    var result = selector.ShowDialog(this);
+                    if (result == DialogResult.OK && !string.IsNullOrEmpty(selector.SelectedSheetName))
+                    {
+                        // Người dùng đã chọn/tạo một sheet - cập nhật và reload
+                        await _frmConfig.SetConfigSheet(selector.SelectedSheetName);
+                    }
+                    else
+                    {
+                        // Người dùng bấm Hủy - quay lại tab trước
+                        tabControl1.SelectedIndex = _previousTabIndex;
+                    }
+                }
+            }
+            finally
+            {
+                _isHandlingTabChange = false;
+            }
+        }
+
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             Application.Exit();

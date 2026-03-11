@@ -36,6 +36,7 @@ namespace ECQ_Soft
             this.dgvParentProducts = new System.Windows.Forms.DataGridView();
             this.dgvAllProducts = new System.Windows.Forms.DataGridView();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button8 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.comboBox5 = new System.Windows.Forms.ComboBox();
             this.label4 = new System.Windows.Forms.Label();
@@ -49,8 +50,6 @@ namespace ECQ_Soft
             this.label6 = new System.Windows.Forms.Label();
             this.comboBox3 = new System.Windows.Forms.ComboBox();
             this.button6 = new System.Windows.Forms.Button();
-            this.button7 = new System.Windows.Forms.Button();
-            this.button8 = new System.Windows.Forms.Button();
             this.button9 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
@@ -70,7 +69,7 @@ namespace ECQ_Soft
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(304, 26);
+            this.label3.Location = new System.Drawing.Point(251, 26);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(74, 13);
             this.label3.TabIndex = 2;
@@ -79,7 +78,7 @@ namespace ECQ_Soft
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(307, 49);
+            this.comboBox1.Location = new System.Drawing.Point(254, 49);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(200, 21);
             this.comboBox1.TabIndex = 3;
@@ -94,7 +93,7 @@ namespace ECQ_Soft
             // 
             // btnSearch
             // 
-            this.btnSearch.Location = new System.Drawing.Point(537, 47);
+            this.btnSearch.Location = new System.Drawing.Point(460, 49);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(75, 23);
             this.btnSearch.TabIndex = 6;
@@ -134,10 +133,19 @@ namespace ECQ_Soft
             this.groupBox1.Controls.Add(this.btnSearch);
             this.groupBox1.Location = new System.Drawing.Point(779, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(754, 75);
+            this.groupBox1.Size = new System.Drawing.Size(639, 75);
             this.groupBox1.TabIndex = 23;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Cấu hình theo sản phẩm";
+            // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(541, 49);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(75, 23);
+            this.button8.TabIndex = 39;
+            this.button8.Text = "Cập nhật";
+            this.button8.UseVisualStyleBackColor = true;
             // 
             // button2
             // 
@@ -222,7 +230,7 @@ namespace ECQ_Soft
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(1568, 330);
+            this.button5.Location = new System.Drawing.Point(1574, 330);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(75, 23);
             this.button5.TabIndex = 37;
@@ -232,7 +240,7 @@ namespace ECQ_Soft
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(1158, 309);
+            this.label6.Location = new System.Drawing.Point(1290, 307);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(146, 13);
             this.label6.TabIndex = 7;
@@ -241,37 +249,19 @@ namespace ECQ_Soft
             // comboBox3
             // 
             this.comboBox3.FormattingEnabled = true;
-            this.comboBox3.Location = new System.Drawing.Point(1161, 332);
+            this.comboBox3.Location = new System.Drawing.Point(1293, 330);
             this.comboBox3.Name = "comboBox3";
             this.comboBox3.Size = new System.Drawing.Size(200, 21);
             this.comboBox3.TabIndex = 8;
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(1391, 330);
+            this.button6.Location = new System.Drawing.Point(1499, 331);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(75, 23);
             this.button6.TabIndex = 9;
             this.button6.Text = "Tìm kiếm";
             this.button6.UseVisualStyleBackColor = true;
-            // 
-            // button7
-            // 
-            this.button7.Location = new System.Drawing.Point(1487, 330);
-            this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(75, 23);
-            this.button7.TabIndex = 38;
-            this.button7.Text = "Cập nhật";
-            this.button7.UseVisualStyleBackColor = true;
-            // 
-            // button8
-            // 
-            this.button8.Location = new System.Drawing.Point(629, 46);
-            this.button8.Name = "button8";
-            this.button8.Size = new System.Drawing.Size(75, 23);
-            this.button8.TabIndex = 39;
-            this.button8.Text = "Cập nhật";
-            this.button8.UseVisualStyleBackColor = true;
             // 
             // button9
             // 
@@ -287,7 +277,6 @@ namespace ECQ_Soft
             // 
             this.AutoScroll = true;
             this.Controls.Add(this.button9);
-            this.Controls.Add(this.button7);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.button5);
             this.Controls.Add(this.comboBox3);
@@ -305,7 +294,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.dgvParentProducts);
             this.Controls.Add(this.groupBox1);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(1435, 595);
+            this.Size = new System.Drawing.Size(1435, 561);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();
@@ -368,7 +357,6 @@ namespace ECQ_Soft
         private System.Windows.Forms.ComboBox comboBox3;
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.Button button8;
-        private System.Windows.Forms.Button button7;
         private System.Windows.Forms.Button button9;
     }
 }

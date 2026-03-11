@@ -134,6 +134,12 @@
     <Compile Include="FrmRelation.Designer.cs">
       <DependentUpon>FrmRelation.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmSheetSelector.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSheetSelector.Designer.cs">
+      <DependentUpon>FrmSheetSelector.cs</DependentUpon>
+    </Compile>
     <Compile Include="Model\Category.cs" />
     <Compile Include="Model\CategoryItem.cs" />
     <Compile Include="Model\ConfigProductItem.cs" />

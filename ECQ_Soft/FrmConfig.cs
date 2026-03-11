@@ -20,6 +20,28 @@ namespace ECQ_Soft
         string spreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
         string sheetName = "Products_Table";
         string configSheetName = "Products_Config";
+
+        /// <summary>Trả về SheetsService để FrmMain/modal dùng chung.</summary>
+        public SheetsService GetSheetsService()
+        {
+            if (_sheetsService == null) InitGoogleSheetsService();
+            return _sheetsService;
+        }
+
+        /// <summary>Trả về Spreadsheet ID hiện tại.</summary>
+        public string GetSpreadsheetId() => spreadsheetId;
+
+        /// <summary>
+        /// Cập nhật tên sheet cấu hình và reload lại dữ liệu cấu hình.
+        /// Được gọi sau khi người dùng chọn/tạo tab từ modal FrmSheetSelector.
+        /// </summary>
+        public async Task SetConfigSheet(string newConfigSheetName)
+        {
+            if (string.IsNullOrEmpty(newConfigSheetName)) return;
+            configSheetName = newConfigSheetName;
+            await LoadDataAsync();
+        }
+
         private List<CategoryItem> categoryTree = new List<CategoryItem>();
         private List<Products> allProducts = new List<Products>(); 
         private List<ConfigProductItem> configProducts = new List<ConfigProductItem>();
@@ -75,10 +97,12 @@ namespace ECQ_Soft
             }
         }
 
-        private async void FrmConfig_Load(object sender, EventArgs e)
+        private void FrmConfig_Load(object sender, EventArgs e)
         {
-            InitGoogleSheetsService();
-            await LoadDataAsync();
+            // Không gọi LoadDataAsync() ở đây vì FrmMain đã gọi trước đó.
+            // Việc gọi lại sẽ gây race condition: khi tab lần đầu hiển thị,
+            // sự kiện Load này kích hoạt và load lại từ configSheetName mặc định
+            // ("Products_Config"), ghi đè tab mà người dùng đã chọn từ modal.
             
             button2.Click += Button2_Click;
             button1.Click += BtnAddParent_Click;
@@ -97,15 +121,19 @@ namespace ECQ_Soft
 
         private void Button6_Click(object sender, EventArgs e)
         {
-            string selectedHeaderName = comboBox3.SelectedItem?.ToString();
+            // Dùng .Text thay vì .SelectedItem để hỗ trợ cả gõ tay lẫn chọn từ dropdown
+            string selectedHeaderName = comboBox3.Text?.Trim();
             if (string.IsNullOrEmpty(selectedHeaderName) || selectedHeaderName == "-- Chọn cấu hình đã lưu --")
             {
                 MessageBox.Show("Vui lòng chọn một cấu hình để tải!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Tìm vị trí của Header được chọn
-            int headerIndex = allSavedConfigs.FindIndex(c => c.IsHeader && c.TenHang == selectedHeaderName);
+            // Tìm vị trí Header - dùng Trim() và OrdinalIgnoreCase để tránh lỗi khoảng trắng/encoding
+            int headerIndex = allSavedConfigs.FindIndex(c =>
+                c.IsHeader &&
+                string.Equals(c.TenHang?.Trim(), selectedHeaderName, StringComparison.OrdinalIgnoreCase));
+
             if (headerIndex >= 0)
             {
                 configProducts.Clear();
@@ -127,6 +155,10 @@ namespace ECQ_Soft
                 button5.Text = "Cập nhật";
                 
                 MessageBox.Show($"Đã tải cấu hình '{selectedHeaderName}' thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show($"Không tìm thấy cấu hình '{selectedHeaderName}' trong danh sách!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -307,18 +339,19 @@ namespace ECQ_Soft
                         };
                         allSavedConfigs.Add(item);
                     }
-
-                    // Đổ danh sách Tên Header vào comboBox3 để tìm kiếm cấu hình đã lưu
-                    var headerNames = allSavedConfigs
-                        .Where(c => c.IsHeader)
-                        .Select(c => c.TenHang)
-                        .Distinct()
-                        .ToList();
-                    headerNames.Insert(0, "-- Chọn cấu hình đã lưu --");
-                    comboBox3.DataSource = null;
-                    comboBox3.DataSource = headerNames;
                 }
+
+                // Luôn cập nhật comboBox3 dù sheet có dữ liệu hay rỗng
+                var headerNames = allSavedConfigs
+                    .Where(c => c.IsHeader)
+                    .Select(c => c.TenHang)
+                    .Distinct()
+                    .ToList();
+                headerNames.Insert(0, "-- Chọn cấu hình đã lưu --");
+                comboBox3.DataSource = null;
+                comboBox3.DataSource = headerNames;
                 // ------------------------------------------
+
             }
             catch (Exception ex)
             {
@@ -644,6 +677,41 @@ namespace ECQ_Soft
             updateRequest.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
             await updateRequest.ExecuteAsync();
 
+            // 3b. Tính tổng và ghi 3 dòng tóm tắt ở dưới cùng
+            decimal tongCongThanhTienVND = finalDataToSave.Where(x => !x.IsHeader).Sum(x => x.ThanhTienVND);
+            decimal tongCongGiaNhap     = finalDataToSave.Where(x => !x.IsHeader).Sum(x => x.GiaNhap);
+            decimal tongCongThanhTien   = finalDataToSave.Where(x => !x.IsHeader).Sum(x => x.ThanhTien);
+
+            decimal thueMul = 0.08m;
+            decimal vatThanhTienVND = Math.Round(tongCongThanhTienVND * thueMul, 0);
+            decimal vatThanhTien    = Math.Round(tongCongThanhTien    * thueMul, 0);
+
+            decimal totalThanhTienVND = tongCongThanhTienVND + vatThanhTienVND;
+            decimal totalThanhTien    = tongCongThanhTien    + vatThanhTien;
+
+            int summaryStartRow = finalDataToSave.Count + 2; // +2 vì row 1 là header cột
+
+            var summaryValues = new Google.Apis.Sheets.v4.Data.ValueRange
+            {
+                Values = new List<IList<object>>
+                {
+                    // TỔNG CỘNG — col A trống, B=nhãn, G=ThanhTienVND, J=GiaNhap, K=ThanhTien
+                    new List<object> { "", "TỔNG CỘNG (Giá chưa bao gồm VAT)", "", "", "", "",
+                        tongCongThanhTienVND, "", "", tongCongGiaNhap, tongCongThanhTien, "" },
+                    // THUẾ VAT 8%
+                    new List<object> { "", "THUẾ VAT 8%", "", "", "", "",
+                        vatThanhTienVND, "", "", "", vatThanhTien, "" },
+                    // THÀNH TIỀN
+                    new List<object> { "", "THÀNH TIỀN", "", "", "", "",
+                        totalThanhTienVND, "", "", "", totalThanhTien, "" }
+                }
+            };
+            string summaryRange = $"{configSheetName}!A{summaryStartRow}";
+            var summaryRequest = _sheetsService.Spreadsheets.Values.Update(summaryValues, spreadsheetId, summaryRange);
+            summaryRequest.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+            await summaryRequest.ExecuteAsync();
+
+
             // Không cập nhật lại currentEditingConfigName ở đây nữa vì sẽ được reset ở sự kiện Click
             // Đổ lại danh sách Tên Header vào comboBox3
             var headerNames = allSavedConfigs
@@ -718,15 +786,43 @@ namespace ECQ_Soft
                         }
                     }
 
-                    if (requests.Count > 1) // Nếu có yêu cầu tô màu (request[0] là xóa định dạng)
+                    // Tô màu 3 dòng tóm tắt cuối (màu cyan/xanh ngọc như ảnh)
+                    int baseSummaryRow = finalDataToSave.Count + 1; // index 0-based (row 1 = header cột)
+                    var summaryColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.0f, Green = 0.9f, Blue = 0.9f }; // cyan
+                    for (int s = 0; s < 3; s++)
                     {
-                        var batchUpdate = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = requests };
-                        await _sheetsService.Spreadsheets.BatchUpdate(batchUpdate, spreadsheetId).ExecuteAsync();
+                        requests.Add(new Google.Apis.Sheets.v4.Data.Request
+                        {
+                            RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                            {
+                                Range = new Google.Apis.Sheets.v4.Data.GridRange
+                                {
+                                    SheetId = sheetId,
+                                    StartRowIndex = baseSummaryRow + s,
+                                    EndRowIndex = baseSummaryRow + s + 1,
+                                    StartColumnIndex = 0, EndColumnIndex = 12
+                                },
+                                Cell = new Google.Apis.Sheets.v4.Data.CellData
+                                {
+                                    UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat
+                                    {
+                                        BackgroundColor = summaryColor,
+                                        TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true }
+                                    }
+                                },
+                                Fields = "userEnteredFormat(backgroundColor,textFormat)"
+                            }
+                        });
                     }
+
+                    // Luôn thực thi (ít nhất có clear + 3 summary rows)
+                    var batchUpdate = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = requests };
+                    await _sheetsService.Spreadsheets.BatchUpdate(batchUpdate, spreadsheetId).ExecuteAsync();
                 }
             }
             catch { /* Bỏ qua lỗi định dạng nếu có */ }
         }
+
 
         private void BtnAddParent_Click(object sender, EventArgs e)
         {
