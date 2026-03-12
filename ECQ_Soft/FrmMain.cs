@@ -105,20 +105,24 @@ namespace ECQ_Soft
                 var service = _frmConfig.GetSheetsService();
                 var spreadsheetId = _frmConfig.GetSpreadsheetId();
 
-                using (var selector = new FrmSheetSelector(spreadsheetId, service))
-                {
-                    var result = selector.ShowDialog(this);
-                    if (result == DialogResult.OK && !string.IsNullOrEmpty(selector.SelectedSheetName))
+                    // Chỉ hiển thị modal chọn/tạo tab nếu chưa có sheet nào được chọn
+                    if (string.IsNullOrEmpty(_frmConfig.GetConfigSheetName()))
                     {
-                        // Người dùng đã chọn/tạo một sheet - cập nhật và reload
-                        await _frmConfig.SetConfigSheet(selector.SelectedSheetName);
+                        using (var selector = new FrmSheetSelector(spreadsheetId, service))
+                        {
+                            var result = selector.ShowDialog(this);
+                            if (result == DialogResult.OK && !string.IsNullOrEmpty(selector.SelectedSheetName))
+                            {
+                                // Người dùng đã chọn/tạo một sheet - cập nhật và reload
+                                await _frmConfig.SetConfigSheet(selector.SelectedSheetName);
+                            }
+                            else
+                            {
+                                // Người dùng bấm Hủy - quay lại tab trước
+                                tabControl1.SelectedIndex = _previousTabIndex;
+                            }
+                        }
                     }
-                    else
-                    {
-                        // Người dùng bấm Hủy - quay lại tab trước
-                        tabControl1.SelectedIndex = _previousTabIndex;
-                    }
-                }
             }
             finally
             {

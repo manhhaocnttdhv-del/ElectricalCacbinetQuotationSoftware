@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ECQ_Soft", "ECQ_Soft\ECQ_Soft.csproj", "{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ECQ_Soft", "..\ECQ_Soft\ECQ_Soft.csproj", "{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ECQ V1.0", "ECQ V1.0\ECQ V1.0.vdproj", "{96F935E1-F769-4E58-B43C-3A7E87492443}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ECQ V1.0", "..\ECQ V1.0\ECQ V1.0.vdproj", "{96F935E1-F769-4E58-B43C-3A7E87492443}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ECQ_Demo", "ECQ_Demo\ECQ_Demo.vdproj", "{1C88AB68-FFA3-9FAB-EE60-1A523D802EF1}"
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ECQ_Setup", "ECQ_Setup.vdproj", "{8A4CBBAF-4043-64D9-16CF-070C16892912}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,13 +18,15 @@ Global
 		{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{96F935E1-F769-4E58-B43C-3A7E87492443}.Debug|Any CPU.ActiveCfg = Debug
 		{96F935E1-F769-4E58-B43C-3A7E87492443}.Release|Any CPU.ActiveCfg = Release
-		{1C88AB68-FFA3-9FAB-EE60-1A523D802EF1}.Debug|Any CPU.ActiveCfg = Debug
-		{1C88AB68-FFA3-9FAB-EE60-1A523D802EF1}.Release|Any CPU.ActiveCfg = Release
+		{8A4CBBAF-4043-64D9-16CF-070C16892912}.Debug|Any CPU.ActiveCfg = Debug
+		{8A4CBBAF-4043-64D9-16CF-070C16892912}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8374E90B-CBC4-4727-851C-51CD11A5BD83}
 	EndGlobalSection
 EndGlobal

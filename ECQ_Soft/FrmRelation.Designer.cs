@@ -132,21 +132,21 @@ namespace ECQ_Soft
             // dgvParentProducts
             // 
             this.dgvParentProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvParentProducts.Location = new System.Drawing.Point(780, 100);
+            this.dgvParentProducts.Location = new System.Drawing.Point(777, 101);
             this.dgvParentProducts.Name = "dgvParentProducts";
             this.dgvParentProducts.RowHeadersWidth = 51;
             this.dgvParentProducts.RowTemplate.Height = 24;
-            this.dgvParentProducts.Size = new System.Drawing.Size(743, 223);
+            this.dgvParentProducts.Size = new System.Drawing.Size(743, 300);
             this.dgvParentProducts.TabIndex = 10;
             // 
             // dgvChildProducts
             // 
             this.dgvChildProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvChildProducts.Location = new System.Drawing.Point(780, 361);
+            this.dgvChildProducts.Location = new System.Drawing.Point(777, 436);
             this.dgvChildProducts.Name = "dgvChildProducts";
             this.dgvChildProducts.RowHeadersWidth = 51;
             this.dgvChildProducts.RowTemplate.Height = 24;
-            this.dgvChildProducts.Size = new System.Drawing.Size(743, 223);
+            this.dgvChildProducts.Size = new System.Drawing.Size(743, 300);
             this.dgvChildProducts.TabIndex = 11;
             // 
             // lblParentList
@@ -163,7 +163,7 @@ namespace ECQ_Soft
             // 
             this.lblChildList.AutoSize = true;
             this.lblChildList.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
-            this.lblChildList.Location = new System.Drawing.Point(780, 339);
+            this.lblChildList.Location = new System.Drawing.Point(774, 418);
             this.lblChildList.Name = "lblChildList";
             this.lblChildList.Size = new System.Drawing.Size(175, 15);
             this.lblChildList.TabIndex = 13;
@@ -188,7 +188,7 @@ namespace ECQ_Soft
             this.dgvAllProducts.ReadOnly = true;
             this.dgvAllProducts.RowHeadersWidth = 51;
             this.dgvAllProducts.RowTemplate.Height = 24;
-            this.dgvAllProducts.Size = new System.Drawing.Size(743, 484);
+            this.dgvAllProducts.Size = new System.Drawing.Size(743, 636);
             this.dgvAllProducts.TabIndex = 15;
             // 
             // textBox2
@@ -218,14 +218,14 @@ namespace ECQ_Soft
             // 
             // btnRemoveChild
             // 
-            this.btnRemoveChild.Location = new System.Drawing.Point(1448, 336);
+            this.btnRemoveChild.Location = new System.Drawing.Point(1445, 407);
             this.btnRemoveChild.Name = "btnRemoveChild";
             this.btnRemoveChild.Size = new System.Drawing.Size(75, 23);
             this.btnRemoveChild.TabIndex = 19;
             this.btnRemoveChild.Text = "Xóa";
             this.btnRemoveChild.UseVisualStyleBackColor = true;
             // 
-            // FrmConfig
+            // FrmRelation
             // 
             this.AutoScroll = true;
             this.Controls.Add(this.textBox2);
@@ -248,7 +248,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.btnRemoveParent);
             this.Controls.Add(this.label1);
             this.Name = "FrmRelation";
-            this.Size = new System.Drawing.Size(1435, 748);
+            this.Size = new System.Drawing.Size(1435, 765);
             this.Load += new System.EventHandler(this.FrmRelation_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvChildProducts)).EndInit();

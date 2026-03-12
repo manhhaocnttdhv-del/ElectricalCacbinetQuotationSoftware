@@ -103,11 +103,11 @@ namespace ECQ_Soft
             // dgvParentProducts
             // 
             this.dgvParentProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvParentProducts.Location = new System.Drawing.Point(779, 356);
+            this.dgvParentProducts.Location = new System.Drawing.Point(779, 492);
             this.dgvParentProducts.Name = "dgvParentProducts";
             this.dgvParentProducts.RowHeadersWidth = 51;
             this.dgvParentProducts.RowTemplate.Height = 24;
-            this.dgvParentProducts.Size = new System.Drawing.Size(948, 197);
+            this.dgvParentProducts.Size = new System.Drawing.Size(700, 270);
             this.dgvParentProducts.TabIndex = 10;
             // 
             // dgvAllProducts
@@ -120,7 +120,7 @@ namespace ECQ_Soft
             this.dgvAllProducts.ReadOnly = true;
             this.dgvAllProducts.RowHeadersWidth = 51;
             this.dgvAllProducts.RowTemplate.Height = 24;
-            this.dgvAllProducts.Size = new System.Drawing.Size(743, 484);
+            this.dgvAllProducts.Size = new System.Drawing.Size(700, 693);
             this.dgvAllProducts.TabIndex = 15;
             // 
             // groupBox1
@@ -131,7 +131,7 @@ namespace ECQ_Soft
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.comboBox1);
             this.groupBox1.Controls.Add(this.btnSearch);
-            this.groupBox1.Location = new System.Drawing.Point(779, 3);
+            this.groupBox1.Location = new System.Drawing.Point(782, 40);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(639, 75);
             this.groupBox1.TabIndex = 23;
@@ -149,7 +149,7 @@ namespace ECQ_Soft
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(517, 40);
+            this.button2.Location = new System.Drawing.Point(471, 40);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 30;
@@ -159,7 +159,7 @@ namespace ECQ_Soft
             // comboBox5
             // 
             this.comboBox5.FormattingEnabled = true;
-            this.comboBox5.Location = new System.Drawing.Point(288, 40);
+            this.comboBox5.Location = new System.Drawing.Point(242, 40);
             this.comboBox5.Name = "comboBox5";
             this.comboBox5.Size = new System.Drawing.Size(200, 21);
             this.comboBox5.TabIndex = 27;
@@ -167,7 +167,7 @@ namespace ECQ_Soft
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(285, 17);
+            this.label4.Location = new System.Drawing.Point(239, 17);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(56, 13);
             this.label4.TabIndex = 26;
@@ -175,7 +175,7 @@ namespace ECQ_Soft
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(697, 40);
+            this.button1.Location = new System.Drawing.Point(651, 40);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 31;
@@ -185,17 +185,17 @@ namespace ECQ_Soft
             // dataGridView1
             // 
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView1.Location = new System.Drawing.Point(779, 100);
+            this.dataGridView1.Location = new System.Drawing.Point(779, 167);
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.RowHeadersWidth = 51;
             this.dataGridView1.RowTemplate.Height = 24;
-            this.dataGridView1.Size = new System.Drawing.Size(948, 197);
+            this.dataGridView1.Size = new System.Drawing.Size(700, 270);
             this.dataGridView1.TabIndex = 33;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(779, 81);
+            this.label1.Location = new System.Drawing.Point(779, 151);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(101, 13);
             this.label1.TabIndex = 34;
@@ -204,7 +204,7 @@ namespace ECQ_Soft
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(776, 340);
+            this.label5.Location = new System.Drawing.Point(777, 476);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(103, 13);
             this.label5.TabIndex = 35;
@@ -212,7 +212,7 @@ namespace ECQ_Soft
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(1649, 69);
+            this.button3.Location = new System.Drawing.Point(1404, 138);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(75, 23);
             this.button3.TabIndex = 7;
@@ -221,7 +221,7 @@ namespace ECQ_Soft
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(1649, 330);
+            this.button4.Location = new System.Drawing.Point(1401, 463);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(75, 23);
             this.button4.TabIndex = 36;
@@ -230,7 +230,7 @@ namespace ECQ_Soft
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(1574, 330);
+            this.button5.Location = new System.Drawing.Point(1320, 463);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(75, 23);
             this.button5.TabIndex = 37;
@@ -240,7 +240,7 @@ namespace ECQ_Soft
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(1290, 307);
+            this.label6.Location = new System.Drawing.Point(1030, 440);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(146, 13);
             this.label6.TabIndex = 7;
@@ -249,14 +249,14 @@ namespace ECQ_Soft
             // comboBox3
             // 
             this.comboBox3.FormattingEnabled = true;
-            this.comboBox3.Location = new System.Drawing.Point(1293, 330);
+            this.comboBox3.Location = new System.Drawing.Point(1033, 463);
             this.comboBox3.Name = "comboBox3";
             this.comboBox3.Size = new System.Drawing.Size(200, 21);
             this.comboBox3.TabIndex = 8;
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(1499, 331);
+            this.button6.Location = new System.Drawing.Point(1239, 463);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(75, 23);
             this.button6.TabIndex = 9;
@@ -265,7 +265,7 @@ namespace ECQ_Soft
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(608, 40);
+            this.button9.Location = new System.Drawing.Point(562, 40);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(75, 23);
             this.button9.TabIndex = 39;
@@ -294,7 +294,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.dgvParentProducts);
             this.Controls.Add(this.groupBox1);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(1435, 561);
+            this.Size = new System.Drawing.Size(1384, 697);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();

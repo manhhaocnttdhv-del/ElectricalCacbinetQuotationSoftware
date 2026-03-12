@@ -19,7 +19,7 @@ namespace ECQ_Soft
         private SheetsService _sheetsService;
         string spreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
         string sheetName = "Products_Table";
-        string configSheetName = "Products_Config";
+        string configSheetName = null;
 
         /// <summary>Trả về SheetsService để FrmMain/modal dùng chung.</summary>
         public SheetsService GetSheetsService()
@@ -30,6 +30,9 @@ namespace ECQ_Soft
 
         /// <summary>Trả về Spreadsheet ID hiện tại.</summary>
         public string GetSpreadsheetId() => spreadsheetId;
+
+        /// <summary>Trả về tên sheet cấu hình hiện tại.</summary>
+        public string GetConfigSheetName() => configSheetName;
 
         /// <summary>
         /// Cập nhật tên sheet cấu hình và reload lại dữ liệu cấu hình.
@@ -202,7 +205,7 @@ namespace ECQ_Soft
                     for (int i = 0; i < rows.Count; i++)
                     {
                         var row = rows[i];
-                        if (row.Count < 2) continue; 
+                        if (row.Count < 2) continue;
 
                         var p = new Products
                         {
@@ -315,11 +318,25 @@ namespace ECQ_Soft
                         var row = savedRows[i];
                         if (row.Count < 2) continue;
 
-                        decimal.TryParse(row.Count > 6 ? row[6]?.ToString() : "0", out decimal dg);
-                        decimal.TryParse(row.Count > 7 ? row[7]?.ToString() : "0", out decimal ttVnd);
-                        decimal.TryParse(row.Count > 9 ? row[9]?.ToString() : "0", out decimal gn);
-                        decimal.TryParse(row.Count > 10 ? row[10]?.ToString() : "0", out decimal tt);
-                        decimal.TryParse(row.Count > 11 ? row[11]?.ToString() : "0", out decimal bg);
+                        string tenHang = row[1]?.ToString()?.Trim() ?? "";
+                        // Bỏ qua các dòng tổng cộng/tóm tắt
+                        if (tenHang.StartsWith("TỔNG CỘNG") || tenHang.StartsWith("THUẾ VAT") || tenHang.StartsWith("THÀNH TIỀN"))
+                            continue;
+
+                        Func<string, decimal> parseCurrency = (s) => {
+                            if (string.IsNullOrEmpty(s)) return 0;
+                            // Loại bỏ dấu chấm và dấu phẩy để parse (giả sử dấu chấm là phân cách nghìn)
+                            // Nếu có cả chấm và phẩy, cần cẩn thận hơn, nhưng ở đây thường là N0
+                            string clean = s.Replace(".", "").Replace(",", "").Replace("₫", "").Trim();
+                            decimal.TryParse(clean, out decimal res);
+                            return res;
+                        };
+
+                        decimal dg = parseCurrency(row.Count > 6 ? row[6]?.ToString() : "0");
+                        decimal ttVnd = parseCurrency(row.Count > 7 ? row[7]?.ToString() : "0");
+                        decimal gn = parseCurrency(row.Count > 9 ? row[9]?.ToString() : "0");
+                        decimal tt = parseCurrency(row.Count > 10 ? row[10]?.ToString() : "0");
+                        decimal bg = parseCurrency(row.Count > 11 ? row[11]?.ToString() : "0");
 
                         var item = new ConfigProductItem
                         {
@@ -352,6 +369,11 @@ namespace ECQ_Soft
                 comboBox3.DataSource = headerNames;
                 // ------------------------------------------
 
+                UpdateHeaderSum();
+                UpdateConfigGrid();
+                UpdateGridSelector(dgvAllProducts, allProducts);
+                UpdateGridSelector(dataGridView1, childProducts);
+
             }
             catch (Exception ex)
             {
@@ -374,7 +396,11 @@ namespace ECQ_Soft
             if (dgv.Columns.Contains("Name")) dgv.Columns["Name"].HeaderText = "Tên sản phẩm";
             if (dgv.Columns.Contains("Model")) dgv.Columns["Model"].HeaderText = "Model";
             if (dgv.Columns.Contains("SKU")) dgv.Columns["SKU"].HeaderText = "Mã SKU";
-            if (dgv.Columns.Contains("Price")) dgv.Columns["Price"].HeaderText = "Giá bán";
+            if (dgv.Columns.Contains("Price"))
+            {
+                dgv.Columns["Price"].HeaderText = "Giá bán";
+                dgv.Columns["Price"].DefaultCellStyle.Format = "N0";
+            }
             if (dgv.Columns.Contains("HÃNG")) dgv.Columns["HÃNG"].HeaderText = "Hãng";
             if (dgv.Columns.Contains("Category")) dgv.Columns["Category"].HeaderText = "Danh mục";
 
@@ -479,12 +505,17 @@ namespace ECQ_Soft
 
         private void BtnAddFromRelation_Click(object sender, EventArgs e)
         {
-            if (comboBox2.SelectedValue != null && int.TryParse(comboBox2.SelectedValue.ToString(), out int selectedId) && selectedId > 0)
-            {
-                string selectedCatPR = comboBox1.SelectedItem?.ToString();
-                if (selectedCatPR == "-- Tất cả danh mục --") selectedCatPR = null;
+            string selectedCatPR = comboBox1.SelectedItem?.ToString();
+            if (selectedCatPR == "-- Tất cả danh mục --") selectedCatPR = null;
 
-                // Nếu chọn Main thì lấy các ID con, nếu chọn Child thì lấy các ID Main
+            int selectedId = 0;
+            if (comboBox2.SelectedValue != null) int.TryParse(comboBox2.SelectedValue.ToString(), out selectedId);
+
+            List<int> relatedIds = new List<int>();
+
+            if (selectedId > 0)
+            {
+                // Nếu chọn một sản phẩm cụ thể: Lấy các sản phẩm liên quan (Main <-> Child) và lọc theo danh mục nếu có
                 var childIds = productRelations
                     .Where(r => r.ID_Product_Main == selectedId && (string.IsNullOrEmpty(selectedCatPR) || r.Category_PR == selectedCatPR))
                     .Select(r => r.ID_Product_Child);
@@ -493,14 +524,30 @@ namespace ECQ_Soft
                     .Where(r => r.ID_Product_Child == selectedId && (string.IsNullOrEmpty(selectedCatPR) || r.Category_PR == selectedCatPR))
                     .Select(r => r.ID_Product_Main);
 
-                var relatedIds = childIds.Concat(mainIds).Distinct().ToList();
+                relatedIds = childIds.Concat(mainIds).Distinct().ToList();
+            }
+            else if (!string.IsNullOrEmpty(selectedCatPR))
+            {
+                // Nếu KHÔNG chọn sản phẩm nhưng có chọn Danh mục PR: Lấy tất cả sản phẩm tham gia vào các quan hệ thuộc danh mục này
+                relatedIds = productRelations
+                    .Where(r => r.Category_PR == selectedCatPR)
+                    .SelectMany(r => new[] { r.ID_Product_Main, r.ID_Product_Child })
+                    .Distinct()
+                    .ToList();
+            }
 
-                // Lấy thông tin các sản phẩm liên quan
+            if (relatedIds.Count > 0)
+            {
+                // Hiển thị danh sách sản phẩm tìm được
                 var childrenProductsToAdd = allProducts.Where(p => relatedIds.Contains(p.Id)).ToList();
-
                 dataGridView1.DataSource = null;
                 dataGridView1.DataSource = childrenProductsToAdd;
                 FormatDataGridView(dataGridView1);
+            }
+            else
+            {
+                // Nếu không tìm thấy kết quả hoặc không có filter, xóa trắng bảng
+                dataGridView1.DataSource = null;
             }
         }
 
@@ -777,13 +824,42 @@ namespace ECQ_Soft
                                     {
                                         UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat
                                         {
-                                            BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.2f, Green = 0.8f, Blue = 0.2f } // Màu xanh lá
+                                            BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.2f, Green = 0.8f, Blue = 0.2f }, // Màu xanh lá
+                                            NumberFormat = new Google.Apis.Sheets.v4.Data.NumberFormat { Type = "NUMBER", Pattern = "#,##0" }
                                         }
                                     },
-                                    Fields = "userEnteredFormat.backgroundColor"
+                                    Fields = "userEnteredFormat(backgroundColor,numberFormat)"
                                 }
                             });
                         }
+                    }
+
+                    // Định dạng tiền cho toàn bộ cột G, H, J, K, L (index 6, 7, 9, 10, 11)
+                    int[] moneyCols = { 6, 7, 9, 10, 11 };
+                    foreach (int colIdx in moneyCols)
+                    {
+                        requests.Add(new Google.Apis.Sheets.v4.Data.Request
+                        {
+                            RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                            {
+                                Range = new Google.Apis.Sheets.v4.Data.GridRange
+                                {
+                                    SheetId = sheetId,
+                                    StartRowIndex = 1,
+                                    EndRowIndex = 1000,
+                                    StartColumnIndex = colIdx,
+                                    EndColumnIndex = colIdx + 1
+                                },
+                                Cell = new Google.Apis.Sheets.v4.Data.CellData
+                                {
+                                    UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat
+                                    {
+                                        NumberFormat = new Google.Apis.Sheets.v4.Data.NumberFormat { Type = "NUMBER", Pattern = "#,##0" }
+                                    }
+                                },
+                                Fields = "userEnteredFormat.numberFormat"
+                            }
+                        });
                     }
 
                     // Tô màu 3 dòng tóm tắt cuối (màu cyan/xanh ngọc như ảnh)
@@ -807,10 +883,11 @@ namespace ECQ_Soft
                                     UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat
                                     {
                                         BackgroundColor = summaryColor,
-                                        TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true }
+                                        TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true },
+                                        NumberFormat = new Google.Apis.Sheets.v4.Data.NumberFormat { Type = "NUMBER", Pattern = "#,##0" }
                                     }
                                 },
-                                Fields = "userEnteredFormat(backgroundColor,textFormat)"
+                                Fields = "userEnteredFormat(backgroundColor,textFormat,numberFormat)"
                             }
                         });
                     }
@@ -1033,9 +1110,20 @@ namespace ECQ_Soft
             FormatDataGridView(dgv);
         }
 
-        private void button9_Click(object sender, EventArgs e)
+        private async void button9_Click(object sender, EventArgs e)
         {
-
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                await LoadDataAsync();
+                this.Cursor = Cursors.Default;
+                MessageBox.Show("Đã cập nhật dữ liệu từ Google Sheets!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                this.Cursor = Cursors.Default;
+                MessageBox.Show($"Lỗi khi cập nhật dữ liệu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
