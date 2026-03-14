@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ECQ_Soft", "ECQ_Soft\ECQ_So
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ECQ V1.0", "ECQ V1.0\ECQ V1.0.vdproj", "{96F935E1-F769-4E58-B43C-3A7E87492443}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ECQ_Demo", "ECQ_Demo\ECQ_Demo.vdproj", "{1C88AB68-FFA3-9FAB-EE60-1A523D802EF1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,10 +19,11 @@ Global
 		{CFFE0A91-C8CD-47D2-8FEB-65B6619E125C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{96F935E1-F769-4E58-B43C-3A7E87492443}.Debug|Any CPU.ActiveCfg = Debug
 		{96F935E1-F769-4E58-B43C-3A7E87492443}.Release|Any CPU.ActiveCfg = Release
-		{1C88AB68-FFA3-9FAB-EE60-1A523D802EF1}.Debug|Any CPU.ActiveCfg = Debug
-		{1C88AB68-FFA3-9FAB-EE60-1A523D802EF1}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1DFB2B2A-5686-4E92-9607-BBE19AADAC2B}
 	EndGlobalSection
 EndGlobal
