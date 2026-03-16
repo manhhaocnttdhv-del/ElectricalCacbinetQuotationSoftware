@@ -149,7 +149,7 @@ namespace ECQ_Soft
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(471, 40);
+            this.button2.Location = new System.Drawing.Point(489, 40);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 30;
@@ -159,7 +159,7 @@ namespace ECQ_Soft
             // comboBox5
             // 
             this.comboBox5.FormattingEnabled = true;
-            this.comboBox5.Location = new System.Drawing.Point(242, 40);
+            this.comboBox5.Location = new System.Drawing.Point(283, 42);
             this.comboBox5.Name = "comboBox5";
             this.comboBox5.Size = new System.Drawing.Size(200, 21);
             this.comboBox5.TabIndex = 27;
@@ -167,7 +167,7 @@ namespace ECQ_Soft
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(239, 17);
+            this.label4.Location = new System.Drawing.Point(280, 19);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(56, 13);
             this.label4.TabIndex = 26;
@@ -265,7 +265,7 @@ namespace ECQ_Soft
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(562, 40);
+            this.button9.Location = new System.Drawing.Point(570, 40);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(75, 23);
             this.button9.TabIndex = 39;
@@ -294,7 +294,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.dgvParentProducts);
             this.Controls.Add(this.groupBox1);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(1384, 697);
+            this.Size = new System.Drawing.Size(1367, 680);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();

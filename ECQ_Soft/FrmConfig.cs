@@ -566,7 +566,7 @@ namespace ECQ_Soft
                         STT = 1,
                         TenHang = headerName,
                         MaHang = "",
-                        XuatXu = "VNECCA",
+                        XuatXu = "VNECCO",
                         DonVi = "TỦ",
                         SoLuong = 1,
                         DonGiaVND = 0,
@@ -915,7 +915,7 @@ namespace ECQ_Soft
                         STT = 1,
                         TenHang = "TỦ ĐIỆN VÍ DỤ", // Có thể cho người dùng tự sửa
                         MaHang = "",
-                        XuatXu = "VNECCA",
+                        XuatXu = "VNECCO",
                         DonVi = "TỦ",
                         SoLuong = 1,
                         DonGiaVND = 0,
