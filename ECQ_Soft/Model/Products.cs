@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ECQ_Soft.Model
 {
-    internal class Products
+    public class Products
     {
 
         public int Id { get; set; }
@@ -20,5 +20,6 @@ namespace ECQ_Soft.Model
         public string Height { get; set; }
         public string Category { get; set; }
         public string HÃNG { get; set; }
+        public bool IsSelected { get; set; }
     }
 }

@@ -57,6 +57,36 @@ namespace ECQ_Soft
             InitializeComponent();
             dgvParentProducts.CellValueChanged += DgvParentProducts_CellValueChanged;
             dgvParentProducts.CurrentCellDirtyStateChanged += DgvParentProducts_CurrentCellDirtyStateChanged;
+
+            dgvAllProducts.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
+            dataGridView1.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
+
+            dgvAllProducts.DataBindingComplete += Grid_DataBindingComplete;
+            dataGridView1.DataBindingComplete += Grid_DataBindingComplete;
+            dgvParentProducts.DataBindingComplete += DgvParentProducts_DataBindingComplete;
+        }
+
+        private void DgvParentProducts_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            FormatConfigGrid(dgvParentProducts);
+        }
+
+        private void Grid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            var dgv = sender as DataGridView;
+            if (dgv != null)
+            {
+                FormatDataGridView(dgv);
+            }
+        }
+
+        private void Grid_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            var dgv = sender as DataGridView;
+            if (dgv != null && dgv.IsCurrentCellDirty)
+            {
+                dgv.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
         }
 
         private void InitGoogleSheetsService()
@@ -167,20 +197,37 @@ namespace ECQ_Soft
 
         private void Button2_Click(object sender, EventArgs e)
         {
+            string searchText = textBox2.Text.Trim().ToLower();
+            string selectedBrand = comboBox4.Text;
             string selectedCategoryPath = comboBox5.SelectedValue?.ToString();
-            if (string.IsNullOrEmpty(selectedCategoryPath) || selectedCategoryPath == "-- Tất cả danh mục --")
+
+            var filteredProducts = allProducts.AsEnumerable();
+
+            // 1. Filter by Name / SKU (Partial match)
+            if (!string.IsNullOrEmpty(searchText))
             {
-                dgvAllProducts.DataSource = null;
-                dgvAllProducts.DataSource = allProducts;
-                FormatDataGridView(dgvAllProducts);
+                filteredProducts = filteredProducts.Where(p => 
+                    (p.Name != null && p.Name.ToLower().Contains(searchText)) || 
+                    (p.SKU != null && p.SKU.ToLower().Contains(searchText)) ||
+                    (p.Model != null && p.Model.ToLower().Contains(searchText))
+                );
             }
-            else
+
+            // 2. Filter by Manufacturer (Exact match)
+            if (!string.IsNullOrEmpty(selectedBrand) && selectedBrand != "-- Tất cả hãng --")
             {
-                var filteredProducts = allProducts.Where(p => !string.IsNullOrEmpty(p.Category) && p.Category.StartsWith(selectedCategoryPath)).ToList();
-                dgvAllProducts.DataSource = null;
-                dgvAllProducts.DataSource = filteredProducts;
-                FormatDataGridView(dgvAllProducts);
+                filteredProducts = filteredProducts.Where(p => p.HÃNG == selectedBrand);
             }
+
+            // 3. Filter by Category (Prefix match)
+            if (!string.IsNullOrEmpty(selectedCategoryPath) && selectedCategoryPath != "-- Tất cả danh mục --")
+            {
+                filteredProducts = filteredProducts.Where(p => !string.IsNullOrEmpty(p.Category) && p.Category.StartsWith(selectedCategoryPath));
+            }
+
+            dgvAllProducts.DataSource = null;
+            dgvAllProducts.DataSource = filteredProducts.ToList();
+            // FormatDataGridView will be called by DataBindingComplete
         }
 
         public async Task LoadDataAsync()
@@ -244,16 +291,16 @@ namespace ECQ_Soft
                     comboBox5.DisplayMember = "DisplayText";
                     comboBox5.ValueMember = "FullPath";
 
-                    // 2. Load Hãng vào comboBox2 (Bên trái - Hãng sản xuất)
+                    // 2. Load Hãng vào comboBox4 (Bên trái - Hãng sản xuất)
                     var brandList = rawBrands.OrderBy(b => b).ToList();
                     brandList.Insert(0, "-- Tất cả hãng --");
-                    comboBox2.DataSource = null;
-                    comboBox2.DataSource = brandList;
+                    comboBox4.DataSource = null;
+                    comboBox4.DataSource = brandList;
 
                     // 3. Hiển thị lên DataGridView
                     dgvAllProducts.DataSource = null;
                     dgvAllProducts.DataSource = allProducts;
-                    FormatDataGridView(dgvAllProducts);
+                    // FormatDataGridView will be called by DataBindingComplete
                 }
 
                 // --------- LOAD PRODUCTS RELATION ---------
@@ -360,7 +407,7 @@ namespace ECQ_Soft
 
                 // Luôn cập nhật comboBox3 dù sheet có dữ liệu hay rỗng
                 var headerNames = allSavedConfigs
-                    .Where(c => c.IsHeader)
+                    .Where(c => c.IsHeader && !string.IsNullOrEmpty(c.TenHang) && !c.TenHang.StartsWith("--"))
                     .Select(c => c.TenHang)
                     .Distinct()
                     .ToList();
@@ -383,30 +430,59 @@ namespace ECQ_Soft
 
         private void FormatDataGridView(DataGridView dgv)
         {
-            if (dgv == null || dgv.Columns.Count == 0) return;
+            if (dgv == null || dgv.IsDisposed || dgv.Columns == null || dgv.Columns.Count == 0) return;
 
-            // Ẩn các cột không cần thiết
-            string[] hideCols = { "Id", "Weight", "Length", "Width", "Height" };
-            foreach (var colName in hideCols)
+            try
             {
-                if (dgv.Columns.Contains(colName)) dgv.Columns[colName].Visible = false;
-            }
+                // Sử dụng mảng cố định để duyệt để tránh lỗi đồng bộ
+                var cols = dgv.Columns.Cast<DataGridViewColumn>().ToList();
 
-            // Đặt Header đúng tên
-            if (dgv.Columns.Contains("Name")) dgv.Columns["Name"].HeaderText = "Tên sản phẩm";
-            if (dgv.Columns.Contains("Model")) dgv.Columns["Model"].HeaderText = "Model";
-            if (dgv.Columns.Contains("SKU")) dgv.Columns["SKU"].HeaderText = "Mã SKU";
-            if (dgv.Columns.Contains("Price"))
+                foreach (var col in cols)
+                {
+                    if (col == null || col.DataGridView == null) continue;
+                    
+                    string colName = col.Name;
+
+                    // 1. Hide unwanted columns
+                    if (colName == "Id" || colName == "Weight" || colName == "Length" || colName == "Width" || colName == "Height")
+                    {
+                        col.Visible = false;
+                        continue;
+                    }
+
+                    // 2. Set headers and format
+                    if (colName == "Name") col.HeaderText = "Tên sản phẩm";
+                    else if (colName == "Model") col.HeaderText = "Model";
+                    else if (colName == "SKU") col.HeaderText = "Mã SKU";
+                    else if (colName == "Price")
+                    {
+                        col.HeaderText = "Giá bán";
+                        col.DefaultCellStyle.Format = "N0";
+                    }
+                    else if (colName == "HÃNG") col.HeaderText = "Hãng";
+                    else if (colName == "Category") col.HeaderText = "Danh mục";
+                    else if (colName == "IsSelected")
+                    {
+                        col.HeaderText = "Chọn";
+                        try { col.ReadOnly = false; } catch { }
+                        try { col.DisplayIndex = dgv.Columns.Count - 1; } catch { }
+                    }
+
+                    // 3. Global ReadOnly
+                    if (colName != "IsSelected")
+                    {
+                        try { col.ReadOnly = true; } catch { }
+                    }
+                }
+
+                dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                dgv.SelectionMode = DataGridViewSelectionMode.CellSelect;
+                dgv.MultiSelect = true;
+            }
+            catch (Exception)
             {
-                dgv.Columns["Price"].HeaderText = "Giá bán";
-                dgv.Columns["Price"].DefaultCellStyle.Format = "N0";
+                // Silently ignore layout-related exceptions during binding
             }
-            if (dgv.Columns.Contains("HÃNG")) dgv.Columns["HÃNG"].HeaderText = "Hãng";
-            if (dgv.Columns.Contains("Category")) dgv.Columns["Category"].HeaderText = "Danh mục";
-
-            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgv.MultiSelect = true;
         }
         private void ComboBox2_SelectedValueChanged(object sender, EventArgs e)
         {
@@ -539,10 +615,11 @@ namespace ECQ_Soft
             if (relatedIds.Count > 0)
             {
                 // Hiển thị danh sách sản phẩm tìm được
-                var childrenProductsToAdd = allProducts.Where(p => relatedIds.Contains(p.Id)).ToList();
+                childProducts = allProducts.Where(p => relatedIds.Contains(p.Id)).ToList();
+                foreach (var p in childProducts) p.IsSelected = false; // Reset selection state
                 dataGridView1.DataSource = null;
-                dataGridView1.DataSource = childrenProductsToAdd;
-                FormatDataGridView(dataGridView1);
+                dataGridView1.DataSource = childProducts;
+                // FormatDataGridView will be called by DataBindingComplete
             }
             else
             {
@@ -553,20 +630,28 @@ namespace ECQ_Soft
 
         private void Button3_Click(object sender, EventArgs e)
         {
-            if (dataGridView1.SelectedRows.Count > 0)
+            var selectedItems = childProducts.Where(p => p.IsSelected).ToList();
+            if (selectedItems.Count > 0)
             {
                 // Tự động thêm dòng Header nếu danh sách đang rỗng (Không còn chkAddHeader nữa)
                 if (configProducts.Count == 0 || !configProducts.Any(p => p.IsHeader))
                 {
+                    string headerName = comboBox2.Text; // Tên của sản phẩm Main làm Header
+                    
+                    // if (string.IsNullOrEmpty(headerName) || headerName.StartsWith("--"))
+                    // {
+                    //     MessageBox.Show("Vui lòng chọn sản phẩm chính (Main Product) trước khi thêm các sản phẩm liên quan vào cấu hình!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //     return;
+                    // }
+
                     button5.Text = "Lưu";
                     currentEditingConfigName = null;
-                    string headerName = comboBox2.Text; // Tên của sản phẩm Main làm Header
                     configProducts.Add(new ConfigProductItem
                     {
                         STT = 1,
                         TenHang = headerName,
                         MaHang = "",
-                        XuatXu = "VNECCA",
+                        XuatXu = "VNECCO",
                         DonVi = "TỦ",
                         SoLuong = 1,
                         DonGiaVND = 0,
@@ -579,11 +664,8 @@ namespace ECQ_Soft
                     });
                 }
 
-                foreach (DataGridViewRow row in dataGridView1.SelectedRows)
+                foreach (var product in selectedItems)
                 {
-                    var product = row.DataBoundItem as Products;
-                    if (product == null) continue;
-
                     if (!configProducts.Any(p => p.MaHang == product.SKU))
                     {
                         decimal price = 0;
@@ -606,6 +688,7 @@ namespace ECQ_Soft
                             IsHeader = false
                         });
                     }
+                    product.IsSelected = false; // Reset sau khi thêm
                 }
                 
                 for (int i = 0; i < configProducts.Count; i++)
@@ -615,7 +698,7 @@ namespace ECQ_Soft
                 
                 UpdateHeaderSum();
                 UpdateConfigGrid();
-                dataGridView1.ClearSelection();
+                dataGridView1.Refresh();
             }
         }
 
@@ -903,7 +986,8 @@ namespace ECQ_Soft
 
         private void BtnAddParent_Click(object sender, EventArgs e)
         {
-            if (dgvAllProducts.SelectedRows.Count > 0)
+            var selectedItems = allProducts.Where(p => p.IsSelected).ToList();
+            if (selectedItems.Count > 0)
             {
                 // Tự động thêm dòng Header nếu danh sách đang rỗng 
                 if (configProducts.Count == 0 || !configProducts.Any(p => p.IsHeader))
@@ -915,7 +999,7 @@ namespace ECQ_Soft
                         STT = 1,
                         TenHang = "TỦ ĐIỆN VÍ DỤ", // Có thể cho người dùng tự sửa
                         MaHang = "",
-                        XuatXu = "VNECCA",
+                        XuatXu = "VNECCO",
                         DonVi = "TỦ",
                         SoLuong = 1,
                         DonGiaVND = 0,
@@ -928,11 +1012,8 @@ namespace ECQ_Soft
                     });
                 }
 
-                foreach (DataGridViewRow row in dgvAllProducts.SelectedRows)
+                foreach (var product in selectedItems)
                 {
-                    var product = row.DataBoundItem as Products;
-                    if (product == null) continue;
-
                     if (!configProducts.Any(p => p.MaHang == product.SKU))
                     {
                         decimal price = 0;
@@ -955,11 +1036,12 @@ namespace ECQ_Soft
                             IsHeader = false
                         });
                     }
+                    product.IsSelected = false; // Reset sau khi thêm
                 }
                 
                 UpdateHeaderSum();
                 UpdateConfigGrid();
-                dgvAllProducts.ClearSelection();
+                dgvAllProducts.Refresh();
             }
         }
 
@@ -1045,46 +1127,68 @@ namespace ECQ_Soft
         {
             dgvParentProducts.DataSource = null;
             dgvParentProducts.DataSource = configProducts.ToList();
+            // Format will be handled by DgvParentProducts_DataBindingComplete
             
-            if (dgvParentProducts.Columns.Count > 0)
-            {
-                dgvParentProducts.Columns["STT"].HeaderText = "STT";
-                dgvParentProducts.Columns["TenHang"].HeaderText = "Tên hàng";
-                dgvParentProducts.Columns["MaHang"].HeaderText = "Mã hàng";
-                dgvParentProducts.Columns["XuatXu"].HeaderText = "Xuất xứ";
-                dgvParentProducts.Columns["DonVi"].HeaderText = "Đơn vị";
-                dgvParentProducts.Columns["SoLuong"].HeaderText = "Số lượng";
-                dgvParentProducts.Columns["DonGiaVND"].HeaderText = "Đơn giá (VNĐ)";
-                dgvParentProducts.Columns["DonGiaVND"].DefaultCellStyle.Format = "N0";
-                dgvParentProducts.Columns["ThanhTienVND"].HeaderText = "Thành tiền (VNĐ)";
-                dgvParentProducts.Columns["ThanhTienVND"].DefaultCellStyle.Format = "N0";
-                dgvParentProducts.Columns["GhiChu"].HeaderText = "Ghi chú";
-                dgvParentProducts.Columns["GiaNhap"].HeaderText = "Giá Nhập";
-                dgvParentProducts.Columns["GiaNhap"].DefaultCellStyle.Format = "N0";
-                dgvParentProducts.Columns["ThanhTien"].HeaderText = "Thành Tiền";
-                dgvParentProducts.Columns["ThanhTien"].DefaultCellStyle.Format = "N0";
-                dgvParentProducts.Columns["BangGia"].HeaderText = "Bảng Giá";
-                dgvParentProducts.Columns["BangGia"].DefaultCellStyle.Format = "N0";
-                
-                dgvParentProducts.Columns["IsHeader"].Visible = false;
+            // Re-bind CellFormatting if needed (usually stays bound, but for safety)
+            dgvParentProducts.CellFormatting -= DgvParentProducts_CellFormatting;
+            dgvParentProducts.CellFormatting += DgvParentProducts_CellFormatting;
+        }
 
-                dgvParentProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-                dgvParentProducts.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-                dgvParentProducts.MultiSelect = true;
+        private void FormatConfigGrid(DataGridView dgv)
+        {
+            if (dgv == null || dgv.IsDisposed || dgv.Columns == null || dgv.Columns.Count == 0) return;
+
+            try
+            {
+                if (dgv.Columns.Contains("STT")) dgv.Columns["STT"].HeaderText = "STT";
+                if (dgv.Columns.Contains("TenHang")) dgv.Columns["TenHang"].HeaderText = "Tên hàng";
+                if (dgv.Columns.Contains("MaHang")) dgv.Columns["MaHang"].HeaderText = "Mã hàng";
+                if (dgv.Columns.Contains("XuatXu")) dgv.Columns["XuatXu"].HeaderText = "Xuất xứ";
+                if (dgv.Columns.Contains("DonVi")) dgv.Columns["DonVi"].HeaderText = "Đơn vị";
+                if (dgv.Columns.Contains("SoLuong")) dgv.Columns["SoLuong"].HeaderText = "Số lượng";
                 
-                // Cho phép sửa cột Số lượng và Ghi chú
-                foreach (DataGridViewColumn col in dgvParentProducts.Columns)
+                if (dgv.Columns.Contains("DonGiaVND"))
+                {
+                    dgv.Columns["DonGiaVND"].HeaderText = "Đơn giá (VNĐ)";
+                    dgv.Columns["DonGiaVND"].DefaultCellStyle.Format = "N0";
+                }
+                if (dgv.Columns.Contains("ThanhTienVND"))
+                {
+                    dgv.Columns["ThanhTienVND"].HeaderText = "Thành tiền (VNĐ)";
+                    dgv.Columns["ThanhTienVND"].DefaultCellStyle.Format = "N0";
+                }
+                if (dgv.Columns.Contains("GhiChu")) dgv.Columns["GhiChu"].HeaderText = "Ghi chú";
+                if (dgv.Columns.Contains("GiaNhap"))
+                {
+                    dgv.Columns["GiaNhap"].HeaderText = "Giá Nhập";
+                    dgv.Columns["GiaNhap"].DefaultCellStyle.Format = "N0";
+                }
+                if (dgv.Columns.Contains("ThanhTien"))
+                {
+                    dgv.Columns["ThanhTien"].HeaderText = "Thành Tiền";
+                    dgv.Columns["ThanhTien"].DefaultCellStyle.Format = "N0";
+                }
+                if (dgv.Columns.Contains("BangGia"))
+                {
+                    dgv.Columns["BangGia"].HeaderText = "Bảng Giá";
+                    dgv.Columns["BangGia"].DefaultCellStyle.Format = "N0";
+                }
+                
+                if (dgv.Columns.Contains("IsHeader")) dgv.Columns["IsHeader"].Visible = false;
+
+                dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                dgv.MultiSelect = true;
+                
+                foreach (DataGridViewColumn col in dgv.Columns)
                 {
                     if (col.Name != "SoLuong" && col.Name != "GhiChu" && col.Name != "TenHang")
                     {
                         col.ReadOnly = true;
                     }
                 }
-
-                // Gán sự kiện vẽ màu dòng Header
-                dgvParentProducts.CellFormatting -= DgvParentProducts_CellFormatting;
-                dgvParentProducts.CellFormatting += DgvParentProducts_CellFormatting;
             }
+            catch (Exception) { /* Ignore lifecycle exceptions */ }
         }
 
         private void DgvParentProducts_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -1107,7 +1211,7 @@ namespace ECQ_Soft
         {
             dgv.DataSource = null;
             dgv.DataSource = source.ToList();
-            FormatDataGridView(dgv);
+            // FormatDataGridView will be called by DataBindingComplete
         }
 
         private async void button9_Click(object sender, EventArgs e)
