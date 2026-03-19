@@ -52,7 +52,14 @@ namespace ECQ_Soft
                 _sheetIdMap.Clear();
                 cboExisting.Items.Clear();
 
+                // Các tab hệ thống cần ẩn khỏi danh sách chọn
+                var hiddenTabs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "Products_Table", "Products_Relatation"
+                };
+
                 var sheetNames = spreadsheet.Sheets
+                    .Where(s => !hiddenTabs.Contains(s.Properties.Title))
                     .OrderBy(s => s.Properties.Title)
                     .ToList();
 

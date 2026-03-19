@@ -101,31 +101,33 @@ namespace ECQ_Soft
             _isHandlingTabChange = true;
             try
             {
-                // Hiển thị modal chọn/tạo tab Google Sheet
+                // Luôn hiển thị modal chọn/tạo tab Google Sheet mỗi khi click vào tab Cấu hình
                 var service = _frmConfig.GetSheetsService();
                 var spreadsheetId = _frmConfig.GetSpreadsheetId();
 
-                    // Chỉ hiển thị modal chọn/tạo tab nếu chưa có sheet nào được chọn
-                    if (string.IsNullOrEmpty(_frmConfig.GetConfigSheetName()))
-                    {
-                        using (var selector = new FrmSheetSelector(spreadsheetId, service))
-                        {
-                            var result = selector.ShowDialog(this);
-                            if (result == DialogResult.OK && !string.IsNullOrEmpty(selector.SelectedSheetName))
-                            {
-                                // Người dùng đã chọn/tạo một sheet - cập nhật và reload
-                                await _frmConfig.SetConfigSheet(selector.SelectedSheetName);
-                            }
-                            else
-                            {
-                                // Người dùng bấm Hủy - quay lại tab trước
-                                tabControl1.SelectedIndex = _previousTabIndex;
-                            }
-                        }
-                    }
+                string selectedSheet = null;
+                bool cancelled = false;
+
+                using (var selector = new FrmSheetSelector(spreadsheetId, service))
+                {
+                    var result = selector.ShowDialog(this);
+                    if (result == DialogResult.OK && !string.IsNullOrEmpty(selector.SelectedSheetName))
+                        selectedSheet = selector.SelectedSheetName;
+                    else
+                        cancelled = true;
+                }
+
+                // Thả cờ NGAY SAU KHI dialog đóng để click nhanh không bị chặn
+                _isHandlingTabChange = false;
+
+                if (cancelled)
+                    tabControl1.SelectedIndex = _previousTabIndex;
+                else
+                    await _frmConfig.SetConfigSheet(selectedSheet);
             }
             finally
             {
+                // Đảm bảo flag luôn được thả dù có exception
                 _isHandlingTabChange = false;
             }
         }

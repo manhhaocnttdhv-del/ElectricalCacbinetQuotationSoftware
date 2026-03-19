@@ -147,6 +147,13 @@
     <Compile Include="Model\RelationItem.cs" />
     <Compile Include="Services\GoogleSheetsService.cs" />
     <Compile Include="Helper\CategoryParser.cs" />
+    <Compile Include="Helper\CheckedComboBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Helper\ColorPickerPopup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Helpers\ExcelHelper.cs" />
     <Compile Include="Model\CabinetType.cs" />
     <Compile Include="Model\MarketPrice.cs" />
     <Compile Include="Model\Material.cs" />

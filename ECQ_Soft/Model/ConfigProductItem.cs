@@ -23,5 +23,16 @@ namespace ECQ_Soft.Model
         
         // Cờ để xác định đây là dòng Header chung/tổng ở trên cùng
         public bool IsHeader { get; set; }
+
+        // Cờ để xác định đây là dòng tổng kết (TỔNG CỘNG, THUẾ VAT, THÀNH TIỀN)
+        public bool IsSummary { get; set; }
+
+        // Vị trí dòng trên sheet (0-based, row 2+ trên sheet)
+        public int SheetRowIndex { get; set; } = -1;
+
+        public ConfigProductItem Clone()
+        {
+            return (ConfigProductItem)this.MemberwiseClone();
+        }
     }
 }

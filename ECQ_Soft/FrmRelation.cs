@@ -25,6 +25,11 @@ namespace ECQ_Soft
         public FrmRelation()
         {
             InitializeComponent();
+
+            // Luôn format lại grid sau mỗi lần bind dữ liệu
+            dgvAllProducts.DataBindingComplete += (s, e) => FormatDataGridView(dgvAllProducts);
+            dgvParentProducts.DataBindingComplete += (s, e) => FormatDataGridView(dgvParentProducts);
+            dgvChildProducts.DataBindingComplete += (s, e) => FormatDataGridView(dgvChildProducts);
         }
 
         private void InitGoogleSheetsService()
@@ -157,11 +162,17 @@ namespace ECQ_Soft
         {
             if (dgv == null || dgv.Columns.Count == 0) return;
 
-            // Ẩn các cột không cần thiết
-            string[] hideCols = { "Id", "Weight", "Length", "Width", "Height" };
+            // Ẩn các cột không cần thiết (kể cả IsSelected)
+            string[] hideCols = { "Id", "Weight", "Length", "Width", "Height", "IsSelected" };
             foreach (var colName in hideCols)
             {
                 if (dgv.Columns.Contains(colName)) dgv.Columns[colName].Visible = false;
+            }
+
+            // Ẩn thêm bất kỳ cột CheckBox nào tự sinh (phòng trường hợp tên cột khác)
+            foreach (DataGridViewColumn col in dgv.Columns)
+            {
+                if (col is DataGridViewCheckBoxColumn) col.Visible = false;
             }
 
             // Đặt Header đúng tên
@@ -184,9 +195,12 @@ namespace ECQ_Soft
             string selectedCategoryPath = comboBox1.SelectedValue?.ToString();
 
             var filtered = allProducts.Where(p =>
-                (string.IsNullOrEmpty(searchText) || p.Name.ToLower().Contains(searchText) || p.Model.ToLower().Contains(searchText) || p.SKU.ToLower().Contains(searchText)) &&
-                (selectedBrand == "-- Tất cả hãng --" || p.HÃNG == selectedBrand) &&
-                (string.IsNullOrEmpty(selectedCategoryPath) || p.Category.Contains(selectedCategoryPath))
+                (string.IsNullOrEmpty(searchText) || 
+                 (p.Name ?? "").ToLower().Contains(searchText) || 
+                 (p.Model ?? "").ToLower().Contains(searchText) || 
+                 (p.SKU ?? "").ToLower().Contains(searchText)) &&
+                (selectedBrand == "-- Tất cả hãng --" || (p.HÃNG ?? "") == selectedBrand) &&
+                (string.IsNullOrEmpty(selectedCategoryPath) || (p.Category ?? "").Contains(selectedCategoryPath))
             ).ToList();
 
             dgvAllProducts.DataSource = null;
