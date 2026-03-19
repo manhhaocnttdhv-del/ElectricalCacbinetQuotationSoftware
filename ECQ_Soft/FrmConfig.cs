@@ -18,11 +18,26 @@ namespace ECQ_Soft
 {
     public partial class FrmConfig : UserControl
     {
+        // ══════════════════════════════════════════════════════════════════
+        // FIELDS – Biến trạng thái của form
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>Cờ tránh vòng lặp khi cập nhật comboBox2 ↔ comboBox1 lẫn nhau.</summary>
         private bool isUpdatingComboBoxes = false;
+
+        /// <summary>Kết nối tới Google Sheets API (khởi tạo một lần, dùng lại).</summary>
         private SheetsService _sheetsService;
+
+        /// <summary>ID của Google Spreadsheet chứa toàn bộ dữ liệu.</summary>
         string spreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
+
+        /// <summary>Tên sheet chứa danh sách sản phẩm (bảng master).</summary>
         string sheetName = "Products_Table";
+
+        /// <summary>Tên sheet hiện tại đang làm việc (ví dụ: "Config_Tab1"). Null = chưa chọn.</summary>
         string configSheetName = null;
+
+        /// <summary>Trả về đường dẫn file cache JSON cho một key dữ liệu cụ thể.</summary>
         private string GetCachePath(string key) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"cache_{key}_{configSheetName ?? "global"}.json");
 
         /// <summary>Trả về SheetsService để FrmMain/modal dùng chung.</summary>
@@ -58,23 +73,49 @@ namespace ECQ_Soft
             await LoadDataAsync();
         }
 
+        /// <summary>Cây danh mục sản phẩm (phân cấp, dùng cho bộ lọc).</summary>
         private List<CategoryItem> categoryTree = new List<CategoryItem>();
-        private List<Products> allProducts = new List<Products>(); 
+
+        /// <summary>Toàn bộ sản phẩm nạp từ Google Sheets (sheet Products_Table).</summary>
+        private List<Products> allProducts = new List<Products>();
+
+        /// <summary>Danh sách sản phẩm đang được thêm vào cấu hình báo giá hiện tại.</summary>
         private List<ConfigProductItem> configProducts = new List<ConfigProductItem>();
+
+        /// <summary>Danh sách quan hệ sản phẩm chính – sản phẩm con (relation PR).</summary>
         private List<RelationItem> productRelations = new List<RelationItem>();
+
+        /// <summary>Danh sách sản phẩm con (bên phải) đang được chọn, binding với dataGridView1.</summary>
         private BindingList<Products> childProducts = new BindingList<Products>();
+
+        /// <summary>Toàn bộ cấu hình đã lưu trên Google Sheets (dùng để merge khi nạp nhiều cấu hình).</summary>
         private List<ConfigProductItem> allSavedConfigs = new List<ConfigProductItem>();
+
+        /// <summary>Tên cấu hình đang được chỉnh sửa (null = đang tạo mới).</summary>
         private string currentEditingConfigName = null;
+
         private CheckBox chkSelectAllAllProducts = new CheckBox();
         private CheckBox chkSelectAllChildProducts = new CheckBox();
 
-        // Lưu màu nền / màu chữ tuỳ chỉnh cho từng ô (rowIndex, colIndex)
-        private Dictionary<(int r, int c), Color> _cellBgColors = new Dictionary<(int, int), Color>();
-        private Dictionary<(int r, int c), Color> _cellFgColors = new Dictionary<(int, int), Color>();
+        // ── Màu tuỳ chỉnh per-cell (được chọn qua color picker chuột phải) ──
+        // Key = (rowIndex, colIndex) của DataGridView; Value = màu được chọn
+        private Dictionary<(int r, int c), Color> _cellBgColors = new Dictionary<(int, int), Color>(); // màu nền
+        private Dictionary<(int r, int c), Color> _cellFgColors = new Dictionary<(int, int), Color>(); // màu chữ
+
+        /// <summary>Lưu vị trí ô được right-click (để hiển thị context menu đúng ô).</summary>
         private int _rightClickedRow = -1;
         private int _rightClickedCol = -1;
+
+        /// <summary>Danh sách hiển thị trong dgvParentProducts (bao gồm cả 3 dòng TỔNG/VAT/THÀNH TIỀN).</summary>
         private List<ConfigProductItem> _displayList = new List<ConfigProductItem>();
 
+        // ══════════════════════════════════════════════════════════════════
+        // KHỞI TẠO FORM
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Constructor: đăng ký tất cả event handlers và thiết lập context menu màu ô.
+        /// </summary>
         public FrmConfig()
         {
             InitializeComponent();
@@ -103,6 +144,12 @@ namespace ECQ_Soft
             SetupHeaderCheckBox(dataGridView1, chkSelectAllChildProducts, "IsSelected");
 
             dataGridView1.DataSource = childProducts;
+
+            // Click ra ngoài DataGridView → xóa bôi đen (selection)
+            this.Click += (s, e) => dgvParentProducts.ClearSelection();
+            this.MouseDown += (s, e) => dgvParentProducts.ClearSelection();
+            // Khi focus rời khỏi DataGridView (ví dụ click vào button, textbox khác) → xóa selection
+            dgvParentProducts.Leave += (s, e) => dgvParentProducts.ClearSelection();
 
             // ── Context menu chuột phải cho ô trong danh sách cấu hình ──
             var ctxCell = new ContextMenuStrip();
@@ -171,29 +218,43 @@ namespace ECQ_Soft
             };
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // EVENT HANDLERS – DataGridView
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>Sau khi binding xong, áp dụng style cho dgvParentProducts (danh sách cấu hình).</summary>
         private void DgvParentProducts_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             FormatConfigGrid(dgvParentProducts);
         }
 
+        /// <summary>Sau khi binding xong ở grid sản phẩm (trái/phải), áp dụng style chung.</summary>
         private void Grid_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
         {
             var dgv = sender as DataGridView;
             if (dgv != null)
-            {
                 FormatDataGridView(dgv);
-            }
         }
 
+        /// <summary>
+        /// Commit ngay khi ô đang sửa thay đổi giá trị (tránh phải nhấn Enter thủ công).
+        /// Cần thiết để checkbox IsSelected hoạt động mượt mà.
+        /// </summary>
         private void Grid_CurrentCellDirtyStateChanged(object sender, EventArgs e)
         {
             var dgv = sender as DataGridView;
             if (dgv != null && dgv.IsCurrentCellDirty)
-            {
                 dgv.CommitEdit(DataGridViewDataErrorContexts.Commit);
-            }
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // KẾT NỐI GOOGLE SHEETS
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Khởi tạo _sheetsService từ file config.json (Service Account credentials).
+        /// Chỉ gọi một lần; các lần sau dùng lại instance đã có.
+        /// </summary>
         private void InitGoogleSheetsService()
         {
             try
@@ -354,6 +415,14 @@ namespace ECQ_Soft
             // FormatDataGridView will be called by DataBindingComplete
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // NẠP DỮ LIỆU (LOAD DATA)
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Nạp toàn bộ dữ liệu: trước nạp từ cache (hiện ngay), sau đó nạp song song từ mạng.
+        /// Bao gồm: danh sách cấu hình, sản phẩm, quan hệ PR, cấu hình đã lưu.
+        /// </summary>
         public async Task LoadDataAsync()
         {
             if (_sheetsService == null) InitGoogleSheetsService();
@@ -407,6 +476,10 @@ namespace ECQ_Soft
             }
         }
 
+        /// <summary>
+        /// Lấy danh sách tên cấu hình đã lưu (header dòng IsHeader=1) từ Google Sheets.
+        /// Cập nhật lstSavedConfigs và lưu vào cache.
+        /// </summary>
         private async Task FetchConfigNamesAsync()
         {
             if (string.IsNullOrEmpty(configSheetName)) return;
@@ -437,6 +510,10 @@ namespace ECQ_Soft
             catch { }
         }
 
+        /// <summary>
+        /// Lấy toàn bộ sản phẩm từ sheet Products_Table (cột A→K).
+        /// Sau khi nạp: cập nhật bộ lọc hãng/danh mục và hiển thị lên dgvAllProducts.
+        /// </summary>
         private async Task FetchAllProductsAsync()
         {
             try
@@ -475,6 +552,10 @@ namespace ECQ_Soft
             catch { }
         }
 
+        /// <summary>
+        /// Xây dựng cây danh mục và danh sách hãng từ dữ liệu sản phẩm.
+        /// Được gọi sau khi nạp sản phẩm để cập nhật các bộ lọc.
+        /// </summary>
         private void UpdateFiltersFromProducts(List<Products> products)
         {
             var rawCategories = products.Select(p => p.Category).Where(c => !string.IsNullOrEmpty(c)).ToList();
@@ -487,6 +568,10 @@ namespace ECQ_Soft
             categoryTree5.Insert(0, new CategoryItem { DisplayText = "-- Tất cả danh mục --", FullPath = "" });
         }
 
+        /// <summary>
+        /// Lấy danh sách quan hệ sản phẩm chính – con từ sheet Products_Relatation.
+        /// Cập nhật productRelations và comboBox2/comboBox1.
+        /// </summary>
         private async Task FetchProductRelationsAsync()
         {
             try
@@ -511,6 +596,10 @@ namespace ECQ_Soft
             catch { }
         }
 
+        /// <summary>
+        /// Cập nhật comboBox2 (Sản phẩm chính) và comboBox1 (Danh mục PR)
+        /// dựa trên dữ liệu quan hệ hiện tại.
+        /// </summary>
         private void UpdateProductRelationCombo()
         {
             // CHỈ lấy ID_Product_Main (Sản phẩm chính) để tránh hiển thị linh kiện con
@@ -530,10 +619,15 @@ namespace ECQ_Soft
             comboBox1.DataSource = catPRs;
         }
 
-        // Lưu màu từ Google Sheet: key = (sheetRowIndex, sheetColIndex), value = Color
-        private Dictionary<(int r, int c), Color> _sheetBgColors = new Dictionary<(int, int), Color>();
-        private Dictionary<(int r, int c), Color> _sheetFgColors = new Dictionary<(int, int), Color>();
+        // ── Màu đọc từ Google Sheet (dùng để khôi phục màu khi load cấu hình) ──
+        // Key = (sheetRowIndex 0-based, sheetColIndex 0-based); Value = màu tương ứng
+        private Dictionary<(int r, int c), Color> _sheetBgColors = new Dictionary<(int, int), Color>(); // màu nền
+        private Dictionary<(int r, int c), Color> _sheetFgColors = new Dictionary<(int, int), Color>(); // màu chữ
 
+        /// <summary>
+        /// Lấy toàn bộ dữ liệu cấu hình đã lưu (bao gồm allSavedConfigs)
+        /// và sau đó đọc cả thông tin màu sắc từng ô của sheet.
+        /// </summary>
         private async Task FetchSavedConfigsFullDataAsync()
         {
             if (string.IsNullOrEmpty(configSheetName)) return;
@@ -584,6 +678,10 @@ namespace ECQ_Soft
             catch { }
         }
 
+        /// <summary>
+        /// Đọc màu nền và màu chữ của từng ô trong config sheet.
+        /// Kết quả lưu vào _sheetBgColors và _sheetFgColors để áp dụng lên DGV.
+        /// </summary>
         private async Task FetchSheetFormattingAsync()
         {
             try
@@ -641,6 +739,14 @@ namespace ECQ_Soft
             catch { }
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // ĐỊNH DẠNG GIAO DIỆN (FORMAT / STYLE)
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Định dạng hai grid sản phẩm (dgvAllProducts & dataGridView1):
+        /// ẩn cột không cần thiết, đặt header text, chỉ cho phép sửa checkbox IsSelected.
+        /// </summary>
         private void FormatDataGridView(DataGridView dgv)
         {
             if (dgv == null || dgv.IsDisposed || dgv.Columns == null || dgv.Columns.Count == 0) return;
@@ -707,6 +813,14 @@ namespace ECQ_Soft
                 // Silently ignore layout-related exceptions during binding
             }
         }
+        // ══════════════════════════════════════════════════════════════════
+        // BỘ LỌC QUAN HỆ (COMBO SẢN PHẨM CHÍNH – DANH MỤC PR)
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Khi đổi sản phẩm chính (comboBox2), lọc lại danh sách Danh mục PR (comboBox1)
+        /// và cập nhật grid sản phẩm con (dataGridView1) tương ứng.
+        /// </summary>
         private void ComboBox2_SelectedValueChanged(object sender, EventArgs e)
         {
             if (isUpdatingComboBoxes) return;
@@ -752,6 +866,10 @@ namespace ECQ_Soft
             }
         }
 
+        /// <summary>
+        /// Khi đổi Danh mục PR (comboBox1), lọc lại danh sách sản phẩm chính (comboBox2)
+        /// cho phù hợp và cập nhật grid sản phẩm con.
+        /// </summary>
         private void ComboBox1_SelectedValueChanged(object sender, EventArgs e)
         {
             if (isUpdatingComboBoxes) return;
@@ -873,13 +991,19 @@ namespace ECQ_Soft
             // Tìm vị trí cuối của nhóm này (trước header kế tiếp)
             int insertAt = headerIdx + 1;
             while (insertAt < configProducts.Count && !configProducts[insertAt].IsHeader)
-                insertAt++;
+                    insertAt++;
 
             // Thêm các sản phẩm được chọn vào đúng vị trí trong nhóm
             foreach (var product in selectedItems)
             {
-                // Bỏ qua nếu đã có trong danh sách
-                if (configProducts.Any(p => !p.IsHeader && p.MaHang == product.SKU)) continue;
+                // Chỉ bỏ qua nếu sản phẩm đã có trong CÙNG NHÓM này
+                // (cho phép cùng sản phẩm xuất hiện ở nhiều nhóm PR khác nhau)
+                int groupStart = headerIdx + 1;
+                int groupEnd   = insertAt; // insertAt đã trỏ đến cuối nhóm
+                bool alreadyInGroup = configProducts
+                    .Skip(groupStart).Take(groupEnd - groupStart)
+                    .Any(p => !p.IsHeader && p.MaHang == product.SKU);
+                if (alreadyInGroup) continue;
 
                 decimal price = 0;
                 decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
@@ -1466,18 +1590,26 @@ namespace ECQ_Soft
 
         private void UpdateHeaderSum()
         {
-            var headerRow = configProducts.FirstOrDefault(p => p.IsHeader);
-            if (headerRow != null)
+            // Cập nhật tổng cho TỪ́NG header - mỗi nhóm tính riêng
+            for (int i = 0; i < configProducts.Count; i++)
             {
-                // Tính tổng trừ dòng Header ra
-                decimal totalDonGia = configProducts.Where(p => !p.IsHeader).Sum(p => p.DonGiaVND * p.SoLuong);
-                decimal totalThanhTien = configProducts.Where(p => !p.IsHeader).Sum(p => p.ThanhTienVND);
-                decimal totalGiaNhap = configProducts.Where(p => !p.IsHeader).Sum(p => p.GiaNhap * p.SoLuong);
+                if (!configProducts[i].IsHeader) continue;
 
-                headerRow.DonGiaVND = totalDonGia;
-                headerRow.ThanhTienVND = totalThanhTien;
-                headerRow.GiaNhap = totalGiaNhap;
-                headerRow.ThanhTien = totalThanhTien;
+                // Phạm vi nhóm: từ i+1 đến header kế tiếp (hoặc cuối list)
+                int groupEnd = i + 1;
+                while (groupEnd < configProducts.Count && !configProducts[groupEnd].IsHeader)
+                    groupEnd++;
+
+                var groupItems = configProducts
+                    .Skip(i + 1).Take(groupEnd - i - 1)
+                    .Where(p => !p.IsHeader && !p.IsSummary)
+                    .ToList();
+
+                configProducts[i].DonGiaVND    = groupItems.Sum(p => p.DonGiaVND  * p.SoLuong);
+                configProducts[i].ThanhTienVND = groupItems.Sum(p => p.ThanhTienVND);
+                configProducts[i].GiaNhap      = groupItems.Sum(p => p.GiaNhap    * p.SoLuong);
+                configProducts[i].ThanhTien    = groupItems.Sum(p => p.ThanhTien);
+                configProducts[i].BangGia      = groupItems.Sum(p => p.BangGia);
             }
         }
 
@@ -1560,6 +1692,7 @@ namespace ECQ_Soft
                 _displayList.Add(new ConfigProductItem
                 {
                     TenHang = "TỔNG CỘNG (Giá chưa bao gồm VAT)",
+                    DonGiaVND = tongCongThanhTien,
                     ThanhTienVND = tongCongThanhTien,
                     GiaNhap = tongCongGiaNhap,
                     ThanhTien = tongCongThanhTien,
@@ -1569,6 +1702,8 @@ namespace ECQ_Soft
                 _displayList.Add(new ConfigProductItem
                 {
                     TenHang = "THUẾ VAT 8%",
+                    DonGiaVND = vatThanhTien,
+                    ThanhTienVND = vatThanhTien,
                     GiaNhap = vatGiaNhap,
                     ThanhTien = vatThanhTien,
                     IsSummary = true
@@ -1576,6 +1711,7 @@ namespace ECQ_Soft
                 _displayList.Add(new ConfigProductItem
                 {
                     TenHang = "THÀNH TIỀN",
+                    DonGiaVND = tongCongThanhTien + vatThanhTien,
                     ThanhTienVND = tongCongThanhTien + vatThanhTien,
                     GiaNhap = tongCongGiaNhap + vatGiaNhap,
                     ThanhTien = tongCongThanhTien + vatThanhTien,
@@ -1599,7 +1735,7 @@ namespace ECQ_Soft
                     row.DefaultCellStyle.ForeColor = Color.Black;
                     row.DefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
 
-                    // Số tiền → chữ đỏ
+                    // Số tiền → chữ đỏ (tất cả cột tiền kể cả DonGiaVND, ThanhTienVND)
                     foreach (var colName in new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" })
                     {
                         if (dgvParentProducts.Columns.Contains(colName))
@@ -1684,7 +1820,7 @@ namespace ECQ_Soft
                 // Header cột chính: nền vàng, chữ xanh đậm, bold, căn giữa
                 var yellowHeader = new DataGridViewCellStyle
                 {
-                    BackColor  = Color.FromArgb(255, 235, 156),
+                    BackColor  = Color.Yellow,
                     ForeColor  = Color.FromArgb(31, 73, 125),
                     Font       = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                     Alignment  = DataGridViewContentAlignment.MiddleCenter,
@@ -1757,7 +1893,7 @@ namespace ECQ_Soft
 
                 // Ẩn giá trị 0 ở các cột không liên quan (giống gộp ô trong Excel)
                 string colName = dgvParentProducts.Columns[e.ColumnIndex].Name;
-                var hiddenCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "DonGiaVND", "ThanhTienVND", "GhiChu" };
+                var hiddenCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu" };
                 if (Array.IndexOf(hiddenCols, colName) >= 0)
                 {
                     e.Value = "";
@@ -1765,7 +1901,7 @@ namespace ECQ_Soft
                 }
 
                 // Số tiền → chữ đỏ
-                var numberCols = new[] { "GiaNhap", "ThanhTien", "BangGia" };
+                var numberCols = new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" };
                 if (Array.IndexOf(numberCols, colName) >= 0)
                 {
                     e.CellStyle.ForeColor = Color.Red;
@@ -1946,47 +2082,155 @@ namespace ECQ_Soft
                 Excel.Worksheet ws = workbook.ActiveSheet;
                 ws.Name = "Danh Sach Cau Hinh";
 
-                // Thu th\u1eadp c\u00e1c c\u1ed9t hi\u1ec7n th\u1ecb
+                // Thu thập các cột hiện thị
                 var visibleCols = new List<DataGridViewColumn>();
                 foreach (DataGridViewColumn col in dgv.Columns)
                     if (col.Visible) visibleCols.Add(col);
 
-                // \u2500\u2500 1. Header c\u1ed9t \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+                // ── 1. Header cột ──────────────────────────────────────────────
+                // Lấy màu header từ DGV (ColumnHeadersDefaultCellStyle.BackColor)
+                Color dgvHeaderBg = dgv.ColumnHeadersDefaultCellStyle.BackColor;
+                Color dgvHeaderFg = dgv.ColumnHeadersDefaultCellStyle.ForeColor;
+
                 for (int c = 0; c < visibleCols.Count; c++)
                 {
                     Excel.Range hCell = (Excel.Range)ws.Cells[1, c + 1];
                     hCell.Value2 = visibleCols[c].HeaderText;
+
+                    // Lấy màu header riêng của từng cột (ví dụ cột giá màu xanh)
+                    Color colHdrBg = visibleCols[c].HeaderCell.Style.BackColor != Color.Empty
+                                     ? visibleCols[c].HeaderCell.Style.BackColor : dgvHeaderBg;
+                    Color colHdrFg = visibleCols[c].HeaderCell.Style.ForeColor != Color.Empty
+                                     ? visibleCols[c].HeaderCell.Style.ForeColor : dgvHeaderFg;
+
+                    hCell.Interior.Color    = ColorTranslator.ToOle(colHdrBg);
+                    hCell.Font.Color        = ColorTranslator.ToOle(colHdrFg);
+                    hCell.Font.Bold         = true;
+                    hCell.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                    hCell.VerticalAlignment   = Excel.XlVAlign.xlVAlignCenter;
                 }
-                Excel.Range headerRow = ws.Range[ws.Cells[1, 1], ws.Cells[1, visibleCols.Count]];
-                headerRow.Font.Bold           = true;
-                headerRow.Interior.Color      = ColorTranslator.ToOle(Color.LightGray);
-                headerRow.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                headerRow.VerticalAlignment   = Excel.XlVAlign.xlVAlignCenter;
 
-                // \u2500\u2500 2. D\u1eef li\u1ec7u + m\u00e0u n\u1ec1n \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-                for (int r = 0; r < dgv.Rows.Count && r < items.Count; r++)
+                // ── 2. Dữ liệu + màu nền/chữ theo logic DGV ──────────────────
+                // ** Không đọc từ dgvRow.DefaultCellStyle vì CellFormatting là dynamic,
+                //    màu không được lưu vào Style. Phải áp dụng cùng quy tắc với UpdateConfigGrid. **
+                var moneyCols       = new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" };
+                var hiddenSumCols   = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu" };
+
+                for (int r = 0; r < _displayList.Count; r++)
                 {
-                    bool isHeader = items[r].IsHeader;
+                    var item = _displayList[r];
 
-                    // M\u00e0u n\u1ec1n: xanh l\u00e1 cho header, xanh d\u01b0\u01a1ng nh\u1ea1t cho c\u00e1c h\u00e0ng th\u01b0\u1eddng
-                    Color bgColor = isHeader ? Color.LightGreen : Color.FromArgb(173, 216, 230); // LightBlue
+                    // --- Quy tắc màu dòng (giống UpdateConfigGrid + CellFormatting) ---
+                    Color rowBg;
+                    Color rowFg;
+                    bool  rowBold;
 
+                    if (item.IsSummary)
+                    {
+                        rowBg   = Color.Yellow;         // Dòng tổng: nền vàng
+                        rowFg   = Color.Black;
+                        rowBold = true;
+                    }
+                    else if (item.IsHeader)
+                    {
+                        rowBg   = Color.LightGreen;     // Dòng header nhóm: xanh lá
+                        rowFg   = Color.Black;
+                        rowBold = true;
+                    }
+                    else
+                    {
+                        rowBg   = Color.White;          // Dòng thường: trắng
+                        rowFg   = Color.Black;
+                        rowBold = false;
+                    }
+
+                    // --- Ghi từng ô: đọc giá trị trực tiếp từ item, không qua DGV cell
                     for (int c = 0; c < visibleCols.Count; c++)
                     {
-                        Excel.Range cell = (Excel.Range)ws.Cells[r + 2, c + 1];
-                        var val = dgv.Rows[r].Cells[visibleCols[c].Index].Value;
-                        if (val != null) cell.Value2 = val.ToString();
+                        Excel.Range xCell = (Excel.Range)ws.Cells[r + 2, c + 1];
+                        string colNm      = visibleCols[c].Name;
+                        int    dgvColIdx  = visibleCols[c].Index;
 
-                        cell.Interior.Color = ColorTranslator.ToOle(bgColor);
-                        if (isHeader) cell.Font.Bold = true;
+                        // ── Giá trị: đọc thẳng từ item ──
+                        if (item.IsSummary && Array.IndexOf(hiddenSumCols, colNm) >= 0)
+                        {
+                            xCell.Value2 = ""; // ẩn cột không liên quan ở dòng tổng
+                        }
+                        else
+                        {
+                            object val = null;
+                            switch (colNm)
+                            {
+                                case "STT":          val = item.STT;          break;
+                                case "TenHang":      val = item.TenHang;      break;
+                                case "MaHang":       val = item.MaHang;       break;
+                                case "XuatXu":       val = item.XuatXu;       break;
+                                case "DonVi":        val = item.DonVi;        break;
+                                case "SoLuong":      val = item.SoLuong;      break;
+                                case "DonGiaVND":    val = item.DonGiaVND;    break;
+                                case "ThanhTienVND": val = item.ThanhTienVND; break;
+                                case "GhiChu":       val = item.GhiChu;       break;
+                                case "GiaNhap":      val = item.GiaNhap;      break;
+                                case "ThanhTien":    val = item.ThanhTien;    break;
+                                case "BangGia":      val = item.BangGia;      break;
+                            }
+                            if (val is decimal decVal)
+                                xCell.Value2 = (double)decVal;
+                            else if (val != null)
+                                xCell.Value2 = val.ToString();
+                        }
+
+                        // ── Màu nền: per-cell picker > sheet color > màu dòng mặc định ──
+                        // _sheetBgColors: màu load từ Google Sheet (nguồn chính của per-cell color)
+                        // _cellBgColors:  màu set qua color picker trong session hiện tại (ghi đè)
+                        string[] sheetColOrd = { "STT","TenHang","MaHang","XuatXu","DonVi","SoLuong",
+                                                  "DonGiaVND","ThanhTienVND","GhiChu","GiaNhap","ThanhTien","BangGia" };
+                        int sheetC = Array.IndexOf(sheetColOrd, colNm);
+                        var sheetKeyBg = (item.SheetRowIndex, sheetC);
+
+                        Color cellBg = rowBg;
+                        if (sheetC >= 0 && item.SheetRowIndex >= 0 && _sheetBgColors.TryGetValue(sheetKeyBg, out Color sheetBg))
+                            cellBg = sheetBg;                                   // màu từ Google Sheet
+                        if (_cellBgColors.TryGetValue((r, dgvColIdx), out Color customBg))
+                            cellBg = customBg;                                  // picker ghi đè
+                        xCell.Interior.Color = ColorTranslator.ToOle(cellBg);
+
+                        // ── Màu chữ: summary+tiền → đỏ; sheet color > picker ghi đè ──
+                        Color cellFg = (item.IsSummary && Array.IndexOf(moneyCols, colNm) >= 0)
+                                       ? Color.Red : rowFg;
+                        var sheetKeyFg = (item.SheetRowIndex, sheetC);
+                        if (sheetC >= 0 && item.SheetRowIndex >= 0 && _sheetFgColors.TryGetValue(sheetKeyFg, out Color sheetFg))
+                            cellFg = sheetFg;
+                        if (_cellFgColors.TryGetValue((r, dgvColIdx), out Color customFg))
+                            cellFg = customFg;
+                        xCell.Font.Color = ColorTranslator.ToOle(cellFg);
+                        xCell.Font.Bold  = rowBold;
+
+                        // ── Căn chỉnh ──
+                        if (Array.IndexOf(new[] { "STT", "XuatXu", "DonVi", "SoLuong" }, colNm) >= 0)
+                            xCell.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                        else if (Array.IndexOf(moneyCols, colNm) >= 0)
+                            xCell.HorizontalAlignment = Excel.XlHAlign.xlHAlignRight;
+                        else
+                            xCell.HorizontalAlignment = Excel.XlHAlign.xlHAlignLeft;
+
+                        // ── Định dạng số tiền ──
+                        if (Array.IndexOf(moneyCols, colNm) >= 0)
+                            xCell.NumberFormat = "#,##0";
                     }
                 }
 
-                // \u2500\u2500 3. Format b\u1ea3ng \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-                Excel.Range used = ws.Range[ws.Cells[1, 1], ws.Cells[dgv.Rows.Count + 1, visibleCols.Count]];
-                used.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-                used.Rows.AutoFit();
-                used.WrapText = true;
+                // ── 3. Viền bảng + chiều cao hàng ──
+                Excel.Range used = ws.Range[ws.Cells[1, 1], ws.Cells[_displayList.Count + 1, visibleCols.Count]];
+                used.Borders.LineStyle     = Excel.XlLineStyle.xlContinuous;
+                used.Borders.Weight        = Excel.XlBorderWeight.xlThin;
+                used.WrapText              = false;       // Không xuống dòng bên trong ô
+                used.VerticalAlignment     = Excel.XlVAlign.xlVAlignCenter;
+
+                // Header cột cao 30pt, dữ liệu 15pt (giống DGV)
+                ws.Rows[1].RowHeight = 30;
+                for (int r2 = 2; r2 <= _displayList.Count + 1; r2++)
+                    ((Excel.Range)ws.Rows[r2]).RowHeight = 15;
 
                 // ── 4. Độ rộng cột tuỳ chỉnh ──────────────────────────────
                 for (int c = 0; c < visibleCols.Count; c++)
