@@ -142,11 +142,15 @@
     </Compile>
     <Compile Include="Model\Category.cs" />
     <Compile Include="Model\CategoryItem.cs" />
+    <Compile Include="Model\CategoryTreeNode.cs" />
     <Compile Include="Model\ConfigProductItem.cs" />
     <Compile Include="Model\Products.cs" />
     <Compile Include="Model\RelationItem.cs" />
     <Compile Include="Services\GoogleSheetsService.cs" />
     <Compile Include="Helper\CategoryParser.cs" />
+    <Compile Include="Helper\CategoryTreeDropdown.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Helper\CheckedComboBox.cs">
       <SubType>Component</SubType>
     </Compile>

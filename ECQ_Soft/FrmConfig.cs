@@ -398,16 +398,27 @@ namespace ECQ_Soft
         private void Button2_Click(object sender, EventArgs e)
         {
             string searchText = textBox2.Text.Trim().ToLower();
+            string selectedCat = cboCategory?.SelectedFullPath ?? "";
 
             var filteredProducts = allProducts.AsEnumerable();
 
-            // 1. Filter by Name / SKU (Partial match)
+            // 1. Filter by Name / SKU / Model (Partial match)
             if (!string.IsNullOrEmpty(searchText))
             {
-                filteredProducts = filteredProducts.Where(p => 
-                    (p.Name != null && p.Name.ToLower().Contains(searchText)) || 
-                    (p.SKU != null && p.SKU.ToLower().Contains(searchText)) ||
+                filteredProducts = filteredProducts.Where(p =>
+                    (p.Name  != null && p.Name.ToLower().Contains(searchText)) ||
+                    (p.SKU   != null && p.SKU.ToLower().Contains(searchText))  ||
                     (p.Model != null && p.Model.ToLower().Contains(searchText))
+                );
+            }
+
+            // 2. Filter by Category (từ CategoryTreeDropdown)
+            if (!string.IsNullOrEmpty(selectedCat))
+            {
+                // Match nếu category của sản phẩm bắt đầu bằng selectedCat (bao gồm node cha lẫn con)
+                filteredProducts = filteredProducts.Where(p =>
+                    p.Category != null &&
+                    p.Category.TrimEnd(';').Trim().StartsWith(selectedCat, StringComparison.OrdinalIgnoreCase)
                 );
             }
 
@@ -485,11 +496,15 @@ namespace ECQ_Soft
             if (string.IsNullOrEmpty(configSheetName)) return;
             try
             {
-                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{configSheetName}!A2:B").ExecuteAsync();
+                // Lấy cột A→E để có DonVi (cột E, index 4) xác định đây là header (DonVi="TỦ")
+                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{configSheetName}!A2:E").ExecuteAsync();
                 if (response.Values != null)
                 {
                     var freshNames = response.Values
-                        .Where(r => r.Count >= 2 && r[0]?.ToString()?.Trim() == "1" && !string.IsNullOrEmpty(r[1]?.ToString()) && !r[1].ToString().StartsWith("--"))
+                        .Where(r => r.Count >= 5
+                            && r[4]?.ToString()?.Trim() == "TỦ"
+                            && !string.IsNullOrEmpty(r[1]?.ToString())
+                            && !r[1].ToString().StartsWith("--"))
                         .Select(r => r[1].ToString())
                         .Distinct().ToList();
 
@@ -559,13 +574,15 @@ namespace ECQ_Soft
         private void UpdateFiltersFromProducts(List<Products> products)
         {
             var rawCategories = products.Select(p => p.Category).Where(c => !string.IsNullOrEmpty(c)).ToList();
-            var rawBrands = products.Select(p => p.HÃNG).Where(b => !string.IsNullOrEmpty(b)).Distinct().OrderBy(b => b).ToList();
-            
+
+            // ── CategoryTreeDropdown mới (đa cấp đệ quy) ──
+            var treeNodes = CategoryParser.ParseToTreeNodes(rawCategories);
+            if (cboCategory != null)
+                cboCategory.LoadTree(treeNodes);
+
+            // Giữ lại categoryTree cũ để tương thích các chỗ khác vẫn còn dùng
             categoryTree = CategoryParser.ParseToTree(rawCategories);
             categoryTree.Insert(0, new CategoryItem { DisplayText = "-- Tất cả danh mục --", FullPath = "" });
-
-            var categoryTree5 = CategoryParser.ParseToTree(rawCategories);
-            categoryTree5.Insert(0, new CategoryItem { DisplayText = "-- Tất cả danh mục --", FullPath = "" });
         }
 
         /// <summary>
@@ -664,7 +681,7 @@ namespace ECQ_Soft
                             GiaNhap = parseCurrency(row.Count > 9 ? row[9]?.ToString() : "0"),
                             ThanhTien = parseCurrency(row.Count > 10 ? row[10]?.ToString() : "0"),
                             BangGia = parseCurrency(row.Count > 11 ? row[11]?.ToString() : "0"),
-                            IsHeader = (row.Count > 4 && row[4]?.ToString() == "TỦ") || (row.Count > 0 && row[0]?.ToString() == "1"),
+                            IsHeader = row.Count > 4 && row[4]?.ToString()?.Trim() == "TỦ",
                             SheetRowIndex = i // Lưu vị trí dòng trên sheet (0-based, tương ứng row 2+)
                         });
                     }
@@ -1066,39 +1083,72 @@ namespace ECQ_Soft
         {
             if (_sheetsService == null) InitGoogleSheetsService();
 
-            List<ConfigProductItem> finalDataToSave = new List<ConfigProductItem>();
-            string newHeaderName = configProducts.FirstOrDefault(p => p.IsHeader)?.TenHang;
-
-            if (button5.Text == "Cập nhật" && !string.IsNullOrEmpty(currentEditingConfigName))
+            // ── Tách configProducts thành từng nhóm theo header ──
+            // Mỗi nhóm gồm: 1 dòng header + các sản phẩm con ngay sau
+            var groups = new List<List<ConfigProductItem>>();
+            List<ConfigProductItem> currentGroup = null;
+            foreach (var item in configProducts)
             {
-                int headerIndex = allSavedConfigs.FindIndex(c => c.IsHeader && c.TenHang == currentEditingConfigName);
-                if (headerIndex >= 0)
+                if (item.IsHeader)
                 {
-                    finalDataToSave.AddRange(allSavedConfigs.Take(headerIndex));
-                    
-                    int nextHeaderIndex = allSavedConfigs.FindIndex(headerIndex + 1, c => c.IsHeader);
-                    
-                    finalDataToSave.AddRange(configProducts);
-                    
-                    if (nextHeaderIndex > 0)
+                    currentGroup = new List<ConfigProductItem> { item };
+                    groups.Add(currentGroup);
+                }
+                else if (currentGroup != null)
+                {
+                    currentGroup.Add(item);
+                }
+                else
+                {
+                    // Sản phẩm không thuộc nhóm nào (không có header trước) → tạo nhóm ảo
+                    currentGroup = new List<ConfigProductItem> { item };
+                    groups.Add(currentGroup);
+                }
+            }
+
+            // ── Bắt đầu từ bản sao của allSavedConfigs ──
+            // Với mỗi nhóm trong configProducts:
+            //   - Nếu TenHang của header TRÙNG với header đã lưu → thay thế nhóm cũ
+            //   - Nếu KHÔNG trùng → thêm mới vào cuối
+            var workingList = allSavedConfigs.ToList();
+
+            foreach (var group in groups)
+            {
+                var groupHeader = group.FirstOrDefault(x => x.IsHeader);
+                string groupHeaderName = groupHeader?.TenHang?.Trim();
+
+                if (!string.IsNullOrEmpty(groupHeaderName))
+                {
+                    // Tìm header trùng tên trong danh sách hiện tại
+                    int existingHeaderIdx = workingList.FindIndex(c =>
+                        c.IsHeader &&
+                        string.Equals(c.TenHang?.Trim(), groupHeaderName, StringComparison.OrdinalIgnoreCase));
+
+                    if (existingHeaderIdx >= 0)
                     {
-                        finalDataToSave.AddRange(allSavedConfigs.Skip(nextHeaderIndex));
+                        // Tìm vị trí kết thúc của nhóm cũ (header tiếp theo hoặc hết list)
+                        int existingGroupEnd = workingList.FindIndex(existingHeaderIdx + 1, c => c.IsHeader);
+                        if (existingGroupEnd < 0) existingGroupEnd = workingList.Count;
+
+                        // Xóa nhóm cũ và chèn nhóm mới vào đúng vị trí
+                        workingList.RemoveRange(existingHeaderIdx, existingGroupEnd - existingHeaderIdx);
+                        workingList.InsertRange(existingHeaderIdx, group);
+                    }
+                    else
+                    {
+                        // Chưa có → thêm mới vào cuối
+                        workingList.AddRange(group);
                     }
                 }
                 else
                 {
-                    finalDataToSave.AddRange(allSavedConfigs);
-                    finalDataToSave.AddRange(configProducts);
+                    // Không có tên header → luôn thêm mới
+                    workingList.AddRange(group);
                 }
             }
-            else
-            {
-                finalDataToSave.AddRange(allSavedConfigs);
-                finalDataToSave.AddRange(configProducts);
-            }
 
-            // Lưu count CŨ trước khi merge (cần cho tính offset per-cell color)
-            int oldSavedCount = finalDataToSave.Count - configProducts.Count;
+            List<ConfigProductItem> finalDataToSave = workingList;
+
 
             // Gán lại tham chiếu
             allSavedConfigs = finalDataToSave.ToList();
@@ -1422,19 +1472,36 @@ namespace ECQ_Soft
                             dgvToSheetCol[dgvParentProducts.Columns[sheetColOrder[sc]].Index] = sc;
                     }
 
-                    // Row offset: DGV row i → sheet row (oldSavedCount + i + 1)
-                    // oldSavedCount = count CŨ của allSavedConfigs trước merge
-                    int configRowOffset = oldSavedCount;
+                    // ── Build map: configProduct index → sheet row index (0-based) ──
+                    // Duyệt finalDataToSave để tìm vị trí thực của từng item trong configProducts
+                    // (vì sau merge, configProducts có thể nằm rải rác trong finalDataToSave)
+                    var configProductToSheetRow = new Dictionary<int, int>(); // key: configProducts index, value: finalDataToSave index
+                    {
+                        // Dùng reference equality để match
+                        var configSet = new HashSet<ConfigProductItem>(configProducts);
+                        for (int fi = 0; fi < finalDataToSave.Count; fi++)
+                        {
+                            if (configSet.Contains(finalDataToSave[fi]))
+                            {
+                                int cpIdx = configProducts.IndexOf(finalDataToSave[fi]);
+                                if (cpIdx >= 0)
+                                    configProductToSheetRow[cpIdx] = fi;
+                            }
+                        }
+                    }
+
                     int configRowCount = configProducts.Where(p => !p.IsSummary).Count();
 
+                    // Tô màu nền per-cell từ color picker (chuột phải → chọn màu)
                     foreach (var kvp in _cellBgColors)
                     {
                         int dgvRow = kvp.Key.r;
                         int dgvCol = kvp.Key.c;
                         if (dgvRow >= configRowCount) continue; // Bỏ qua summary rows
                         if (!dgvToSheetCol.ContainsKey(dgvCol)) continue;
+                        if (!configProductToSheetRow.ContainsKey(dgvRow)) continue;
 
-                        int sheetRow = configRowOffset + dgvRow + 1; // +1 vì row 1 là header cột
+                        int sheetRow = configProductToSheetRow[dgvRow] + 1; // +1 vì row 1 là header cột
                         int sheetCol = dgvToSheetCol[dgvCol];
                         System.Drawing.Color c = kvp.Value;
 
@@ -1472,8 +1539,9 @@ namespace ECQ_Soft
                         int dgvCol = kvp.Key.c;
                         if (dgvRow >= configRowCount) continue;
                         if (!dgvToSheetCol.ContainsKey(dgvCol)) continue;
+                        if (!configProductToSheetRow.ContainsKey(dgvRow)) continue;
 
-                        int sheetRow = configRowOffset + dgvRow + 1;
+                        int sheetRow = configProductToSheetRow[dgvRow] + 1;
                         int sheetCol = dgvToSheetCol[dgvCol];
                         System.Drawing.Color c = kvp.Value;
 

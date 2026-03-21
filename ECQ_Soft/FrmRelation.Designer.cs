@@ -31,7 +31,7 @@ namespace ECQ_Soft
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.comboBox1 = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.btnSearch = new System.Windows.Forms.Button();
@@ -79,13 +79,15 @@ namespace ECQ_Soft
             this.label3.TabIndex = 2;
             this.label3.Text = "Danh mục";
             // 
-            // comboBox1
+            // comboBox1 (CategoryTreeDropdown - Danh mục đa cấp)
             // 
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Location = new System.Drawing.Point(463, 30);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(200, 21);
             this.comboBox1.TabIndex = 3;
+            this.comboBox1.DropDownHeight = 1;
             // 
             // comboBox2
             // 
@@ -263,7 +265,7 @@ namespace ECQ_Soft
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.ComboBox comboBox1;
+        private ECQ_Soft.Helper.CategoryTreeDropdown comboBox1;
         private System.Windows.Forms.ComboBox comboBox2;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button btnSearch;

@@ -98,10 +98,14 @@ namespace ECQ_Soft
                 return;
             }
 
+            // Nếu đã chọn sheet rồi thì không hỏi lại (tránh reset danh sách)
+            if (!string.IsNullOrEmpty(_frmConfig.GetConfigSheetName()))
+                return;
+
             _isHandlingTabChange = true;
             try
             {
-                // Luôn hiển thị modal chọn/tạo tab Google Sheet mỗi khi click vào tab Cấu hình
+                // Chỉ hiển thị modal lần ĐẦU TIÊN (chưa chọn sheet)
                 var service = _frmConfig.GetSheetsService();
                 var spreadsheetId = _frmConfig.GetSpreadsheetId();
 
@@ -131,6 +135,7 @@ namespace ECQ_Soft
                 _isHandlingTabChange = false;
             }
         }
+
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {

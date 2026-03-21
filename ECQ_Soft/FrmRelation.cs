@@ -132,13 +132,12 @@ namespace ECQ_Soft
                         if (!string.IsNullOrEmpty(p.HÃNG)) rawBrands.Add(p.HÃNG);
                     }
 
-                    // 1. Load Cây danh mục vào comboBox1 (Bên phải - Danh mục)
-                    categoryTree = CategoryParser.ParseToTree(rawCategories);
-                    categoryTree.Insert(0, new CategoryItem { DisplayText = "-- Tất cả danh mục --", FullPath = "" });
-                    comboBox1.DataSource = null;
-                    comboBox1.DataSource = categoryTree;
-                    comboBox1.DisplayMember = "DisplayText";
-                    comboBox1.ValueMember = "FullPath";
+                    // 1. Load cây danh mục vào CategoryTreeDropdown (comboBox1)
+                    var treeNodes = CategoryParser.ParseToTreeNodes(rawCategories);
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        comboBox1.LoadTree(treeNodes);
+                    });
 
                     // 2. Load Hãng vào comboBox2 (Bên trái - Hãng sản xuất)
                     var brandList = rawBrands.OrderBy(b => b).ToList();
@@ -192,15 +191,17 @@ namespace ECQ_Soft
         {
             string searchText = textBox1.Text.ToLower().Trim();
             string selectedBrand = comboBox2.SelectedItem?.ToString();
-            string selectedCategoryPath = comboBox1.SelectedValue?.ToString();
+            // Dùng SelectedFullPath thay vì SelectedValue (CategoryTreeDropdown không có SelectedValue)
+            string selectedCategoryPath = comboBox1.SelectedFullPath;
 
             var filtered = allProducts.Where(p =>
                 (string.IsNullOrEmpty(searchText) || 
                  (p.Name ?? "").ToLower().Contains(searchText) || 
                  (p.Model ?? "").ToLower().Contains(searchText) || 
                  (p.SKU ?? "").ToLower().Contains(searchText)) &&
-                (selectedBrand == "-- Tất cả hãng --" || (p.HÃNG ?? "") == selectedBrand) &&
-                (string.IsNullOrEmpty(selectedCategoryPath) || (p.Category ?? "").Contains(selectedCategoryPath))
+                (selectedBrand == "-- Tất cả hãng --" || string.IsNullOrEmpty(selectedBrand) || (p.HÃNG ?? "") == selectedBrand) &&
+                // Dùng StartsWith để click node cha (cấp 1) lọc cả con cháu (cấp 2, 3...)
+                (string.IsNullOrEmpty(selectedCategoryPath) || (p.Category ?? "").StartsWith(selectedCategoryPath, StringComparison.OrdinalIgnoreCase))
             ).ToList();
 
             dgvAllProducts.DataSource = null;

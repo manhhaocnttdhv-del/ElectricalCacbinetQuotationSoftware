@@ -68,5 +68,68 @@ namespace ECQ_Soft.Helper
 
             return result;
         }
+
+        /// <summary>
+        /// Xây cây <see cref="CategoryTreeNode"/> từ danh sách chuỗi raw phân cách ">>".
+        /// Dùng đệ quy để Insert đúng vị trí cha → con ở mọi độ sâu.
+        /// </summary>
+        public static List<CategoryTreeNode> ParseToTreeNodes(IEnumerable<string> rawCategories)
+        {
+            var roots = new List<CategoryTreeNode>();
+
+            var uniquePaths = rawCategories
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.TrimEnd(';').Trim())
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
+
+            foreach (var path in uniquePaths)
+            {
+                var parts = path
+                    .Split(new[] { ">>" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .ToArray();
+
+                if (parts.Length == 0) continue;
+
+                // Đệ quy insert vào cây
+                InsertPath(roots, parts, 0, "");
+            }
+
+            return roots;
+        }
+
+        /// <summary>
+        /// Đệ quy: tìm hoặc tạo node con tại <paramref name="depth"/> trong <paramref name="siblings"/>,
+        /// rồi tiếp tục đi sâu hơn với phần còn lại của mảng parts.
+        /// </summary>
+        private static void InsertPath(List<CategoryTreeNode> siblings, string[] parts, int depth, string parentPath)
+        {
+            if (depth >= parts.Length) return;
+
+            string label = parts[depth];
+            string fullPath = string.IsNullOrEmpty(parentPath) ? label : $"{parentPath} >> {label}";
+
+            // Tìm node đã tồn tại ở cùng cấp
+            var existing = siblings.FirstOrDefault(n =>
+                string.Equals(n.Label, label, StringComparison.OrdinalIgnoreCase));
+
+            if (existing == null)
+            {
+                existing = new CategoryTreeNode
+                {
+                    Label    = label,
+                    FullPath = fullPath,
+                    Level    = depth,
+                    IsExpanded = false   // mặc định đóng, user bấm mới mở
+                };
+                siblings.Add(existing);
+            }
+
+            // Đệ quy vào level tiếp theo
+            InsertPath(existing.Children, parts, depth + 1, fullPath);
+        }
     }
 }
