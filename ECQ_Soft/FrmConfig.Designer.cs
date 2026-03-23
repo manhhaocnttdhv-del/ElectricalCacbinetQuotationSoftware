@@ -139,7 +139,8 @@ namespace ECQ_Soft
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(574, 46);
+            this.button9.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
+            this.button9.Location = new System.Drawing.Point(648, 46);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(75, 23);
             this.button9.TabIndex = 52;
@@ -149,14 +150,16 @@ namespace ECQ_Soft
             // label9
             // 
             this.label9.AutoSize = true;
+            this.label9.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label9.Location = new System.Drawing.Point(135, 29);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(55, 13);
+            this.label9.Size = new System.Drawing.Size(59, 13);
             this.label9.TabIndex = 53;
             this.label9.Text = "Sản phẩm";
             // 
             // button2
             // 
+            this.button2.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button2.Location = new System.Drawing.Point(486, 46);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
@@ -166,7 +169,8 @@ namespace ECQ_Soft
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(655, 46);
+            this.button1.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
+            this.button1.Location = new System.Drawing.Point(567, 46);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 51;
@@ -184,18 +188,20 @@ namespace ECQ_Soft
             // label2
             // 
             this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label2.Location = new System.Drawing.Point(816, 27);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(86, 13);
+            this.label2.Size = new System.Drawing.Size(92, 13);
             this.label2.TabIndex = 55;
             this.label2.Text = "Sản phẩm chính";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label3.Location = new System.Drawing.Point(1022, 25);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(74, 13);
+            this.label3.Size = new System.Drawing.Size(78, 13);
             this.label3.TabIndex = 56;
             this.label3.Text = "Danh mục PR";
             // 
@@ -209,6 +215,7 @@ namespace ECQ_Soft
             // 
             // btnSearch
             // 
+            this.btnSearch.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnSearch.Location = new System.Drawing.Point(1231, 48);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(75, 23);
@@ -219,14 +226,16 @@ namespace ECQ_Soft
             // label6
             // 
             this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label6.Location = new System.Drawing.Point(926, 335);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(146, 13);
+            this.label6.Size = new System.Drawing.Size(161, 13);
             this.label6.TabIndex = 61;
             this.label6.Text = "Tìm kiếm danh sách cấu hình";
             // 
             // button5
             // 
+            this.button5.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button5.Location = new System.Drawing.Point(1216, 358);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(78, 23);
@@ -236,6 +245,7 @@ namespace ECQ_Soft
             // 
             // button6
             // 
+            this.button6.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button6.Location = new System.Drawing.Point(1135, 358);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(78, 23);
@@ -245,6 +255,7 @@ namespace ECQ_Soft
             // 
             // button4
             // 
+            this.button4.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button4.Location = new System.Drawing.Point(1297, 358);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(78, 23);
@@ -254,11 +265,12 @@ namespace ECQ_Soft
             // 
             // button10
             // 
+            this.button10.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button10.Location = new System.Drawing.Point(1381, 358);
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(78, 23);
             this.button10.TabIndex = 66;
-            this.button10.Text = "Xuất excel";
+            this.button10.Text = "Xuất Excel";
             this.button10.UseVisualStyleBackColor = true;
             // 
             // lstSavedConfigs
@@ -276,9 +288,10 @@ namespace ECQ_Soft
             // label1
             // 
             this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label1.Location = new System.Drawing.Point(297, 29);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(56, 13);
+            this.label1.Size = new System.Drawing.Size(60, 13);
             this.label1.TabIndex = 71;
             this.label1.Text = "Danh mục";
             // 
@@ -310,7 +323,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.dgvAllProducts);
             this.Controls.Add(this.dgvParentProducts);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(1143, 456);
+            this.Size = new System.Drawing.Size(1126, 439);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();

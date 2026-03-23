@@ -86,6 +86,9 @@ namespace ECQ_Soft
             tabPage2.Text = "Đối tượng";
             tabPage3.Text = "Cấu hình";
             tabControl1.SelectedTab = tabPage1;
+
+            // Tự động maximize theo màn hình (24in hay 15.6in đều fill đủ)
+            this.WindowState = FormWindowState.Maximized;
         }
 
         private async void TabControl1_SelectedIndexChanged(object sender, EventArgs e)

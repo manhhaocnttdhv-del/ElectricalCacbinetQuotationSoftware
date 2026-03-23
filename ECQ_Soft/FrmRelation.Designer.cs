@@ -55,6 +55,7 @@ namespace ECQ_Soft
             // label1
             // 
             this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label1.Location = new System.Drawing.Point(12, 9);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(73, 13);
@@ -64,6 +65,7 @@ namespace ECQ_Soft
             // label2
             // 
             this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label2.Location = new System.Drawing.Point(237, 9);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(76, 13);
@@ -73,6 +75,7 @@ namespace ECQ_Soft
             // label3
             // 
             this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label3.Location = new System.Drawing.Point(460, 7);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(56, 13);
@@ -106,6 +109,7 @@ namespace ECQ_Soft
             // 
             // btnSearch
             // 
+            this.btnSearch.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnSearch.Location = new System.Drawing.Point(683, 31);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(75, 23);
@@ -115,6 +119,7 @@ namespace ECQ_Soft
             // 
             // btnAddParent
             // 
+            this.btnAddParent.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnAddParent.Location = new System.Drawing.Point(602, 71);
             this.btnAddParent.Name = "btnAddParent";
             this.btnAddParent.Size = new System.Drawing.Size(75, 23);
@@ -124,6 +129,7 @@ namespace ECQ_Soft
             // 
             // btnAddChild
             // 
+            this.btnAddChild.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnAddChild.Location = new System.Drawing.Point(683, 71);
             this.btnAddChild.Name = "btnAddChild";
             this.btnAddChild.Size = new System.Drawing.Size(75, 23);
@@ -154,7 +160,7 @@ namespace ECQ_Soft
             // lblParentList
             // 
             this.lblParentList.AutoSize = true;
-            this.lblParentList.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            this.lblParentList.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.lblParentList.Location = new System.Drawing.Point(780, 78);
             this.lblParentList.Name = "lblParentList";
             this.lblParentList.Size = new System.Drawing.Size(175, 15);
@@ -164,7 +170,7 @@ namespace ECQ_Soft
             // lblChildList
             // 
             this.lblChildList.AutoSize = true;
-            this.lblChildList.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
+            this.lblChildList.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.lblChildList.Location = new System.Drawing.Point(774, 418);
             this.lblChildList.Name = "lblChildList";
             this.lblChildList.Size = new System.Drawing.Size(175, 15);
@@ -175,6 +181,7 @@ namespace ECQ_Soft
             // 
             this.btnSaveRelation.Location = new System.Drawing.Point(1367, 75);
             this.btnSaveRelation.Name = "btnSaveRelation";
+            this.btnSaveRelation.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnSaveRelation.Size = new System.Drawing.Size(75, 23);
             this.btnSaveRelation.TabIndex = 14;
             this.btnSaveRelation.Text = "Lưu";
@@ -203,16 +210,18 @@ namespace ECQ_Soft
             // category_relationship
             // 
             this.category_relationship.AutoSize = true;
+            this.category_relationship.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.category_relationship.Location = new System.Drawing.Point(1158, 57);
             this.category_relationship.Name = "category_relationship";
-            this.category_relationship.Size = new System.Drawing.Size(98, 13);
+            this.category_relationship.Size = new System.Drawing.Size(102, 13);
             this.category_relationship.TabIndex = 16;
-            this.category_relationship.Text = "Danh mục quan hệ";
+            this.category_relationship.Text = "Danh mục PR";
             // 
             // btnRemoveParent
             // 
             this.btnRemoveParent.Location = new System.Drawing.Point(1448, 75);
             this.btnRemoveParent.Name = "btnRemoveParent";
+            this.btnRemoveParent.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnRemoveParent.Size = new System.Drawing.Size(75, 23);
             this.btnRemoveParent.TabIndex = 18;
             this.btnRemoveParent.Text = "Xóa";
@@ -222,6 +231,7 @@ namespace ECQ_Soft
             // 
             this.btnRemoveChild.Location = new System.Drawing.Point(1445, 407);
             this.btnRemoveChild.Name = "btnRemoveChild";
+            this.btnRemoveChild.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.btnRemoveChild.Size = new System.Drawing.Size(75, 23);
             this.btnRemoveChild.TabIndex = 19;
             this.btnRemoveChild.Text = "Xóa";

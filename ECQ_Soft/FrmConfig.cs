@@ -129,6 +129,7 @@ namespace ECQ_Soft
             dataGridView1.DataBindingComplete += Grid_DataBindingComplete;
             dgvParentProducts.DataBindingComplete += DgvParentProducts_DataBindingComplete;
             dgvParentProducts.CellFormatting += DgvParentProducts_CellFormatting;
+            dgvParentProducts.CellPainting += DgvParentProducts_CellPainting;
 
             // Handle DataError to suppress technical dialogs
             dgvAllProducts.DataError += Grid_DataError;
@@ -972,10 +973,33 @@ namespace ECQ_Soft
             var selectedItems = childProducts.Where(p => p.IsSelected).ToList();
             if (selectedItems.Count == 0) return;
 
-            // Xác định tên nhóm (header) từ Danh mục PR hoặc fallback tên sản phẩm chính
+            // Xác định tên nhóm (header) mặc định từ Danh mục PR hoặc fallback tên sản phẩm chính
             string catPR = comboBox1.SelectedItem?.ToString();
             bool hasCatPR = !string.IsNullOrEmpty(catPR) && catPR != "-- Tất cả danh mục --";
-            string headerName = hasCatPR ? catPR : comboBox2.Text;
+            string defaultHeaderName = hasCatPR ? catPR : comboBox2.Text;
+
+            // Lấy danh sách các nhóm (header) hiện có
+            var existingHeaders = configProducts
+                .Where(p => p.IsHeader && !string.IsNullOrWhiteSpace(p.TenHang))
+                .ToList();
+
+            string headerName;
+            if (existingHeaders.Count == 0)
+            {
+                // Chưa có nhóm nào → tạo mới với tên mặc định
+                headerName = defaultHeaderName;
+            }
+            else if (existingHeaders.Count == 1)
+            {
+                // Chỉ có 1 nhóm → thêm thẳng vào nhóm đó
+                headerName = existingHeaders[0].TenHang;
+            }
+            else
+            {
+                // Nhiều nhóm → hiện dialog hỏi chọn
+                headerName = ChooseHeaderDialog(existingHeaders, defaultHeaderName);
+                if (headerName == null) return; // Người dùng bấm Huỷ
+            }
 
             // Tìm vị trí header khớp tên trong danh sách cấu hình hiện tại
             int headerIdx = configProducts.FindIndex(p =>
@@ -1013,10 +1037,8 @@ namespace ECQ_Soft
             // Thêm các sản phẩm được chọn vào đúng vị trí trong nhóm
             foreach (var product in selectedItems)
             {
-                // Chỉ bỏ qua nếu sản phẩm đã có trong CÙNG NHÓM này
-                // (cho phép cùng sản phẩm xuất hiện ở nhiều nhóm PR khác nhau)
                 int groupStart = headerIdx + 1;
-                int groupEnd   = insertAt; // insertAt đã trỏ đến cuối nhóm
+                int groupEnd   = insertAt;
                 bool alreadyInGroup = configProducts
                     .Skip(groupStart).Take(groupEnd - groupStart)
                     .Any(p => !p.IsHeader && p.MaHang == product.SKU);
@@ -1053,6 +1075,80 @@ namespace ECQ_Soft
             UpdateHeaderSum();
             UpdateConfigGrid();
             dataGridView1.Refresh();
+        }
+
+        /// <summary>
+        /// Hiện dialog cho người dùng chọn nhóm (I, II, III...) để thêm sản phẩm vào.
+        /// Trả về tên header được chọn, hoặc null nếu người dùng Cancel.
+        /// </summary>
+        private string ChooseHeaderDialog(List<ConfigProductItem> headers, string defaultHeaderName)
+        {
+            using (var frm = new Form())
+            {
+                frm.Text = "Chọn mục để thêm vào";
+                frm.StartPosition = FormStartPosition.CenterParent;
+                frm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                frm.MaximizeBox = false;
+                frm.MinimizeBox = false;
+                frm.Width = 380;
+                frm.Height = 120 + headers.Count * 38 + 48;
+                frm.Font = new Font("Times New Roman", 9.5f, FontStyle.Regular);
+
+                var lbl = new Label
+                {
+                    Text = "Danh sách cấu hình có nhiều mục.\nBạn muốn thêm sản phẩm vào mục nào?",
+                    AutoSize = false,
+                    Size = new Size(340, 40),
+                    Location = new Point(16, 12),
+                    Font = new Font("Times New Roman", 9.5f, FontStyle.Bold)
+                };
+                frm.Controls.Add(lbl);
+
+                int btnY = 60;
+                string chosen = null;
+
+                for (int i = 0; i < headers.Count; i++)
+                {
+                    var h = headers[i];
+                    string roman = ToRomanNumeral(i + 1);
+                    var btn = new Button
+                    {
+                        Text = $"{roman}.  {h.TenHang}",
+                        Location = new Point(16, btnY),
+                        Size = new Size(340, 32),
+                        Tag = h.TenHang,
+                        Font = new Font("Times New Roman", 9.5f, FontStyle.Bold),
+                        FlatStyle = FlatStyle.Flat,
+                        BackColor = Color.LightGreen,
+                        ForeColor = Color.Black,
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        Padding = new Padding(8, 0, 0, 0)
+                    };
+                    btn.FlatAppearance.BorderColor = Color.SeaGreen;
+                    btn.Click += (s, ev) =>
+                    {
+                        chosen = (string)((Button)s).Tag;
+                        frm.DialogResult = DialogResult.OK;
+                        frm.Close();
+                    };
+                    frm.Controls.Add(btn);
+                    btnY += 38;
+                }
+
+                // Nút Huỷ
+                var btnCancel = new Button
+                {
+                    Text = "Huỷ",
+                    Location = new Point(16, btnY + 6),
+                    Size = new Size(80, 28),
+                    DialogResult = DialogResult.Cancel,
+                    Font = new Font("Times New Roman", 9.5f, FontStyle.Regular)
+                };
+                frm.CancelButton = btnCancel;
+                frm.Controls.Add(btnCancel);
+
+                return frm.ShowDialog(this) == DialogResult.OK ? chosen : null;
+            }
         }
 
         private async void Button5_Click(object sender, EventArgs e)
@@ -1157,12 +1253,34 @@ namespace ECQ_Soft
             var valueRange = new Google.Apis.Sheets.v4.Data.ValueRange();
             var objectList = new List<IList<object>>();
 
+            // Tính STT hiển thị đúng cho từng dòng
+            int headerOrder = 0;
+            int productOrder = 0;
+
             for (int i = 0; i < finalDataToSave.Count; i++)
             {
                 var item = finalDataToSave[i];
+
+                string displaySTT;
+                if (item.IsSummary)
+                {
+                    displaySTT = ""; // Dòng tổng: để trống
+                }
+                else if (item.IsHeader)
+                {
+                    headerOrder++;
+                    productOrder = 0; // Reset số thứ tự sản phẩm cho nhóm mới
+                    displaySTT = ToRomanNumeral(headerOrder); // I, II, III...
+                }
+                else
+                {
+                    productOrder++;
+                    displaySTT = productOrder.ToString(); // 1, 2, 3...
+                }
+
                 var row = new List<object>
                 {
-                    item.STT,
+                    displaySTT,
                     item.TenHang,
                     item.MaHang,
                     item.XuatXu,
@@ -1367,9 +1485,8 @@ namespace ECQ_Soft
                         }
                     }
 
-                    // ── Định dạng tiền cho cột J, K, L (GiaNhap=9, ThanhTien=10, BangGia=11) ──
-                    // Bỏ cột G(6) và H(7) để đúng với DGV (ẩn DonGiaVND/ThanhTienVND cho summary)
-                    int[] moneyCols = { 9, 10, 11 };
+                    // ── Định dạng tiền cho cột G(6=DonGiaVND), H(7=ThanhTienVND), J(9=GiaNhap), K(10=ThanhTien), L(11=BangGia) ──
+                    int[] moneyCols = { 6, 7, 9, 10, 11 };
                     foreach (int colIdx in moneyCols)
                     {
                         requests.Add(new Google.Apis.Sheets.v4.Data.Request
@@ -1595,18 +1712,23 @@ namespace ECQ_Soft
 
             if (selectedItems.Count == 0) return;
 
-            // Tự động thêm dòng Header nếu danh sách đang rỗng 
-            if (configProducts.Count == 0 || !configProducts.Any(p => p.IsHeader))
-            {
-                // Lấy tên sản phẩm đầu tiên được chọn làm header
-                string headerName = selectedItems[0].Name;
+            // Lấy danh sách các nhóm (header) hiện có
+            var existingHeaders = configProducts
+                .Where(p => p.IsHeader && !string.IsNullOrWhiteSpace(p.TenHang))
+                .ToList();
 
+            string targetHeaderName;
+
+            if (existingHeaders.Count == 0)
+            {
+                // Chưa có nhóm → tạo mới, dùng tên sản phẩm đầu tiên làm header
+                targetHeaderName = selectedItems[0].Name;
                 button5.Text = "Lưu";
                 currentEditingConfigName = null;
                 configProducts.Add(new ConfigProductItem
                 {
                     STT = 1,
-                    TenHang = headerName,
+                    TenHang = targetHeaderName,
                     MaHang = "",
                     XuatXu = "VNECCO",
                     DonVi = "TỦ",
@@ -1620,31 +1742,56 @@ namespace ECQ_Soft
                     IsHeader = true
                 });
             }
+            else if (existingHeaders.Count == 1)
+            {
+                // Chỉ có 1 nhóm → thêm thẳng
+                targetHeaderName = existingHeaders[0].TenHang;
+            }
+            else
+            {
+                // Nhiều nhóm → hiện dialog hỏi chọn
+                targetHeaderName = ChooseHeaderDialog(existingHeaders, selectedItems[0].Name);
+                if (targetHeaderName == null) return; // Người dùng bấm Huỷ
+            }
 
+            // Tìm vị trí header đã chọn
+            int headerIdx = configProducts.FindIndex(p =>
+                p.IsHeader && string.Equals(p.TenHang?.Trim(), targetHeaderName?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            // Tìm vị trí cuối nhóm (trước header kế)
+            int insertAt = headerIdx + 1;
+            while (insertAt < configProducts.Count && !configProducts[insertAt].IsHeader)
+                insertAt++;
+
+            // Thêm sản phẩm vào nhóm đã chọn
             foreach (var product in selectedItems)
             {
-                if (!configProducts.Any(p => p.MaHang == product.SKU))
-                {
-                    decimal price = 0;
-                    decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
+                int groupStart = headerIdx + 1;
+                bool alreadyInGroup = configProducts
+                    .Skip(groupStart).Take(insertAt - groupStart)
+                    .Any(p => !p.IsHeader && p.MaHang == product.SKU);
+                if (alreadyInGroup) continue;
 
-                    configProducts.Add(new ConfigProductItem
-                    {
-                        STT = configProducts.Count + 1,
-                        TenHang = product.Name,
-                        MaHang = product.SKU,
-                        XuatXu = product.HÃNG,
-                        DonVi = "Cái",
-                        SoLuong = 1,
-                        DonGiaVND = price,
-                        ThanhTienVND = price,
-                        GhiChu = "",
-                        GiaNhap = price,
-                        ThanhTien = price,
-                        BangGia = price,
-                        IsHeader = false
-                    });
-                }
+                decimal price = 0;
+                decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
+
+                configProducts.Insert(insertAt, new ConfigProductItem
+                {
+                    STT = insertAt + 1,
+                    TenHang = product.Name,
+                    MaHang = product.SKU,
+                    XuatXu = product.HÃNG,
+                    DonVi = "Cái",
+                    SoLuong = 1,
+                    DonGiaVND = price,
+                    ThanhTienVND = price,
+                    GhiChu = "",
+                    GiaNhap = price,
+                    ThanhTien = price,
+                    BangGia = price,
+                    IsHeader = false
+                });
+                insertAt++;
             }
 
             // Cập nhật lại STT toàn bộ
@@ -1801,7 +1948,7 @@ namespace ECQ_Soft
                     // Nền VÀNG, Bold (giống bảng báo giá)
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 255, 0);
                     row.DefaultCellStyle.ForeColor = Color.Black;
-                    row.DefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+                    row.DefaultCellStyle.Font = new Font("Times New Roman", 9f, FontStyle.Bold);
 
                     // Số tiền → chữ đỏ (tất cả cột tiền kể cả DonGiaVND, ThanhTienVND)
                     foreach (var colName in new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" })
@@ -1809,7 +1956,7 @@ namespace ECQ_Soft
                         if (dgvParentProducts.Columns.Contains(colName))
                         {
                             row.Cells[colName].Style.ForeColor = Color.Red;
-                            row.Cells[colName].Style.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
+                            row.Cells[colName].Style.Font = new Font("Times New Roman", 9f, FontStyle.Bold);
                         }
                     }
                 }
@@ -1817,7 +1964,7 @@ namespace ECQ_Soft
                 {
                     row.DefaultCellStyle.BackColor = Color.LightGreen;
                     row.DefaultCellStyle.ForeColor = Color.Black;
-                    row.DefaultCellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+                    row.DefaultCellStyle.Font = new Font("Times New Roman", 8.5f, FontStyle.Bold);
                 }
             }
 
@@ -1835,31 +1982,38 @@ namespace ECQ_Soft
                 if (dgv.Columns.Contains("DonVi")) dgv.Columns["DonVi"].HeaderText = "Đơn vị";
                 if (dgv.Columns.Contains("SoLuong")) dgv.Columns["SoLuong"].HeaderText = "Số lượng";
                 
+                var viVN = new System.Globalization.CultureInfo("vi-VN");
+
                 if (dgv.Columns.Contains("DonGiaVND"))
                 {
                     dgv.Columns["DonGiaVND"].HeaderText = "Đơn giá (VNĐ)";
                     dgv.Columns["DonGiaVND"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["DonGiaVND"].DefaultCellStyle.FormatProvider = viVN;
                 }
                 if (dgv.Columns.Contains("ThanhTienVND"))
                 {
                     dgv.Columns["ThanhTienVND"].HeaderText = "Thành tiền (VNĐ)";
                     dgv.Columns["ThanhTienVND"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["ThanhTienVND"].DefaultCellStyle.FormatProvider = viVN;
                 }
                 if (dgv.Columns.Contains("GhiChu")) dgv.Columns["GhiChu"].HeaderText = "Ghi chú";
                 if (dgv.Columns.Contains("GiaNhap"))
                 {
                     dgv.Columns["GiaNhap"].HeaderText = "Giá Nhập";
                     dgv.Columns["GiaNhap"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["GiaNhap"].DefaultCellStyle.FormatProvider = viVN;
                 }
                 if (dgv.Columns.Contains("ThanhTien"))
                 {
                     dgv.Columns["ThanhTien"].HeaderText = "Thành Tiền";
                     dgv.Columns["ThanhTien"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["ThanhTien"].DefaultCellStyle.FormatProvider = viVN;
                 }
                 if (dgv.Columns.Contains("BangGia"))
                 {
                     dgv.Columns["BangGia"].HeaderText = "Bảng Giá";
                     dgv.Columns["BangGia"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["BangGia"].DefaultCellStyle.FormatProvider = viVN;
                 }
                 
                 if (dgv.Columns.Contains("IsHeader")) dgv.Columns["IsHeader"].Visible = false;
@@ -1882,7 +2036,7 @@ namespace ECQ_Soft
                 dgv.DefaultCellStyle.ForeColor          = Color.Black;
                 dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 112, 192);
                 dgv.DefaultCellStyle.SelectionForeColor = Color.White;
-                dgv.DefaultCellStyle.Font               = new Font("Segoe UI", 8.5f);
+                dgv.DefaultCellStyle.Font               = new Font("Times New Roman", 8.5f);
                 dgv.DefaultCellStyle.Padding            = new Padding(2, 1, 2, 1);
 
                 // Header cột chính: nền vàng, chữ xanh đậm, bold, căn giữa
@@ -1890,7 +2044,7 @@ namespace ECQ_Soft
                 {
                     BackColor  = Color.Yellow,
                     ForeColor  = Color.FromArgb(31, 73, 125),
-                    Font       = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Font       = new Font("Times New Roman", 8.5f, FontStyle.Bold),
                     Alignment  = DataGridViewContentAlignment.MiddleCenter,
                     WrapMode   = DataGridViewTriState.True
                 };
@@ -1900,7 +2054,7 @@ namespace ECQ_Soft
                 var blueHeader = new DataGridViewCellStyle(yellowHeader)
                 {
                     BackColor = Color.FromArgb(0, 112, 192),
-                    ForeColor = Color.White
+                    ForeColor = Color.Black
                 };
                 foreach (var colName in new[] { "GiaNhap", "ThanhTien", "BangGia" })
                 {
@@ -1949,35 +2103,95 @@ namespace ECQ_Soft
             catch (Exception) { /* Ignore lifecycle exceptions */ }
         }
 
+        // ────────────────────────────────────────────────────────────────────────
+        // CellPainting: vẽ cột STT riêng (La Mã cho header, số thứ tự cho data)
+        // ────────────────────────────────────────────────────────────────────────
+        private void DgvParentProducts_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            if (dgvParentProducts.Columns[e.ColumnIndex].Name != "STT") return;
+            if (_displayList == null || e.RowIndex >= _displayList.Count) return;
+
+            var item = _displayList[e.RowIndex];
+            string displayValue = "";
+
+            if (item.IsHeader)
+            {
+                // Đếm số header từ đầu → dùng La Mã (I, II, III...)
+                int headerOrder = _displayList.Take(e.RowIndex + 1).Count(x => x.IsHeader);
+                displayValue = ToRomanNumeral(headerOrder);
+            }
+            else if (!item.IsSummary)
+            {
+                // Đếm số thứ tự trong nhóm (1, 2, 3...)
+                int pos = 1;
+                for (int ri = e.RowIndex - 1; ri >= 0; ri--)
+                {
+                    if (_displayList[ri].IsHeader) break;
+                    if (!_displayList[ri].IsSummary) pos++;
+                }
+                displayValue = pos.ToString();
+            }
+            // IsSummary → displayValue = "" (không hiển thị STT)
+
+            // Vẽ toàn bộ nội dung cell (bao gồm nền, border, selection)
+            e.Paint(e.CellBounds, DataGridViewPaintParts.All & ~DataGridViewPaintParts.ContentForeground & ~DataGridViewPaintParts.ContentBackground);
+
+            // Màu chữ tùy theo trạng thái
+            Color fgColor = e.State.HasFlag(DataGridViewElementStates.Selected)
+                ? e.CellStyle.SelectionForeColor
+                : e.CellStyle.ForeColor;
+
+            using (var brush = new SolidBrush(fgColor))
+            {
+                var sf = new StringFormat
+                {
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center
+                };
+                // Padding nhỏ để không bị sát viền
+                var drawRect = new RectangleF(e.CellBounds.X + 1, e.CellBounds.Y + 1,
+                                              e.CellBounds.Width - 2, e.CellBounds.Height - 2);
+                e.Graphics.DrawString(displayValue, new Font(e.CellStyle.Font ?? dgvParentProducts.Font, FontStyle.Bold), brush, drawRect, sf);
+            }
+
+            e.Handled = true;
+        }
+
         private void DgvParentProducts_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (_displayList == null || e.RowIndex < 0 || e.RowIndex >= _displayList.Count) return;
 
             var item = _displayList[e.RowIndex];
+            string currentColName = dgvParentProducts.Columns[e.ColumnIndex].Name;
 
             if (item.IsSummary)
             {
-                e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+                e.CellStyle.Font = new Font("Times New Roman", 8.5f, FontStyle.Bold);
 
                 // Ẩn giá trị 0 ở các cột không liên quan (giống gộp ô trong Excel)
-                string colName = dgvParentProducts.Columns[e.ColumnIndex].Name;
                 var hiddenCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu" };
-                if (Array.IndexOf(hiddenCols, colName) >= 0)
+                if (Array.IndexOf(hiddenCols, currentColName) >= 0)
                 {
                     e.Value = "";
                     e.FormattingApplied = true;
                 }
 
                 // Số tiền → chữ đỏ
+                var blackCols = new[] { "DonGiaVND", "ThanhTienVND" };
                 var numberCols = new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" };
-                if (Array.IndexOf(numberCols, colName) >= 0)
+
+                if (Array.IndexOf(numberCols, currentColName) >= 0)
                 {
-                    e.CellStyle.ForeColor = Color.Red;
+                    e.CellStyle.ForeColor =
+                        Array.IndexOf(blackCols, currentColName) >= 0
+                        ? Color.Black
+                        : Color.Red;
                 }
             }
             else if (item.IsHeader)
             {
-                // Dòng header nhóm: nền xanh lá
+                // Dòng header nhóm: nền xanh lá (STT được vẽ riêng bằng CellPainting)
                 e.CellStyle.BackColor = Color.LightGreen;
                 e.CellStyle.ForeColor = Color.Black;
                 e.CellStyle.SelectionBackColor = Color.LimeGreen;
@@ -2063,6 +2277,13 @@ namespace ECQ_Soft
         {
             // Suppress the default technical error dialog
             e.ThrowException = false;
+
+            // Bỏ qua lỗi format ở cột STT: cột này được hiển thị dạng La Mã (string)
+            // nên DataGridView sẽ báo FormatException khi cố parse ngược lại thành int.
+            var dgv = sender as DataGridView;
+            if (dgv != null && e.ColumnIndex >= 0 && dgv.Columns[e.ColumnIndex].Name == "STT")
+                return;
+
             // Optionally show a user friendly message if it's a formatting error
             if (e.Exception is FormatException)
             {
@@ -2356,6 +2577,24 @@ namespace ECQ_Soft
             if (!dgv.Columns.Contains(columnName)) return;
             Rectangle rect = dgv.GetCellDisplayRectangle(dgv.Columns[columnName].Index, -1, true);
             chk.Location = new Point(rect.X + (rect.Width - chk.Width) / 2, rect.Y + (rect.Height - chk.Height) / 2);
+        }
+
+        /// <summary>Chuyển số nguyên dương sang ký hiệu số La Mã (I, II, III, IV, V...)</summary>
+        private static string ToRomanNumeral(int number)
+        {
+            if (number <= 0) return number.ToString();
+            var romanNumerals = new[]
+            {
+                (1000, "M"), (900, "CM"), (500, "D"), (400, "CD"),
+                (100,  "C"), (90,  "XC"), (50,  "L"), (40,  "XL"),
+                (10,   "X"), (9,   "IX"), (5,   "V"), (4,   "IV"), (1, "I")
+            };
+            var result = new System.Text.StringBuilder();
+            foreach (var (value, numeral) in romanNumerals)
+            {
+                while (number >= value) { result.Append(numeral); number -= value; }
+            }
+            return result.ToString();
         }
     }
 }

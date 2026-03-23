@@ -262,7 +262,7 @@ namespace ECQ_Soft.Helper
                 if (!toggleBounds.IsEmpty)
                 {
                     string glyph = node.IsExpanded ? "▼" : "▶";
-                    using (var f  = new Font("Segoe UI", 10f))
+                    using (var f  = new Font("Times New Roman", 10f))
                     using (var br = new SolidBrush(Color.FromArgb(90, 90, 90)))
                     {
                         var sf = new StringFormat
@@ -290,7 +290,7 @@ namespace ECQ_Soft.Helper
                     : Color.FromArgb(0, 90, 160);
 
                 FontStyle style = node.IsLeaf ? FontStyle.Regular : FontStyle.Bold;
-                using (var f  = new Font("Segoe UI", 8.5f, style))
+                using (var f  = new Font("Times New Roman", 8.5f, style))
                 using (var br = new SolidBrush(textColor))
                 {
                     var textRect = new Rectangle(textX, bounds.Y, bounds.Right - textX - 4, ROW_HEIGHT);
