@@ -8,7 +8,7 @@ namespace ECQ_Soft.Model
 {
     public class ConfigProductItem
     {
-        public int STT { get; set; }
+        public string STT { get; set; }
         public string TenHang { get; set; }
         public string MaHang { get; set; }
         public string XuatXu { get; set; }

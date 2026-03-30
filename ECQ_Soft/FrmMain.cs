@@ -82,9 +82,9 @@ namespace ECQ_Soft
             string userName = Settings.Default.Name;
             lbUserName.Text = "Xin chào, " + userName;
 
-            tabPage1.Text = "Báo giá";
-            tabPage2.Text = "Đối tượng";
-            tabPage3.Text = "Cấu hình";
+            tabPage1.Text = "Vỏ tủ & Thang máng";
+            tabPage2.Text = "Liên kết sản phẩm";
+            tabPage3.Text = "Báo giá & Tính toán";
             tabControl1.SelectedTab = tabPage1;
         }
 

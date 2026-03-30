@@ -140,10 +140,17 @@
     <Compile Include="FrmSheetSelector.Designer.cs">
       <DependentUpon>FrmSheetSelector.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmAdvancedConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmAdvancedConfig.Designer.cs">
+      <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
+    </Compile>
     <Compile Include="Model\Category.cs" />
     <Compile Include="Model\CategoryItem.cs" />
     <Compile Include="Model\CategoryTreeNode.cs" />
     <Compile Include="Model\ConfigProductItem.cs" />
+    <Compile Include="Model\HierarchyNode.cs" />
     <Compile Include="Model\Products.cs" />
     <Compile Include="Model\RelationItem.cs" />
     <Compile Include="Services\GoogleSheetsService.cs" />

@@ -233,7 +233,10 @@ namespace ECQ_Soft
         {
             var dgv = sender as DataGridView;
             if (dgv != null)
+            {
                 FormatDataGridView(dgv);
+                dgv.ClearSelection(); // Tránh auto-select dòng đầu tiên sau khi gán DataSource
+            }
         }
 
         /// <summary>
@@ -312,15 +315,30 @@ namespace ECQ_Soft
             button6.Click += Button6_Click;
             button7.Click += Button7_Click;
             button10.Click += BtnExportExcel_Click;
+            //// Lấy sản phẩm từ các dòng đang được chọn trên grid (highlight xanh)
+            // Đăng ký trong FrmConfig_Load hoặc Constructor
+            dgvAllProducts.SelectionChanged += (s, _) =>
+            {
+                var selectedItems = dgvAllProducts.SelectedRows
+                    .Cast<DataGridViewRow>()
+                    .Select(r => r.DataBoundItem as Products)
+                    .Where(p => p != null)
+                    .ToList();
+
+                bool hasSelection = selectedItems.Count > 0;
+                button1.Enabled = hasSelection;
+                button8.Enabled = hasSelection;
+            };
+
 
             // button9 = "Cập nhật": reload toàn bộ dữ liệu từ Google Sheets
             button9.Click += async (s, ev) =>
-            {
-                button9.Enabled = false;
-                button9.Text = "Đang tải...";
-                try { await LoadDataAsync(); }
-                finally { button9.Enabled = true; button9.Text = "Cập nhật"; }
-            };
+                {
+                    button9.Enabled = false;
+                    button9.Text = "Đang tải...";
+                    try { await LoadDataAsync(); }
+                    finally { button9.Enabled = true; button9.Text = "Cập nhật"; }
+                };
 
             // Nhấn Enter trong ô tìm kiếm = kích hoạt tìm kiếm
             textBox2.KeyDown += (s, ev) =>
@@ -382,7 +400,7 @@ namespace ECQ_Soft
             // Cập nhật lại STT cho toàn bộ danh sách mới
             for (int i = 0; i < configProducts.Count; i++)
             {
-                configProducts[i].STT = i + 1;
+                configProducts[i].STT = (i + 1).ToString();
             }
 
             UpdateHeaderSum();
@@ -533,7 +551,7 @@ namespace ECQ_Soft
         {
             try
             {
-                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A2:K").ExecuteAsync();
+                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A2:M").ExecuteAsync();
                 if (response.Values != null && response.Values.Count > 0)
                 {
                     var newProducts = new List<Products>();
@@ -547,12 +565,14 @@ namespace ECQ_Soft
                             Model = row.Count > 2 ? row[2]?.ToString() : "",
                             SKU = row.Count > 3 ? row[3]?.ToString() : "",
                             Price = row.Count > 4 ? row[4]?.ToString() : "0",
-                            Weight = row.Count > 5 ? row[5]?.ToString() : "0",
-                            Length = row.Count > 6 ? row[6]?.ToString() : "0",
-                            Width = row.Count > 7 ? row[7]?.ToString() : "0",
-                            Height = row.Count > 8 ? row[8]?.ToString() : "0",
-                            Category = row.Count > 9 ? row[9]?.ToString() : "",
-                            HÃNG = row.Count > 10 ? row[10]?.ToString() : ""
+                            PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
+                            Weight = row.Count > 6 ? row[6]?.ToString() : "0",
+                            Length = row.Count > 7 ? row[7]?.ToString() : "0",
+                            Width = row.Count > 8 ? row[8]?.ToString() : "0",
+                            Height = row.Count > 9 ? row[9]?.ToString() : "0",
+                            Category = row.Count > 10 ? row[10]?.ToString() : "",
+                            HÃNG = row.Count > 11 ? row[11]?.ToString() : "",
+                            PriceList = row.Count > 12 ? row[12]?.ToString() : ""
                         });
                     }
                     allProducts.Clear();
@@ -669,7 +689,7 @@ namespace ECQ_Soft
                         };
 
                         newSavedItems.Add(new ConfigProductItem {
-                            STT = (row.Count > 0 && int.TryParse(row[0]?.ToString(), out int stt)) ? stt : i + 1,
+                            STT = ((row.Count > 0 && int.TryParse(row[0]?.ToString(), out int stt)) ? stt : i + 1).ToString(),
                             TenHang = tenHang,
                             MaHang = row.Count > 2 ? row[2]?.ToString() : "",
                             XuatXu = row.Count > 3 ? row[3]?.ToString() : "",
@@ -781,7 +801,7 @@ namespace ECQ_Soft
                     string colName = col.Name;
 
                     // 1. Hide unwanted columns
-                    if (colName == "Id" || colName == "Weight" || colName == "Length" || colName == "Width" || colName == "Height" || colName == "SheetRowIndex")
+                    if (colName == "Id" || colName == "Weight" || colName == "Length" || colName == "Width" || colName == "Height" || colName == "PriceList" || colName == "SheetRowIndex")
                     {
                         col.Visible = false;
                         continue;
@@ -794,6 +814,11 @@ namespace ECQ_Soft
                     else if (colName == "Price")
                     {
                         col.HeaderText = "Giá bán";
+                        col.DefaultCellStyle.Format = "N0";
+                    }
+                    else if (colName == "PriceCost")
+                    {
+                        col.HeaderText = "Giá nhập";
                         col.DefaultCellStyle.Format = "N0";
                     }
                     else if (colName == "HÃNG") col.HeaderText = "Hãng";
@@ -988,7 +1013,7 @@ namespace ECQ_Soft
                 currentEditingConfigName = null;
                 configProducts.Add(new ConfigProductItem
                 {
-                    STT = configProducts.Count + 1,
+                    STT = (configProducts.Count + 1).ToString(),
                     TenHang = headerName,
                     MaHang = "",
                     XuatXu = "VNECCO",
@@ -1024,6 +1049,8 @@ namespace ECQ_Soft
 
                 decimal price = 0;
                 decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
+                decimal priceCost = 0;
+                decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
 
                 configProducts.Insert(insertAt, new ConfigProductItem
                 {
@@ -1035,8 +1062,8 @@ namespace ECQ_Soft
                     DonGiaVND = price,
                     ThanhTienVND = price,
                     GhiChu = "",
-                    GiaNhap = price,
-                    ThanhTien = price,
+                    GiaNhap = priceCost > 0 ? priceCost : price,
+                    ThanhTien = priceCost > 0 ? priceCost : price,
                     BangGia = price,
                     IsHeader = false
                 });
@@ -1048,7 +1075,7 @@ namespace ECQ_Soft
 
             // Cập nhật lại STT toàn bộ
             for (int i = 0; i < configProducts.Count; i++)
-                configProducts[i].STT = i + 1;
+                configProducts[i].STT = (i + 1).ToString();
 
             UpdateHeaderSum();
             UpdateConfigGrid();
@@ -1599,13 +1626,13 @@ namespace ECQ_Soft
             if (configProducts.Count == 0 || !configProducts.Any(p => p.IsHeader))
             {
                 // Lấy tên sản phẩm đầu tiên được chọn làm header
-                string headerName = selectedItems[0].Name;
+                string headerName = "Sản phẩm thêm vào";
 
                 button5.Text = "Lưu";
                 currentEditingConfigName = null;
                 configProducts.Add(new ConfigProductItem
                 {
-                    STT = 1,
+                    STT = "1",
                     TenHang = headerName,
                     MaHang = "",
                     XuatXu = "VNECCO",
@@ -1627,10 +1654,12 @@ namespace ECQ_Soft
                 {
                     decimal price = 0;
                     decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
+                    decimal priceCost = 0;
+                    decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
 
                     configProducts.Add(new ConfigProductItem
                     {
-                        STT = configProducts.Count + 1,
+                        STT = (configProducts.Count + 1).ToString(),
                         TenHang = product.Name,
                         MaHang = product.SKU,
                         XuatXu = product.HÃNG,
@@ -1639,8 +1668,8 @@ namespace ECQ_Soft
                         DonGiaVND = price,
                         ThanhTienVND = price,
                         GhiChu = "",
-                        GiaNhap = price,
-                        ThanhTien = price,
+                        GiaNhap = priceCost > 0 ? priceCost : price,
+                        ThanhTien = priceCost > 0 ? priceCost : price,
                         BangGia = price,
                         IsHeader = false
                     });
@@ -1649,7 +1678,7 @@ namespace ECQ_Soft
 
             // Cập nhật lại STT toàn bộ
             for (int i = 0; i < configProducts.Count; i++)
-                configProducts[i].STT = i + 1;
+                configProducts[i].STT = (i + 1).ToString();
 
             UpdateHeaderSum();
             UpdateConfigGrid();
@@ -1734,7 +1763,7 @@ namespace ECQ_Soft
                 // Cập nhật lại STT sau khi xóa
                 for (int i = 0; i < configProducts.Count; i++)
                 {
-                    configProducts[i].STT = i + 1;
+                    configProducts[i].STT = (i + 1).ToString();
                 }
 
                 UpdateHeaderSum();
@@ -1759,6 +1788,7 @@ namespace ECQ_Soft
 
                 _displayList.Add(new ConfigProductItem
                 {
+                    STT = "",
                     TenHang = "TỔNG CỘNG (Giá chưa bao gồm VAT)",
                     DonGiaVND = tongCongThanhTien,
                     ThanhTienVND = tongCongThanhTien,
@@ -1769,6 +1799,7 @@ namespace ECQ_Soft
                 });
                 _displayList.Add(new ConfigProductItem
                 {
+                    STT = "",
                     TenHang = "THUẾ VAT 8%",
                     DonGiaVND = vatThanhTien,
                     ThanhTienVND = vatThanhTien,
@@ -1778,6 +1809,7 @@ namespace ECQ_Soft
                 });
                 _displayList.Add(new ConfigProductItem
                 {
+                    STT = "",
                     TenHang = "THÀNH TIỀN",
                     DonGiaVND = tongCongThanhTien + vatThanhTien,
                     ThanhTienVND = tongCongThanhTien + vatThanhTien,
@@ -1850,16 +1882,19 @@ namespace ECQ_Soft
                 {
                     dgv.Columns["GiaNhap"].HeaderText = "Giá Nhập";
                     dgv.Columns["GiaNhap"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["GiaNhap"].Visible = true;
                 }
                 if (dgv.Columns.Contains("ThanhTien"))
                 {
                     dgv.Columns["ThanhTien"].HeaderText = "Thành Tiền";
                     dgv.Columns["ThanhTien"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["ThanhTien"].Visible = true;
                 }
                 if (dgv.Columns.Contains("BangGia"))
                 {
                     dgv.Columns["BangGia"].HeaderText = "Bảng Giá";
                     dgv.Columns["BangGia"].DefaultCellStyle.Format = "N0";
+                    dgv.Columns["BangGia"].Visible = true;
                 }
                 
                 if (dgv.Columns.Contains("IsHeader")) dgv.Columns["IsHeader"].Visible = false;
@@ -1954,13 +1989,40 @@ namespace ECQ_Soft
             if (_displayList == null || e.RowIndex < 0 || e.RowIndex >= _displayList.Count) return;
 
             var item = _displayList[e.RowIndex];
+            string colName = dgvParentProducts.Columns[e.ColumnIndex].Name;
+
+            // ── Override cột STT: số La Mã cho header, 1→n cho dòng con ──
+            if (colName == "STT")
+            {
+                if (item.IsSummary)
+                {
+                    e.Value = "";
+                    e.FormattingApplied = true;
+                }
+                else if (item.IsHeader)
+                {
+                    int headerOrder = _displayList.Take(e.RowIndex + 1).Count(x => x.IsHeader);
+                    e.Value = ToRoman(headerOrder);
+                    e.FormattingApplied = true;
+                }
+                else
+                {
+                    int childIndex = 0;
+                    for (int i = e.RowIndex - 1; i >= 0; i--)
+                    {
+                        if (_displayList[i].IsHeader) break;
+                        if (!_displayList[i].IsSummary) childIndex++;
+                    }
+                    e.Value = (childIndex + 1).ToString();
+                    e.FormattingApplied = true;
+                }
+            }
 
             if (item.IsSummary)
             {
                 e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
                 // Ẩn giá trị 0 ở các cột không liên quan (giống gộp ô trong Excel)
-                string colName = dgvParentProducts.Columns[e.ColumnIndex].Name;
                 var hiddenCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu" };
                 if (Array.IndexOf(hiddenCols, colName) >= 0)
                 {
@@ -1991,7 +2053,6 @@ namespace ECQ_Soft
                 // Mapping: Tên cột DGV -> Index cột trên Sheet (0-11)
                 string[] sheetColOrder = { "STT", "TenHang", "MaHang", "XuatXu", "DonVi", "SoLuong",
                                          "DonGiaVND", "ThanhTienVND", "GhiChu", "GiaNhap", "ThanhTien", "BangGia" };
-                string colName = dgvParentProducts.Columns[e.ColumnIndex].Name;
                 int sheetColIdx = Array.IndexOf(sheetColOrder, colName);
 
                 if (sheetColIdx >= 0)
@@ -2010,6 +2071,22 @@ namespace ECQ_Soft
                 e.CellStyle.BackColor = bg;
             if (_cellFgColors.TryGetValue(key, out Color fg))
                 e.CellStyle.ForeColor = fg;
+        }
+
+        /// <summary>Chuyển số nguyên dương sang chữ số La Mã (I, II, III, IV...)</summary>
+        private static string ToRoman(int number)
+        {
+            if (number <= 0) return "";
+            var map = new (int val, string sym)[]
+            {
+                (1000,"M"),(900,"CM"),(500,"D"),(400,"CD"),
+                (100,"C"),(90,"XC"),(50,"L"),(40,"XL"),
+                (10,"X"),(9,"IX"),(5,"V"),(4,"IV"),(1,"I")
+            };
+            var result = new System.Text.StringBuilder();
+            foreach (var (val, sym) in map)
+                while (number >= val) { result.Append(sym); number -= val; }
+            return result.ToString();
         }
 
         private void UpdateGridSelector(DataGridView dgv, List<Products> source)
@@ -2061,13 +2138,8 @@ namespace ECQ_Soft
 
         private void Grid_DataError(object sender, DataGridViewDataErrorEventArgs e)
         {
-            // Suppress the default technical error dialog
+            // Suppress technical dialogs silently
             e.ThrowException = false;
-            // Optionally show a user friendly message if it's a formatting error
-            if (e.Exception is FormatException)
-            {
-                MessageBox.Show("Dữ liệu nhập vào không đúng định dạng (ví dụ: cần nhập số).", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
         }
 
         private void Grid_KeyDown(object sender, KeyEventArgs e)
@@ -2356,6 +2428,117 @@ namespace ECQ_Soft
             if (!dgv.Columns.Contains(columnName)) return;
             Rectangle rect = dgv.GetCellDisplayRectangle(dgv.Columns[columnName].Index, -1, true);
             chk.Location = new Point(rect.X + (rect.Width - chk.Width) / 2, rect.Y + (rect.Height - chk.Height) / 2);
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            // Lấy sản phẩm từ các dòng đang được chọn trên grid (highlight xanh)
+            var selectedItems = dgvAllProducts.SelectedRows
+                .Cast<DataGridViewRow>()
+                .Select(r => r.DataBoundItem as Products)
+                .Where(p => p != null)
+                .ToList();
+
+            foreach (var product in selectedItems)
+            {
+                // Tránh thêm trùng (so sánh theo Id)
+                if (!childProducts.Any(p => p.Id == product.Id))
+                    childProducts.Add(product);
+            }
+        }
+
+        private async void button11_Click(object sender, EventArgs e)
+        {
+            using (var frm = new FrmAdvancedConfig())
+            {
+                // Sử dụng biến spreadsheetId đã có sẵn trong class thay vì ConfigurationManager
+                await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                
+                if (frm.ShowDialog() == DialogResult.OK)
+                {
+                    AddAdvancedConfigResult(frm.SelectedHeader, frm.SelectedComponents);
+                }
+            }
+        }
+
+        private void AddAdvancedConfigResult(string headerName, List<string> components)
+        {
+            if (string.IsNullOrEmpty(headerName)) return;
+
+            // 1. Thêm dòng Header mới
+            configProducts.Add(new ConfigProductItem
+            {
+                TenHang = headerName,
+                MaHang = "",
+                XuatXu = "VNECCO",
+                DonVi = "TỦ",
+                SoLuong = 1,
+                DonGiaVND = 0,
+                ThanhTienVND = 0,
+                GiaNhap = 0,
+                ThanhTien = 0,
+                BangGia = 0,
+                IsHeader = true
+            });
+
+            // 2. Thêm các dòng linh kiện con
+            foreach (var compName in components)
+            {
+                // Thử tìm sản phẩm khớp tên trong database (nếu có)
+                var matched = allProducts.FirstOrDefault(p => 
+                    string.Equals(p.Name?.Trim(), compName, StringComparison.OrdinalIgnoreCase));
+
+                if (matched != null)
+                {
+                    decimal price = 0;
+                    decimal.TryParse(matched.Price?.Replace(".", "").Replace(",", ""), out price);
+                    decimal priceCost = 0;
+                    decimal.TryParse(matched.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+
+                    configProducts.Add(new ConfigProductItem
+                    {
+                        TenHang = matched.Name,
+                        MaHang = matched.SKU,
+                        XuatXu = matched.HÃNG,
+                        DonVi = "Cái",
+                        SoLuong = 1,
+                        DonGiaVND = price,
+                        ThanhTienVND = price,
+                        GiaNhap = priceCost > 0 ? priceCost : price,
+                        ThanhTien = priceCost > 0 ? priceCost : price,
+                        BangGia = price,
+                        IsHeader = false
+                    });
+                }
+                else
+                {
+                    // Nếu không khớp, thêm dòng trống chỉ có tên
+                    configProducts.Add(new ConfigProductItem
+                    {
+                        TenHang = compName,
+                        MaHang = "",
+                        XuatXu = "",
+                        DonVi = "Cái",
+                        SoLuong = 1,
+                        DonGiaVND = 0,
+                        ThanhTienVND = 0,
+                        GiaNhap = 0,
+                        ThanhTien = 0,
+                        BangGia = 0,
+                        IsHeader = false
+                    });
+                }
+            }
+
+            // 3. Cập nhật lại STT toàn bộ
+            for (int i = 0; i < configProducts.Count; i++)
+                configProducts[i].STT = (i + 1).ToString();
+
+            UpdateHeaderSum();
+            UpdateConfigGrid();
+            
+            button5.Text = "Lưu";
+            currentEditingConfigName = null;
         }
     }
 }
