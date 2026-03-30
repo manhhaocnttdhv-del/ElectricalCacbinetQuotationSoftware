@@ -93,9 +93,9 @@ namespace ECQ_Soft
 
             try
             {
-                // Đọc dữ liệu từ Google Sheet (A2:K - 11 cột)
-                // A0:ID, B1:Tên, C2:Model, D3:SKU, E4:Giá, F5:Khối lượng, G6:Dài, H7:Rộng, I8:Cao, J9:Danh mục, K10:Hãng
-                string range = $"{sheetName}!A2:K";
+                // Đọc dữ liệu từ Google Sheet (A2:M - 13 cột)
+                // 0:ID, 1:Tên, 2:Model, 3:SKU, 4:Giá, 5:Giá vốn, 6:Khối lượng, 7:Dài, 8:Rộng, 9:Cao, 10:Danh mục, 11:Hãng, 12:Bảng giá
+                string range = $"{sheetName}!A2:M";
                 var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
                 var response = await request.ExecuteAsync();
                 IList<IList<object>> rows = response.Values;
@@ -118,12 +118,14 @@ namespace ECQ_Soft
                             Model = row.Count > 2 ? row[2]?.ToString() : "",
                             SKU = row.Count > 3 ? row[3]?.ToString() : "",
                             Price = row.Count > 4 ? row[4]?.ToString() : "0",
-                            Weight = row.Count > 5 ? row[5]?.ToString() : "0",
-                            Length = row.Count > 6 ? row[6]?.ToString() : "0",
-                            Width = row.Count > 7 ? row[7]?.ToString() : "0",
-                            Height = row.Count > 8 ? row[8]?.ToString() : "0",
-                            Category = row.Count > 9 ? row[9]?.ToString() : "",
-                            HÃNG = row.Count > 10 ? row[10]?.ToString() : ""
+                            PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
+                            Weight = row.Count > 6 ? row[6]?.ToString() : "0",
+                            Length = row.Count > 7 ? row[7]?.ToString() : "0",
+                            Width = row.Count > 8 ? row[8]?.ToString() : "0",
+                            Height = row.Count > 9 ? row[9]?.ToString() : "0",
+                            Category = row.Count > 10 ? row[10]?.ToString() : "",
+                            HÃNG = row.Count > 11 ? row[11]?.ToString() : "",
+                            PriceList = row.Count > 12 ? row[12]?.ToString() : ""
                         };
 
                         allProducts.Add(p);
@@ -162,7 +164,7 @@ namespace ECQ_Soft
             if (dgv == null || dgv.Columns.Count == 0) return;
 
             // Ẩn các cột không cần thiết (kể cả IsSelected)
-            string[] hideCols = { "Id", "Weight", "Length", "Width", "Height", "IsSelected" };
+            string[] hideCols = { "Id", "Weight", "Length", "Width", "Height", "PriceList", "IsSelected" };
             foreach (var colName in hideCols)
             {
                 if (dgv.Columns.Contains(colName)) dgv.Columns[colName].Visible = false;
@@ -178,7 +180,16 @@ namespace ECQ_Soft
             if (dgv.Columns.Contains("Name")) dgv.Columns["Name"].HeaderText = "Tên sản phẩm";
             if (dgv.Columns.Contains("Model")) dgv.Columns["Model"].HeaderText = "Model";
             if (dgv.Columns.Contains("SKU")) dgv.Columns["SKU"].HeaderText = "Mã SKU";
-            if (dgv.Columns.Contains("Price")) dgv.Columns["Price"].HeaderText = "Giá bán";
+            if (dgv.Columns.Contains("Price"))
+            {
+                dgv.Columns["Price"].HeaderText = "Giá bán";
+                dgv.Columns["Price"].DefaultCellStyle.Format = "N0";
+            }
+            if (dgv.Columns.Contains("PriceCost"))
+            {
+                dgv.Columns["PriceCost"].HeaderText = "Giá nhập";
+                dgv.Columns["PriceCost"].DefaultCellStyle.Format = "N0";
+            }
             if (dgv.Columns.Contains("HÃNG")) dgv.Columns["HÃNG"].HeaderText = "Hãng";
             if (dgv.Columns.Contains("Category")) dgv.Columns["Category"].HeaderText = "Danh mục";
 

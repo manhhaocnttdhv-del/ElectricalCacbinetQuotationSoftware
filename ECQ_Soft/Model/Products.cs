@@ -14,12 +14,14 @@ namespace ECQ_Soft.Model
         public string Model { get; set; }
         public string SKU { get; set; }
         public string Price { get; set; }
+        public string PriceCost { get; set; }
         public string Weight { get; set; }
         public string Length { get; set; }
         public string Width { get; set; }
         public string Height { get; set; }
         public string Category { get; set; }
         public string HÃNG { get; set; }
+        public string PriceList { get; set; }
         public bool IsSelected { get; set; }
     }
 }
