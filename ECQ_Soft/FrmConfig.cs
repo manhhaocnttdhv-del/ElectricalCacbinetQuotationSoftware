@@ -1823,7 +1823,7 @@ namespace ECQ_Soft
             // Cập nhật lại STT toàn bộ
             for (int i = 0; i < configProducts.Count; i++)
                 configProducts[i].STT = (i + 1).ToString();
-
+            
             UpdateHeaderSum();
             UpdateConfigGrid();
             dgvAllProducts.ClearSelection();
