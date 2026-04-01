@@ -49,13 +49,14 @@ namespace ECQ_Soft
             this.btnSearch = new System.Windows.Forms.Button();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button11 = new System.Windows.Forms.Button();
             this.button8 = new System.Windows.Forms.Button();
+            this.btnMoveUp = new System.Windows.Forms.Button();
+            this.btnMoveDown = new System.Windows.Forms.Button();
             this.cboCategory = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.lstSavedConfigs = new ECQ_Soft.Helper.CheckedComboBox();
-            this.button11 = new System.Windows.Forms.Button();
+            this.btn_baogia = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
             this.gbTimkiemSanPham.SuspendLayout();
@@ -70,7 +71,7 @@ namespace ECQ_Soft
             this.dgvParentProducts.Location = new System.Drawing.Point(28, 387);
             this.dgvParentProducts.Name = "dgvParentProducts";
             this.dgvParentProducts.RowHeadersWidth = 51;
-            this.dgvParentProducts.RowTemplate.Height = 24;
+            this.dgvParentProducts.RowTemplate.Height = 36;
             this.dgvParentProducts.Size = new System.Drawing.Size(1446, 327);
             this.dgvParentProducts.TabIndex = 10;
             // 
@@ -92,7 +93,7 @@ namespace ECQ_Soft
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(25, 371);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(88, 16);
+            this.label5.Size = new System.Drawing.Size(70, 13);
             this.label5.TabIndex = 35;
             this.label5.Text = "Bảng báo giá";
             // 
@@ -100,7 +101,7 @@ namespace ECQ_Soft
             // 
             this.textBox2.Location = new System.Drawing.Point(117, 33);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(156, 22);
+            this.textBox2.Size = new System.Drawing.Size(156, 20);
             this.textBox2.TabIndex = 54;
             // 
             // button9
@@ -117,7 +118,7 @@ namespace ECQ_Soft
             this.label9.AutoSize = true;
             this.label9.Location = new System.Drawing.Point(114, 17);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(68, 16);
+            this.label9.Size = new System.Drawing.Size(55, 13);
             this.label9.TabIndex = 53;
             this.label9.Text = "Sản phẩm";
             // 
@@ -142,16 +143,14 @@ namespace ECQ_Soft
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.label6.Location = new System.Drawing.Point(926, 335);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(179, 16);
+            this.label6.Size = new System.Drawing.Size(146, 13);
             this.label6.TabIndex = 61;
             this.label6.Text = "Tìm kiếm danh sách cấu hình";
             // 
             // button5
             // 
-            this.button5.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button5.Location = new System.Drawing.Point(1216, 358);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(78, 23);
@@ -161,7 +160,6 @@ namespace ECQ_Soft
             // 
             // button6
             // 
-            this.button6.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button6.Location = new System.Drawing.Point(1135, 358);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(78, 23);
@@ -171,7 +169,6 @@ namespace ECQ_Soft
             // 
             // button4
             // 
-            this.button4.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button4.Location = new System.Drawing.Point(1297, 358);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(78, 23);
@@ -181,12 +178,11 @@ namespace ECQ_Soft
             // 
             // button10
             // 
-            this.button10.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Bold);
             this.button10.Location = new System.Drawing.Point(1381, 358);
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(78, 23);
             this.button10.TabIndex = 66;
-            this.button10.Text = "Xuất Excel";
+            this.button10.Text = "Xuất excel";
             this.button10.UseVisualStyleBackColor = true;
             // 
             // label1
@@ -194,7 +190,7 @@ namespace ECQ_Soft
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(276, 17);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(67, 16);
+            this.label1.Size = new System.Drawing.Size(56, 13);
             this.label1.TabIndex = 71;
             this.label1.Text = "Danh mục";
             // 
@@ -222,22 +218,22 @@ namespace ECQ_Soft
             this.dataGridView1.Location = new System.Drawing.Point(13, 64);
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.RowHeadersWidth = 51;
-            this.dataGridView1.RowTemplate.Height = 24;
-            this.dataGridView1.Size = new System.Drawing.Size(700, 253);
+            this.dataGridView1.RowTemplate.Height = 36;
+            this.dataGridView1.Size = new System.Drawing.Size(686, 253);
             this.dataGridView1.TabIndex = 33;
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(557, 36);
+            this.button3.Location = new System.Drawing.Point(303, 36);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(75, 23);
             this.button3.TabIndex = 7;
-            this.button3.Text = "Thêm";
+            this.button3.Text = "Lưu";
             this.button3.UseVisualStyleBackColor = true;
             // 
             // button7
             // 
-            this.button7.Location = new System.Drawing.Point(638, 36);
+            this.button7.Location = new System.Drawing.Point(471, 34);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(75, 23);
             this.button7.TabIndex = 49;
@@ -246,7 +242,7 @@ namespace ECQ_Soft
             // 
             // btnSearch
             // 
-            this.btnSearch.Location = new System.Drawing.Point(476, 36);
+            this.btnSearch.Location = new System.Drawing.Point(219, 36);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(75, 23);
             this.btnSearch.TabIndex = 59;
@@ -256,42 +252,24 @@ namespace ECQ_Soft
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(270, 36);
+            this.comboBox1.Location = new System.Drawing.Point(13, 38);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(200, 24);
+            this.comboBox1.Size = new System.Drawing.Size(200, 21);
             this.comboBox1.TabIndex = 57;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(267, 13);
+            this.label3.Location = new System.Drawing.Point(10, 15);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(89, 16);
+            this.label3.Size = new System.Drawing.Size(94, 13);
             this.label3.TabIndex = 56;
-            this.label3.Text = "Danh mục PR";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(61, 15);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(102, 16);
-            this.label2.TabIndex = 55;
-            this.label2.Text = "Sản phẩm chính";
-            // 
-            // comboBox2
-            // 
-            this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(64, 36);
-            this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(200, 24);
-            this.comboBox2.TabIndex = 58;
+            this.label3.Text = "Đóng gói cấu hình";
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btn_baogia);
             this.groupBox1.Controls.Add(this.button11);
-            this.groupBox1.Controls.Add(this.comboBox2);
-            this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.comboBox1);
             this.groupBox1.Controls.Add(this.btnSearch);
@@ -305,15 +283,40 @@ namespace ECQ_Soft
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Bảng cấu hình (Đóng gói sản phẩm)";
             // 
+            // button11
+            // 
+            this.button11.Location = new System.Drawing.Point(555, 33);
+            this.button11.Name = "button11";
+            this.button11.Size = new System.Drawing.Size(151, 23);
+            this.button11.TabIndex = 60;
+            this.button11.Text = "Cấu hình nâng cao";
+            this.button11.UseVisualStyleBackColor = true;
+            this.button11.Click += new System.EventHandler(this.button11_Click);
+            // 
             // button8
             // 
             this.button8.Location = new System.Drawing.Point(739, 158);
             this.button8.Name = "button8";
-            this.button8.Size = new System.Drawing.Size(30, 23);
+            this.button8.Size = new System.Drawing.Size(32, 32);
             this.button8.TabIndex = 74;
-            this.button8.Text = ">";
             this.button8.UseVisualStyleBackColor = true;
             this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
+            // btnMoveUp
+            // 
+            this.btnMoveUp.Location = new System.Drawing.Point(100, 358);
+            this.btnMoveUp.Name = "btnMoveUp";
+            this.btnMoveUp.Size = new System.Drawing.Size(30, 23);
+            this.btnMoveUp.TabIndex = 75;
+            this.btnMoveUp.UseVisualStyleBackColor = true;
+            // 
+            // btnMoveDown
+            // 
+            this.btnMoveDown.Location = new System.Drawing.Point(134, 358);
+            this.btnMoveDown.Name = "btnMoveDown";
+            this.btnMoveDown.Size = new System.Drawing.Size(30, 23);
+            this.btnMoveDown.TabIndex = 76;
+            this.btnMoveDown.UseVisualStyleBackColor = true;
             // 
             // cboCategory
             // 
@@ -323,7 +326,7 @@ namespace ECQ_Soft
             this.cboCategory.Location = new System.Drawing.Point(279, 33);
             this.cboCategory.Name = "cboCategory";
             this.cboCategory.ReadOnly = false;
-            this.cboCategory.Size = new System.Drawing.Size(180, 24);
+            this.cboCategory.Size = new System.Drawing.Size(180, 21);
             this.cboCategory.TabIndex = 70;
             // 
             // lstSavedConfigs
@@ -335,22 +338,24 @@ namespace ECQ_Soft
             this.lstSavedConfigs.Location = new System.Drawing.Point(929, 358);
             this.lstSavedConfigs.Name = "lstSavedConfigs";
             this.lstSavedConfigs.Placeholder = "-- Chọn cấu hình --";
-            this.lstSavedConfigs.Size = new System.Drawing.Size(203, 24);
+            this.lstSavedConfigs.Size = new System.Drawing.Size(203, 21);
             this.lstSavedConfigs.TabIndex = 62;
             // 
-            // button11
+            // btn_baogia
             // 
-            this.button11.Location = new System.Drawing.Point(552, 14);
-            this.button11.Name = "button11";
-            this.button11.Size = new System.Drawing.Size(151, 23);
-            this.button11.TabIndex = 60;
-            this.button11.Text = "Cấu hình nâng cao";
-            this.button11.UseVisualStyleBackColor = true;
-            this.button11.Click += new System.EventHandler(this.button11_Click);
+            this.btn_baogia.Location = new System.Drawing.Point(387, 36);
+            this.btn_baogia.Name = "btn_baogia";
+            this.btn_baogia.Size = new System.Drawing.Size(75, 23);
+            this.btn_baogia.TabIndex = 61;
+            this.btn_baogia.Text = "Lưu báo giá";
+            this.btn_baogia.UseVisualStyleBackColor = true;
+            this.btn_baogia.Click += new System.EventHandler(this.btn_baogia_Click);
             // 
             // FrmConfig
             // 
             this.AutoScroll = true;
+            this.Controls.Add(this.btnMoveUp);
+            this.Controls.Add(this.btnMoveDown);
             this.Controls.Add(this.button8);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.gbTimkiemSanPham);
@@ -363,7 +368,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.label5);
             this.Controls.Add(this.dgvParentProducts);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(1038, 351);
+            this.Size = new System.Drawing.Size(953, 266);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();
@@ -429,10 +434,11 @@ namespace ECQ_Soft
         private System.Windows.Forms.Button btnSearch;
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.ComboBox comboBox2;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Button button8;
         private System.Windows.Forms.Button button11;
+        private System.Windows.Forms.Button btnMoveUp;
+        private System.Windows.Forms.Button btnMoveDown;
+        private System.Windows.Forms.Button btn_baogia;
     }
 }

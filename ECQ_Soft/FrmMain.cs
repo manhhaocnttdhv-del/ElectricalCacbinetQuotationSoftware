@@ -101,9 +101,7 @@ namespace ECQ_Soft
                 return;
             }
 
-            // Nếu đã chọn sheet rồi thì không hỏi lại (tránh reset danh sách)
-            if (!string.IsNullOrEmpty(_frmConfig.GetConfigSheetName()))
-                return;
+
 
             _isHandlingTabChange = true;
             try

@@ -146,6 +146,12 @@
     <Compile Include="FrmAdvancedConfig.Designer.cs">
       <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmSavePackage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmSavePackage.Designer.cs">
+      <DependentUpon>FrmSavePackage.cs</DependentUpon>
+    </Compile>
     <Compile Include="Model\Category.cs" />
     <Compile Include="Model\CategoryItem.cs" />
     <Compile Include="Model\CategoryTreeNode.cs" />
@@ -158,12 +164,19 @@
     <Compile Include="Helper\CategoryTreeDropdown.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Helper\CategorySearchDropdown.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Helper\ProductSearchDropdown.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Helper\CheckedComboBox.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Helper\ColorPickerPopup.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Helper\MoveButtonColumn.cs" />
     <Compile Include="Helpers\ExcelHelper.cs" />
     <Compile Include="Model\CabinetType.cs" />
     <Compile Include="Model\MarketPrice.cs" />
@@ -185,6 +198,9 @@
     <None Include="Resources\showEye.jpg" />
     <None Include="Resources\hideEye.jpg" />
     <None Include="Resources\userimage.jpg" />
+    <EmbeddedResource Include="FrmAdvancedConfig.resx">
+      <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FrmConfig.resx">
       <DependentUpon>FrmConfig.cs</DependentUpon>
     </EmbeddedResource>

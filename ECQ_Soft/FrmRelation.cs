@@ -18,10 +18,17 @@ namespace ECQ_Soft
         private SheetsService _sheetsService;
         string spreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
         string sheetName = "Products_Table";
+        string sheetNameRelationship = "Products_Relatation";
         private List<CategoryItem> categoryTree = new List<CategoryItem>();
         private List<Products> allProducts = new List<Products>(); 
         private List<Products> parentProducts = new List<Products>();
         private List<Products> childProducts = new List<Products>();
+        /// <summary>Danh sách quan hệ sản phẩm chính – sản phẩm con (relation PR).</summary>
+        private List<RelationItem> productRelations = new List<RelationItem>();
+        string configSheetName = null;
+        /// <summary>Trả về đường dẫn file cache JSON cho một key dữ liệu cụ thể.</summary>
+        private string GetCachePath(string key) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"cache_{key}_{configSheetName ?? "global"}.json");
+
         public FrmRelation()
         {
             InitializeComponent();
@@ -93,6 +100,7 @@ namespace ECQ_Soft
 
             try
             {
+                var relationsTask = FetchProductRelationsAsync();
                 // Đọc dữ liệu từ Google Sheet (A2:M - 13 cột)
                 // 0:ID, 1:Tên, 2:Model, 3:SKU, 4:Giá, 5:Giá vốn, 6:Khối lượng, 7:Dài, 8:Rộng, 9:Cao, 10:Danh mục, 11:Hãng, 12:Bảng giá
                 string range = $"{sheetName}!A2:M";
@@ -152,13 +160,45 @@ namespace ECQ_Soft
                     dgvAllProducts.DataSource = allProducts;
                     FormatDataGridView(dgvAllProducts);
                 }
+
+                await Task.WhenAll(relationsTask);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi tải dữ liệu cấu hình: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
+        private async Task FetchProductRelationsAsync()
+        {
+            try
+            {
+                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, "Products_Relatation!A2:E").ExecuteAsync();
+                if (response.Values != null)
+                {
+                    var newRelations = new List<RelationItem>();
+                    foreach (var row in response.Values)
+                    {
+                        if (row.Count < 3) continue;
+                        int.TryParse(row[1]?.ToString(), out int mainId);
+                        int.TryParse(row[2]?.ToString(), out int childId);
+                        newRelations.Add(new RelationItem { ID_Product_Main = mainId, ID_Product_Child = childId, Category_PR = row.Count > 3 ? row[3]?.ToString() : "" });
+                    }
+                    productRelations.Clear();
+                    productRelations.AddRange(newRelations);
+                    //SaveToCache("product_relations", productRelations);
+                }
+            }
+            catch { }
+        }
+        //private void SaveToCache<T>(string key, T data)
+        //{
+        //    try
+        //    {
+        //        string json = Newtonsoft.Json.JsonConvert.SerializeObject(data);
+        //        File.WriteAllText(GetCachePath(key), json);
+        //    }
+        //    catch { }
+        //}
         private void FormatDataGridView(DataGridView dgv)
         {
             if (dgv == null || dgv.Columns.Count == 0) return;
@@ -223,53 +263,211 @@ namespace ECQ_Soft
         // ham xử li
         private void BtnAddParent_Click(object sender, EventArgs e)
         {
-            if (dgvAllProducts.SelectedRows.Count > 0)
+            if (dgvAllProducts.SelectedRows.Count == 0) return;
+
+            foreach (DataGridViewRow row in dgvAllProducts.SelectedRows)
             {
-                foreach (DataGridViewRow row in dgvAllProducts.SelectedRows)
+                var product = row.DataBoundItem as Products;
+                if (product == null) continue;
+
+                // Kiểm tra nếu sản phẩm đã có trong danh sách Con
+                if (childProducts.Any(p => p.Id == product.Id))
                 {
-                    var product = row.DataBoundItem as Products;
-                    if (product == null) continue;
-
-                    // Kiểm tra nếu sản phẩm đã có trong danh sách Con
-                    if (childProducts.Any(p => p.Id == product.Id))
-                    {
-                        MessageBox.Show($"Sản phẩm '{product.Name}' đã có trong danh sách Con, không thể thêm vào danh sách Cha!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        continue;
-                    }
-
-                    if (!parentProducts.Any(p => p.Id == product.Id))
-                    {
-                        parentProducts.Add(product);
-                    }
+                    MessageBox.Show($"Sản phẩm '{product.Name}' đã có trong danh sách Con, không thể thêm vào danh sách Cha!",
+                        "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    continue;
                 }
-                UpdateGridSelector(dgvParentProducts, parentProducts);
-                dgvAllProducts.ClearSelection();
+
+                // Kiểm tra đã có trong danh sách Cha chưa
+                if (parentProducts.Any(p => p.Id == product.Id)) continue;
+
+                // Tìm các quan hệ đã tồn tại của sản phẩm này
+                var existingRelations = productRelations
+                    .Where(r => r.ID_Product_Main == product.Id || r.ID_Product_Child == product.Id)
+                    .ToList();
+
+                if (existingRelations.Count > 0)
+                {
+                    // Hiện dialog thông báo quan hệ đã có → hỏi có muốn tiếp tục không
+                    bool shouldContinue = ShowExistingRelationsDialog(product, existingRelations, "Cha");
+                    if (!shouldContinue) continue;
+                }
+
+                parentProducts.Add(product);
             }
+            UpdateGridSelector(dgvParentProducts, parentProducts);
+            dgvAllProducts.ClearSelection();
         }
 
         private void BtnAddChild_Click(object sender, EventArgs e)
         {
-            if (dgvAllProducts.SelectedRows.Count > 0)
+            if (dgvAllProducts.SelectedRows.Count == 0) return;
+
+            foreach (DataGridViewRow row in dgvAllProducts.SelectedRows)
             {
-                foreach (DataGridViewRow row in dgvAllProducts.SelectedRows)
+                var product = row.DataBoundItem as Products;
+                if (product == null) continue;
+
+                // Kiểm tra nếu sản phẩm đã có trong danh sách Cha
+                if (parentProducts.Any(p => p.Id == product.Id))
                 {
-                    var product = row.DataBoundItem as Products;
-                    if (product == null) continue;
-
-                    // Kiểm tra nếu sản phẩm đã có trong danh sách Cha
-                    if (parentProducts.Any(p => p.Id == product.Id))
-                    {
-                        MessageBox.Show($"Sản phẩm '{product.Name}' đã có trong danh sách Cha, không thể thêm vào danh sách Con!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        continue;
-                    }
-
-                    if (!childProducts.Any(p => p.Id == product.Id))
-                    {
-                        childProducts.Add(product);
-                    }
+                    MessageBox.Show($"Sản phẩm '{product.Name}' đã có trong danh sách Cha, không thể thêm vào danh sách Con!",
+                        "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    continue;
                 }
-                UpdateGridSelector(dgvChildProducts, childProducts);
-                dgvAllProducts.ClearSelection();
+
+                // Kiểm tra đã có trong danh sách Con chưa
+                if (childProducts.Any(p => p.Id == product.Id)) continue;
+
+                // Tìm các quan hệ đã tồn tại của sản phẩm này
+                var existingRelations = productRelations
+                    .Where(r => r.ID_Product_Main == product.Id || r.ID_Product_Child == product.Id)
+                    .ToList();
+
+                if (existingRelations.Count > 0)
+                {
+                    bool shouldContinue = ShowExistingRelationsDialog(product, existingRelations, "Con");
+                    if (!shouldContinue) continue;
+                }
+
+                childProducts.Add(product);
+            }
+            UpdateGridSelector(dgvChildProducts, childProducts);
+            dgvAllProducts.ClearSelection();
+        }
+
+        /// <summary>
+        /// Hiện dialog hiển thị danh sách quan hệ đã tồn tại của sản phẩm.
+        /// Trả về true nếu người dùng muốn tiếp tục thêm, false nếu huỷ.
+        /// </summary>
+        private bool ShowExistingRelationsDialog(Products product, List<RelationItem> relations, string targetList)
+        {
+            using (var frm = new Form())
+            {
+                frm.Text = "Sản phẩm đã có quan hệ";
+                frm.StartPosition = FormStartPosition.CenterParent;
+                frm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                frm.MaximizeBox = false;
+                frm.MinimizeBox = false;
+                frm.Width = 560;
+                frm.Font = new Font("Times New Roman", 9.5f, FontStyle.Regular);
+
+                // Tiêu đề
+                var lblTitle = new Label
+                {
+                    Text = $"⚠ Sản phẩm \"{product.Name}\" đã có {relations.Count} quan hệ hiện tại:",
+                    AutoSize = false,
+                    Size = new Size(520, 36),
+                    Location = new Point(16, 12),
+                    Font = new Font("Times New Roman", 10f, FontStyle.Bold),
+                    ForeColor = Color.DarkRed
+                };
+                frm.Controls.Add(lblTitle);
+
+                // Bảng hiển thị các quan hệ
+                var dgv = new DataGridView
+                {
+                    Location = new Point(16, 52),
+                    Size = new Size(520, 200),
+                    ReadOnly = true,
+                    AllowUserToAddRows = false,
+                    AllowUserToDeleteRows = false,
+                    RowHeadersVisible = false,
+                    SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    BackgroundColor = Color.White,
+                    Font = new Font("Times New Roman", 9f)
+                };
+
+                dgv.Columns.Add("VaiTro", "Vai trò");
+                dgv.Columns.Add("TenSP", "Sản phẩm liên quan");
+                dgv.Columns.Add("DanhMuc", "Danh mục QH");
+
+                dgv.Columns["VaiTro"].Width = 80;
+                dgv.Columns["DanhMuc"].Width = 120;
+
+                foreach (var rel in relations)
+                {
+                    string role;
+                    int relatedId;
+
+                    if (rel.ID_Product_Main == product.Id)
+                    {
+                        role = "→ Con";
+                        relatedId = rel.ID_Product_Child;
+                    }
+                    else
+                    {
+                        role = "← Cha";
+                        relatedId = rel.ID_Product_Main;
+                    }
+
+                    var relatedProduct = allProducts.FirstOrDefault(p => p.Id == relatedId);
+                    string relatedName = relatedProduct != null ? relatedProduct.Name : $"ID: {relatedId}";
+
+                    dgv.Rows.Add(role, relatedName, rel.Category_PR ?? "");
+                }
+
+                // Tô màu theo vai trò
+                dgv.CellFormatting += (s, ev) =>
+                {
+                    if (ev.RowIndex < 0 || ev.ColumnIndex != 0) return;
+                    string val = ev.Value?.ToString() ?? "";
+                    if (val.Contains("Con"))
+                    {
+                        ev.CellStyle.ForeColor = Color.Blue;
+                        ev.CellStyle.Font = new Font("Times New Roman", 9f, FontStyle.Bold);
+                    }
+                    else if (val.Contains("Cha"))
+                    {
+                        ev.CellStyle.ForeColor = Color.DarkGreen;
+                        ev.CellStyle.Font = new Font("Times New Roman", 9f, FontStyle.Bold);
+                    }
+                };
+
+                frm.Controls.Add(dgv);
+
+                // Câu hỏi
+                var lblQuestion = new Label
+                {
+                    Text = $"Bạn vẫn muốn thêm sản phẩm này vào danh sách {targetList}?",
+                    AutoSize = false,
+                    Size = new Size(520, 24),
+                    Location = new Point(16, 260),
+                    Font = new Font("Times New Roman", 9.5f, FontStyle.Regular)
+                };
+                frm.Controls.Add(lblQuestion);
+
+                // Nút Tiếp tục
+                var btnOK = new Button
+                {
+                    Text = "Tiếp tục thêm",
+                    Size = new Size(120, 30),
+                    Location = new Point(300, 290),
+                    DialogResult = DialogResult.OK,
+                    BackColor = Color.LightGreen,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Times New Roman", 9.5f, FontStyle.Bold)
+                };
+                btnOK.FlatAppearance.BorderColor = Color.SeaGreen;
+
+                // Nút Huỷ
+                var btnCancel = new Button
+                {
+                    Text = "Bỏ qua",
+                    Size = new Size(100, 30),
+                    Location = new Point(430, 290),
+                    DialogResult = DialogResult.Cancel,
+                    Font = new Font("Times New Roman", 9.5f, FontStyle.Regular)
+                };
+
+                frm.Controls.Add(btnOK);
+                frm.Controls.Add(btnCancel);
+                frm.AcceptButton = btnOK;
+                frm.CancelButton = btnCancel;
+                frm.Height = 370;
+
+                return frm.ShowDialog(this) == DialogResult.OK;
             }
         }
 
@@ -335,14 +533,14 @@ namespace ECQ_Soft
                 // Chuẩn bị dữ liệu để append vào Sheet Products_Relatation
                 // Cấu trúc: A:ID, B:ID_Product_Main (SKU Cha), C:ID_Product_Child (SKU Con), D:Category_PR
                 var values = new List<IList<object>>();
-
+                int index = 1;
                 foreach (var parent in parentProducts)
                 {
                     foreach (var child in childProducts)
                     {
                         var row = new List<object>
                         {
-                            "", // ID (Để trống hoặc tự tăng nếu sheet có công thức)
+                            index++, // ID (Để trống hoặc tự tăng nếu sheet có công thức)
                             parent.Id,
                             child.Id,
                             relCategory
