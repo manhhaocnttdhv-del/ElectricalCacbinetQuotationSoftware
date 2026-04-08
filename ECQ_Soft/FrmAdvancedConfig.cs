@@ -1303,7 +1303,7 @@ namespace ECQ_Soft
 
         protected override void OnDrawNode(DrawTreeNodeEventArgs e)
         {
-            if (e.Node == null || e.Bounds.Width <= 0 || e.Bounds.Height <= 0) return;
+            if (e.Node == null || e.Bounds.Height <= 0) return;
 
             Graphics g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -1311,27 +1311,29 @@ namespace ECQ_Soft
             bool isSelected = (e.State & TreeNodeStates.Selected) != 0 || this.SelectedNode == e.Node;
             bool isHovered = _hoverNode == e.Node;
 
-            // Nền trắng chuẩn
-            Rectangle rowBounds = new Rectangle(0, e.Bounds.Y, this.Width, e.Bounds.Height);
+            // Vô hiệu hóa translation mặc định của TreeView bằng cách trừ e.Bounds.X
+            int offsetX = -e.Bounds.X;
+            int controlWidth = this.ClientRectangle.Width;
+
+            // 1. Nền trắng toàn bộ hàng
+            Rectangle rowBounds = new Rectangle(offsetX, e.Bounds.Y, controlWidth, e.Bounds.Height);
             g.FillRectangle(Brushes.White, rowBounds);
 
+            // 2. Màu nền cho Hover/Selection
             Color bgColor = Color.Transparent;
             if (isSelected) 
-                bgColor = Color.FromArgb(245, 245, 245); // Nền xám nhạt như trong design
+                bgColor = Color.FromArgb(230, 247, 255); // Blue nhạt Ant Design
             else if (isHovered) 
-                bgColor = Color.FromArgb(245, 245, 245); // Hover cũng xám nhạt
+                bgColor = Color.FromArgb(250, 250, 250); // Xám cực nhạt
 
-            Rectangle bgRect = new Rectangle(8, e.Bounds.Y + 2, this.Width - 16, e.Bounds.Height - 4);
-
-            // Vẽ khối Nền của Row có bọc Padding
             if (isSelected || isHovered)
             {
+                Rectangle bgRect = new Rectangle(offsetX + 4, e.Bounds.Y + 1, controlWidth - 8, e.Bounds.Height - 2);
                 using (var brush = new SolidBrush(bgColor))
                 {
-                    // Lướt Bo tròn nhẹ
                     using (GraphicsPath path = new GraphicsPath())
                     {
-                        int radius = 6;
+                        int radius = 4;
                         path.AddArc(bgRect.X, bgRect.Y, radius, radius, 180, 90);
                         path.AddArc(bgRect.Right - radius, bgRect.Y, radius, radius, 270, 90);
                         path.AddArc(bgRect.Right - radius, bgRect.Bottom - radius, radius, radius, 0, 90);
@@ -1342,79 +1344,48 @@ namespace ECQ_Soft
                 }
             }
 
-            // Tính Vị Trí Lùi vào theo Cấp bậc (Level)
+            // 3. Thanh chỉ thị (Indicator) màu xanh bên phải khi chọn
+            if (isSelected)
+            {
+                using (var blueBrush = new SolidBrush(Color.FromArgb(24, 144, 255)))
+                {
+                    g.FillRectangle(blueBrush, offsetX + controlWidth - 3, e.Bounds.Y + 4, 3, e.Bounds.Height - 8);
+                }
+            }
+
+            // 4. Chevron (Mũi tên)
             int currentIndent = 20 + (e.Node.Level * 24);
-            
-            // Vẽ Mũi Tên Chevron nếu node có con
             if (e.Node.Nodes.Count > 0)
             {
                 int cy = e.Bounds.Y + (e.Bounds.Height) / 2;
                 int cx = currentIndent + 6;
-                Color chevronColor = Color.FromArgb(40, 40, 40); // Chevron đen chuẩn
+                Color chevronColor = Color.FromArgb(140, 140, 140);
                 
-                using (var pen = new Pen(chevronColor, 2f))
+                using (var pen = new Pen(chevronColor, 1.5f))
                 {
                     pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
                     pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-                    pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
                     if (e.Node.IsExpanded)
                     {
-                        // Expand (Chevon Trỏ Xuống)
-                        g.DrawLine(pen, cx - 4, cy - 2, cx, cy + 2);
-                        g.DrawLine(pen, cx, cy + 2, cx + 4, cy - 2);
+                        g.DrawLine(pen, cx - 3, cy - 1, cx, cy + 2);
+                        g.DrawLine(pen, cx, cy + 2, cx + 3, cy - 1);
                     }
                     else
                     {
-                        // Collapse (Chevron Trỏ Ngang / Phải)
-                        g.DrawLine(pen, cx - 2, cy - 4, cx + 2, cy);
-                        g.DrawLine(pen, cx + 2, cy, cx - 2, cy + 4);
+                        g.DrawLine(pen, cx - 1, cy - 3, cx + 2, cy);
+                        g.DrawLine(pen, cx + 2, cy, cx - 1, cy + 3);
                     }
                 }
             }
 
-            // Vẽ Nội Dung Chữ
+            // 5. Chữ danh mục
             int textX = currentIndent + 26;
-            Color textColor = Color.FromArgb(40, 40, 40); // Chữ chuẩn Ant Design (Đen xám)
-            Font textFont = this.Font;
+            Color textColor = isSelected ? Color.FromArgb(24, 144, 255) : Color.FromArgb(40, 40, 40);
+            Font textFont = isSelected ? new Font(this.Font, FontStyle.Bold) : this.Font;
             
             using (var brush = new SolidBrush(textColor))
             {
                 g.DrawString(e.Node.Text, textFont, brush, textX, e.Bounds.Y + (e.Bounds.Height - textFont.Height) / 2);
-            }
-
-            // Vẽ Icon (Chấm tím mộng mơ Mockup) nếu đang Selected & Hovering
-            if (isSelected)
-            {
-                // Thay vì mũi tên, ta vẽ icon Click ngón tay hoặc 1 chấm màu Magenta
-                // Dùng Path vẽ biểu tượng mặt trời tỏa sáng hoặc đơn giản là chấm tròn màu tím
-                int dotSize = 10;
-                int dotX = bgRect.Right - dotSize - 16;
-                int dotY = e.Bounds.Y + (e.Bounds.Height - dotSize)/2;
-
-                using(var brush = new SolidBrush(Color.FromArgb(230, 0, 230))) // Màu tím hồng mạnh
-                {
-                   g.FillEllipse(brush, dotX, dotY, dotSize, dotSize);
-                   
-                   // Vẽ tia nhỏ xung quanh chấm tím
-                   using (var pen = new Pen(Color.FromArgb(230, 0, 230), 1.5f))
-                   {
-                       g.DrawLine(pen, dotX + dotSize/2, dotY - 4, dotX + dotSize/2, dotY - 1);
-                       g.DrawLine(pen, dotX + dotSize/2, dotY + dotSize + 1, dotX + dotSize/2, dotY + dotSize + 4);
-                       g.DrawLine(pen, dotX - 4, dotY + dotSize/2, dotX - 1, dotY + dotSize/2);
-                       g.DrawLine(pen, dotX + dotSize + 1, dotY + dotSize/2, dotX + dotSize + 4, dotY + dotSize/2);
-                   }
-                }
-            }
-            else if (isHovered && !isSelected)
-            {
-                // Hover mock (chấm tím đơn giản không tỏa sáng)
-                int dotSize = 8;
-                int dotX = bgRect.Right - dotSize - 16;
-                int dotY = e.Bounds.Y + (e.Bounds.Height - dotSize)/2;
-                using(var brush = new SolidBrush(Color.FromArgb(230, 0, 230)))
-                {
-                   g.FillEllipse(brush, dotX, dotY, dotSize, dotSize);
-                }
             }
         }
     }

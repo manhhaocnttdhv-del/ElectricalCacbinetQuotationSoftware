@@ -43,6 +43,7 @@ namespace ECQ_Soft
             this.button10 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.gbTimkiemSanPham = new System.Windows.Forms.GroupBox();
+            this.cboCategory = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.button3 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
@@ -50,13 +51,10 @@ namespace ECQ_Soft
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btn_baogia = new System.Windows.Forms.Button();
             this.button11 = new System.Windows.Forms.Button();
             this.button8 = new System.Windows.Forms.Button();
-            this.btnMoveUp = new System.Windows.Forms.Button();
-            this.btnMoveDown = new System.Windows.Forms.Button();
-            this.cboCategory = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.lstSavedConfigs = new ECQ_Soft.Helper.CheckedComboBox();
-            this.btn_baogia = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
             this.gbTimkiemSanPham.SuspendLayout();
@@ -93,9 +91,10 @@ namespace ECQ_Soft
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(25, 371);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(70, 13);
+            this.label5.Size = new System.Drawing.Size(471, 13);
             this.label5.TabIndex = 35;
-            this.label5.Text = "Bảng báo giá";
+            this.label5.Text = "Bảng báo giá (Dùng để gửi cho khách hàng và triển khai nội bộ, đề xuất vật tư, th" +
+    "eo dõi chi tiết...)";
             // 
             // textBox2
             // 
@@ -211,6 +210,17 @@ namespace ECQ_Soft
             this.gbTimkiemSanPham.TabStop = false;
             this.gbTimkiemSanPham.Text = "Bảng tìm kiếm lựa chọn sản phẩm";
             // 
+            // cboCategory
+            // 
+            this.cboCategory.DropDownHeight = 1;
+            this.cboCategory.FormattingEnabled = true;
+            this.cboCategory.IntegralHeight = false;
+            this.cboCategory.Location = new System.Drawing.Point(279, 33);
+            this.cboCategory.Name = "cboCategory";
+            this.cboCategory.ReadOnly = false;
+            this.cboCategory.Size = new System.Drawing.Size(180, 21);
+            this.cboCategory.TabIndex = 70;
+            // 
             // dataGridView1
             // 
             this.dataGridView1.AllowUserToAddRows = false;
@@ -224,27 +234,27 @@ namespace ECQ_Soft
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(303, 36);
+            this.button3.Location = new System.Drawing.Point(303, 38);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(75, 23);
+            this.button3.Size = new System.Drawing.Size(75, 21);
             this.button3.TabIndex = 7;
             this.button3.Text = "Lưu";
             this.button3.UseVisualStyleBackColor = true;
             // 
             // button7
             // 
-            this.button7.Location = new System.Drawing.Point(471, 34);
+            this.button7.Location = new System.Drawing.Point(471, 38);
             this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(75, 23);
+            this.button7.Size = new System.Drawing.Size(75, 21);
             this.button7.TabIndex = 49;
             this.button7.Text = "Xóa tất cả";
             this.button7.UseVisualStyleBackColor = true;
             // 
             // btnSearch
             // 
-            this.btnSearch.Location = new System.Drawing.Point(219, 36);
+            this.btnSearch.Location = new System.Drawing.Point(219, 38);
             this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Size = new System.Drawing.Size(75, 23);
+            this.btnSearch.Size = new System.Drawing.Size(75, 21);
             this.btnSearch.TabIndex = 59;
             this.btnSearch.Text = "Tìm kiếm";
             this.btnSearch.UseVisualStyleBackColor = true;
@@ -283,11 +293,21 @@ namespace ECQ_Soft
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Bảng cấu hình (Đóng gói sản phẩm)";
             // 
+            // btn_baogia
+            // 
+            this.btn_baogia.Location = new System.Drawing.Point(387, 38);
+            this.btn_baogia.Name = "btn_baogia";
+            this.btn_baogia.Size = new System.Drawing.Size(75, 21);
+            this.btn_baogia.TabIndex = 61;
+            this.btn_baogia.Text = "Lưu báo giá";
+            this.btn_baogia.UseVisualStyleBackColor = true;
+            this.btn_baogia.Click += new System.EventHandler(this.btn_baogia_Click);
+            // 
             // button11
             // 
-            this.button11.Location = new System.Drawing.Point(555, 33);
+            this.button11.Location = new System.Drawing.Point(555, 38);
             this.button11.Name = "button11";
-            this.button11.Size = new System.Drawing.Size(151, 23);
+            this.button11.Size = new System.Drawing.Size(144, 21);
             this.button11.TabIndex = 60;
             this.button11.Text = "Cấu hình nâng cao";
             this.button11.UseVisualStyleBackColor = true;
@@ -302,33 +322,6 @@ namespace ECQ_Soft
             this.button8.UseVisualStyleBackColor = true;
             this.button8.Click += new System.EventHandler(this.button8_Click);
             // 
-            // btnMoveUp
-            // 
-            this.btnMoveUp.Location = new System.Drawing.Point(100, 358);
-            this.btnMoveUp.Name = "btnMoveUp";
-            this.btnMoveUp.Size = new System.Drawing.Size(30, 23);
-            this.btnMoveUp.TabIndex = 75;
-            this.btnMoveUp.UseVisualStyleBackColor = true;
-            // 
-            // btnMoveDown
-            // 
-            this.btnMoveDown.Location = new System.Drawing.Point(134, 358);
-            this.btnMoveDown.Name = "btnMoveDown";
-            this.btnMoveDown.Size = new System.Drawing.Size(30, 23);
-            this.btnMoveDown.TabIndex = 76;
-            this.btnMoveDown.UseVisualStyleBackColor = true;
-            // 
-            // cboCategory
-            // 
-            this.cboCategory.DropDownHeight = 1;
-            this.cboCategory.FormattingEnabled = true;
-            this.cboCategory.IntegralHeight = false;
-            this.cboCategory.Location = new System.Drawing.Point(279, 33);
-            this.cboCategory.Name = "cboCategory";
-            this.cboCategory.ReadOnly = false;
-            this.cboCategory.Size = new System.Drawing.Size(180, 21);
-            this.cboCategory.TabIndex = 70;
-            // 
             // lstSavedConfigs
             // 
             this.lstSavedConfigs.DropDownHeight = 1;
@@ -341,21 +334,9 @@ namespace ECQ_Soft
             this.lstSavedConfigs.Size = new System.Drawing.Size(203, 21);
             this.lstSavedConfigs.TabIndex = 62;
             // 
-            // btn_baogia
-            // 
-            this.btn_baogia.Location = new System.Drawing.Point(387, 36);
-            this.btn_baogia.Name = "btn_baogia";
-            this.btn_baogia.Size = new System.Drawing.Size(75, 23);
-            this.btn_baogia.TabIndex = 61;
-            this.btn_baogia.Text = "Lưu báo giá";
-            this.btn_baogia.UseVisualStyleBackColor = true;
-            this.btn_baogia.Click += new System.EventHandler(this.btn_baogia_Click);
-            // 
             // FrmConfig
             // 
             this.AutoScroll = true;
-            this.Controls.Add(this.btnMoveUp);
-            this.Controls.Add(this.btnMoveDown);
             this.Controls.Add(this.button8);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.gbTimkiemSanPham);
@@ -368,7 +349,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.label5);
             this.Controls.Add(this.dgvParentProducts);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(953, 266);
+            this.Size = new System.Drawing.Size(936, 249);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();
@@ -437,8 +418,6 @@ namespace ECQ_Soft
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Button button8;
         private System.Windows.Forms.Button button11;
-        private System.Windows.Forms.Button btnMoveUp;
-        private System.Windows.Forms.Button btnMoveDown;
         private System.Windows.Forms.Button btn_baogia;
     }
 }

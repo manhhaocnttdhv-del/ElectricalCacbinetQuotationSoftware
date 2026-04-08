@@ -376,10 +376,6 @@ namespace ECQ_Soft
             // Vẽ icon play (tam giác) lên button8
             SetPlayIcon(button8);
 
-            // Ẩn 2 toolbar button ▲▼ (đã thay bằng cột inline trong grid)
-            btnMoveUp.Visible   = false;
-            btnMoveDown.Visible = false;
-
             // Gọi ngay để cột ▲▼ xuất hiện dù grid chưa có data
             EnsureMoveColumns(dgvParentProducts);
 
@@ -488,8 +484,6 @@ namespace ECQ_Soft
             int idx = GetSelectedConfigIndex();
             // Không chọn dòng nào, hoặc chọn dòng summary → disable cả 2
             bool valid = idx >= 0 && idx < configProducts.Count && !configProducts[idx].IsSummary;
-            btnMoveUp.Enabled   = valid && idx > 0;
-            btnMoveDown.Enabled = valid && idx < configProducts.Count - 1;
         }
 
         /// <summary>
@@ -1608,9 +1602,9 @@ namespace ECQ_Soft
                 DonGiaVND = price,
                 ThanhTienVND = price,
                 GhiChu = "",
-                GiaNhap = priceCost > 0 ? priceCost : price,
-                ThanhTien = priceCost > 0 ? priceCost : price,
-                BangGia = price,
+                GiaNhap = priceCost,
+                ThanhTien = priceCost,
+                BangGia = price - priceCost,
                 IsHeader = false
             };
         }
@@ -1894,7 +1888,7 @@ namespace ECQ_Soft
                         GhiChu = "",
                         GiaNhap = priceCost > 0 ? priceCost : price,
                         ThanhTien = priceCost > 0 ? priceCost : price,
-                        BangGia = price,
+                        BangGia = price - (priceCost > 0 ? priceCost : price),
                         IsHeader = false
                     });
                 }
@@ -1958,7 +1952,8 @@ namespace ECQ_Soft
                     if (item != null && !item.IsHeader)
                     {
                         item.ThanhTienVND = item.SoLuong * item.DonGiaVND;
-                        item.ThanhTien = item.SoLuong * item.DonGiaVND;
+                        item.ThanhTien = item.SoLuong * item.GiaNhap;
+                        item.BangGia = item.ThanhTienVND - item.ThanhTien;
 
                         UpdateHeaderSum();
                         dgvParentProducts.Refresh(); // Gọi refresh thay vì InvalidateRow để có thể update row Header
@@ -2014,21 +2009,21 @@ namespace ECQ_Soft
                 {
                     STT = "",
                     TenHang = "TỔNG CỘNG (Giá chưa bao gồm VAT)",
-                    DonGiaVND = tongCongThanhTien,
+                    DonGiaVND = 0,
                     ThanhTienVND = tongCongThanhTien,
-                    GiaNhap = tongCongGiaNhap,
-                    ThanhTien = tongCongThanhTien,
-                    BangGia = tongCongBangGia,
+                    GiaNhap = tongCongThanhTien - tongCongGiaNhap,
+                    ThanhTien = tongCongGiaNhap,
+                    BangGia = tongCongThanhTien - tongCongGiaNhap,
                     IsSummary = true
                 });
                 _displayList.Add(new ConfigProductItem
                 {
                     STT = "",
                     TenHang = "THUẾ VAT 8%",
-                    DonGiaVND = vatThanhTien,
+                    DonGiaVND = 0,
                     ThanhTienVND = vatThanhTien,
-                    GiaNhap = vatGiaNhap,
-                    ThanhTien = vatThanhTien,
+                    GiaNhap = 0,
+                    ThanhTien = vatGiaNhap,
                     IsSummary = true
                 });
                 _displayList.Add(new ConfigProductItem
@@ -2038,8 +2033,8 @@ namespace ECQ_Soft
                     DonGiaVND = tongCongThanhTien + vatThanhTien,
                     ThanhTienVND = tongCongThanhTien + vatThanhTien,
                     GiaNhap = tongCongGiaNhap + vatGiaNhap,
-                    ThanhTien = tongCongThanhTien + vatThanhTien,
-                    BangGia = tongCongBangGia,
+                    ThanhTien = tongCongGiaNhap + vatGiaNhap,
+                    BangGia = 0,
                     IsSummary = true
                 });
             }
@@ -2062,12 +2057,19 @@ namespace ECQ_Soft
                     row.DefaultCellStyle.ForeColor = Color.Black;
                     row.DefaultCellStyle.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
 
-                    // Số tiền → chữ đỏ (tất cả cột tiền kể cả DonGiaVND, ThanhTienVND)
+                    // Số tiền → bôi đậm, màu đen (mặc định của row). Riêng Giá Nhập của TỔNG CỘNG thì màu đỏ.
                     foreach (var colName in new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" })
                     {
                         if (dgvParentProducts.Columns.Contains(colName))
                         {
-                            row.Cells[colName].Style.ForeColor = Color.Red;
+                            if (colName == "GiaNhap" && item.TenHang.StartsWith("TỔNG CỘNG"))
+                            {
+                                row.Cells[colName].Style.ForeColor = Color.Red;
+                            }
+                            else
+                            {
+                                row.Cells[colName].Style.ForeColor = Color.Black;
+                            }
                             row.Cells[colName].Style.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
                         }
                     }
@@ -2122,7 +2124,7 @@ namespace ECQ_Soft
                 }
                 if (dgv.Columns.Contains("BangGia"))
                 {
-                    dgv.Columns["BangGia"].HeaderText = "Bảng Giá";
+                    dgv.Columns["BangGia"].HeaderText = "Lợi nhuận";
                     dgv.Columns["BangGia"].DefaultCellStyle.Format = "N0";
                     dgv.Columns["BangGia"].Visible = true;
                 }
@@ -2285,18 +2287,34 @@ namespace ECQ_Soft
                 e.CellStyle.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
                 // Ẩn giá trị 0 ở các cột không liên quan (giống gộp ô trong Excel)
-                var hiddenCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu" };
+                // Đơn giá (VNĐ) cũng được ẩn đi ở tất cả các dòng tổng kết
+                var hiddenCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu", "DonGiaVND" };
                 if (Array.IndexOf(hiddenCols, colName) >= 0)
                 {
                     e.Value = "";
                     e.FormattingApplied = true;
                 }
 
-                // Số tiền → chữ đỏ
+                // Ẩn Giá Nhập và Bảng Giá cho các dòng THUẾ VAT và THÀNH TIỀN
+                if ((colName == "BangGia" || colName == "GiaNhap") && (item.TenHang.StartsWith("THUẾ VAT") || item.TenHang == "THÀNH TIỀN"))
+                {
+                    e.Value = "";
+                    e.FormattingApplied = true;
+                }
+
+                // Định dạng màu chữ cho cấu hình hiển thị như trong Excel mẫu
                 var numberCols = new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "BangGia" };
                 if (Array.IndexOf(numberCols, colName) >= 0)
                 {
-                    e.CellStyle.ForeColor = Color.Red;
+                    // Chỉ hiển thị màu ĐỎ cho cột Giá Nhập của dòng TỔNG CỘNG
+                    if (colName == "GiaNhap" && item.TenHang.StartsWith("TỔNG CỘNG"))
+                    {
+                        e.CellStyle.ForeColor = Color.Red;
+                    }
+                    else
+                    {
+                        e.CellStyle.ForeColor = Color.Black;
+                    }
                 }
             }
             else if (item.IsHeader)
@@ -3123,7 +3141,7 @@ namespace ECQ_Soft
                         ThanhTienVND = price,
                         GiaNhap = priceCost > 0 ? priceCost : price,
                         ThanhTien = priceCost > 0 ? priceCost : price,
-                        BangGia = price,
+                        BangGia = price - (priceCost > 0 ? priceCost : price),
                         IsHeader = false
                     });
                 }
