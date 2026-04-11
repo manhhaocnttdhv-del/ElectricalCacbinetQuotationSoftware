@@ -481,14 +481,31 @@ namespace ECQ_Soft
             // Tìm các trường text (chứa "-text" hoặc bằng "text")
             var rawParts = configRaw.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
             var textFields = new List<string>();
+            var _fieldNameCount = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var part in rawParts)
             {
                 string pLow = part.ToLower();
                 if (pLow.StartsWith("first:")) pLow = pLow.Substring(6).Trim();
                 if (pLow.StartsWith("last:")) pLow = pLow.Substring(5).Trim();
                 
-                if (pLow.EndsWith("-text")) textFields.Add(pLow.Replace("-text", ""));
-                else if (pLow == "text") textFields.Add("Giá trị");
+                string fieldBase = null;
+                if (pLow.EndsWith("-text")) fieldBase = pLow.Replace("-text", "");
+                else if (pLow == "text") fieldBase = "Giá trị";
+                
+                if (fieldBase != null)
+                {
+                    // Đánh số tự động nếu tên trùng: height, height2, height3...
+                    if (!_fieldNameCount.ContainsKey(fieldBase))
+                    {
+                        _fieldNameCount[fieldBase] = 1;
+                        textFields.Add(fieldBase);
+                    }
+                    else
+                    {
+                        _fieldNameCount[fieldBase]++;
+                        textFields.Add(fieldBase + _fieldNameCount[fieldBase].ToString());
+                    }
+                }
             }
             if (!requireSearch && textFields.Count == 0) textFields.Add("Giá trị");
 
@@ -706,6 +723,185 @@ namespace ECQ_Soft
         }
 
         /// <summary>
+        /// Xây dựng từ điển biến cho công thức:
+        /// - Giá trị mặc định từ thuộc tính sản phẩm (p).
+        /// - Ghi đè bằng giá trị người dùng nhập (dictValues).
+        /// - Hỗ trợ trùng tên: height2, height3 → h2, h3 (không ghi đè h).
+        /// </summary>
+        private static Dictionary<string, double> BuildVariableMap(Products p, Dictionary<string, string> dictValues)
+        {
+            var values = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+            // ── Bước 1: Giá trị mặc định từ thuộc tính sản phẩm ──
+            decimal pL = 0, pW = 0, pH = 0, pPrice = 0, pCost = 0, pWeight = 0;
+            if (p != null)
+            {
+                decimal.TryParse(p.Length,  out pL);
+                decimal.TryParse(p.Width,   out pW);
+                decimal.TryParse(p.Height,  out pH);
+                decimal.TryParse(p.Weight,  out pWeight);
+                decimal.TryParse(p.Price?.Replace(".", "").Replace(",", ""), out pPrice);
+                decimal.TryParse(p.PriceCost?.Replace(".", "").Replace(",", ""), out pCost);
+            }
+
+            // Kích thước
+            values["l"] = (double)pL;  values["a"]   = (double)pL;  // length / dài
+            values["w"] = (double)pW;  values["b"]   = (double)pW;  // width  / rộng
+            values["h"] = (double)pH;  values["cao"] = (double)pH;  // height / cao
+            values["d"] = (double)pL;                                // deep   (alias của length)
+            // Giá
+            values["p"]  = (double)pPrice;  values["gv"]  = (double)pPrice;  // giá bán
+            values["goc"] = (double)pCost; values["cost"] = (double)pCost;  // giá vốn
+            // Khối lượng
+            values["kl"] = (double)pWeight; values["kg"] = (double)pWeight;
+            // Diện tích / Thể tích mặc định
+            values["m2"] = 0;
+            values["m3"] = 0;
+
+            // ── Bước 2: Ghi đè từ ô nhập liệu người dùng ──
+            var occur = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var kvp in dictValues)
+            {
+                string rawKey = kvp.Key.ToLower()
+                                        .Replace("~", "_")
+                                        .Replace("/", "_")
+                                        .Trim();
+
+                if (!double.TryParse(kvp.Value
+                        .Replace(",", "."),    // hỗ trợ dấu phẩy thập phân VN
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out double userVal)) continue;
+
+                // Lưu biến gốc (ví dụ: "height2" = 5)
+                values[rawKey] = userVal;
+
+                // Ánh xạ thông minh: tăng biến đếm theo nhóm
+                ApplyAliasMapping(rawKey, userVal, occur, values);
+            }
+
+            return values;
+        }
+
+        /// <summary>
+        /// Ánh xạ một key vào các biến ngắn trong bản đồ biến, có hỗ trợ đánh số khi trùng tên.
+        /// Ví dụ: height lần 1 → h / a, lần 2 → h2 / a2
+        /// </summary>
+        private static void ApplyAliasMapping(
+            string rawKey, double val,
+            Dictionary<string, int> occur,
+            Dictionary<string, double> values)
+        {
+            // Helper: lấy số đếm và increment, trả về suffix ("" hoặc "2", "3"...)
+            string Suffix(string group)
+            {
+                if (!occur.ContainsKey(group)) occur[group] = 0;
+                occur[group]++;
+                return occur[group] == 1 ? "" : occur[group].ToString();
+            }
+
+            // ── Chiều cao (height / cao / h) ──
+            if (rawKey.Contains("height") || rawKey.Contains("chieu_cao") || rawKey == "h")
+            {
+                string s = Suffix("height");
+                values["h" + s] = val; values["a" + s] = val;
+            }
+            // ── Chiều rộng (width / rong / rộng / w) ──
+            else if (rawKey.Contains("width") || rawKey.Contains("rong") || rawKey.Contains("rộng") || rawKey == "w")
+            {
+                string s = Suffix("width");
+                values["w" + s] = val; values["b" + s] = val;
+            }
+            // ── Chiều dài / sâu (length / deep / dai / sau) ──
+            else if (rawKey.Contains("length") || rawKey.Contains("deep") ||
+                     rawKey.Contains("dai") || rawKey.Contains("dài") ||
+                     rawKey.Contains("sau") || rawKey.Contains("sâu") || rawKey == "l" || rawKey == "d")
+            {
+                string s = Suffix("length");
+                values["l" + s] = val; values["d" + s] = val;
+            }
+            // ── Màu / Color ──
+            else if (rawKey.Contains("color") || rawKey.Contains("mau") || rawKey.Contains("màu") || rawKey == "c")
+            {
+                string s = Suffix("color");
+                values["c" + s] = val;
+            }
+            // ── Độ dày (thickness / day) ──
+            else if (rawKey.Contains("thick") || rawKey.Contains("thickness") ||
+                     rawKey.Contains("day") || rawKey.Contains("độ_dày") || rawKey == "t")
+            {
+                string s = Suffix("thick");
+                values["t" + s] = val; values["day" + s] = val;
+            }
+            // ── Đường kính (diameter / duong_kinh) ──
+            else if (rawKey.Contains("diam") || rawKey.Contains("duong_kinh") ||
+                     rawKey.Contains("đường_kính") || rawKey == "dk")
+            {
+                string s = Suffix("diam");
+                values["dk" + s] = val; values["r" + s] = val;
+            }
+            // ── Số lượng (quantity / so_luong / sl) ──
+            else if (rawKey.Contains("quant") || rawKey.Contains("so_luong") ||
+                     rawKey.Contains("quantity") || rawKey == "sl" || rawKey == "qty")
+            {
+                string s = Suffix("qty");
+                values["sl" + s] = val; values["qty" + s] = val; values["n" + s] = val;
+            }
+            // ── Khối lượng (weight / kl / kg) ──
+            else if (rawKey.Contains("weight") || rawKey.Contains("khoi_luong") ||
+                     rawKey.Contains("khối_lượng") || rawKey == "kl" || rawKey == "kg")
+            {
+                string s = Suffix("weight");
+                values["kl" + s] = val; values["kg" + s] = val;
+            }
+            // ── Giá bán (price / gia_ban / p / gv) ──
+            else if (rawKey.Contains("price") || rawKey.Contains("gia_ban") ||
+                     rawKey.Contains("giá_bán") || rawKey == "p" || rawKey == "gv")
+            {
+                string s = Suffix("price");
+                values["p" + s] = val; values["gv" + s] = val;
+            }
+            // ── Giá vốn (cost / gia_von / goc) ──
+            else if (rawKey.Contains("cost") || rawKey.Contains("gia_von") ||
+                     rawKey.Contains("giá_vốn") || rawKey.Contains("goc") || rawKey.Contains("gốc"))
+            {
+                string s = Suffix("cost");
+                values["goc" + s] = val; values["cost" + s] = val;
+            }
+            // ── Diện tích (area / m2 / dien_tich) ──
+            else if (rawKey.Contains("area") || rawKey.Contains("m2") || rawKey.Contains("dien_tich"))
+            {
+                string s = Suffix("area");
+                values["m2" + s] = val; values["area" + s] = val;
+            }
+            // ── Thể tích (volume / m3 / the_tich) ──
+            else if (rawKey.Contains("volume") || rawKey.Contains("m3") || rawKey.Contains("the_tich"))
+            {
+                string s = Suffix("vol");
+                values["m3" + s] = val; values["vol" + s] = val;
+            }
+            // ── Số đếm / count ──
+            else if (rawKey.Contains("count") || rawKey.Contains("so_dem") || rawKey == "so")
+            {
+                string s = Suffix("count");
+                values["so" + s] = val; values["count" + s] = val;
+            }
+            // ── Tỷ lệ / ratio / percent ──
+            else if (rawKey.Contains("ratio") || rawKey.Contains("ty_le") || rawKey.Contains("tỷ_lệ"))
+            {
+                string s = Suffix("ratio");
+                values["ty" + s] = val; values["ratio" + s] = val;
+            }
+            else if (rawKey.Contains("percent") || rawKey.Contains("phan_tram") || rawKey.Contains("phần_trăm") || rawKey == "pct")
+            {
+                string s = Suffix("pct");
+                values["pct" + s] = val; values["phan_tram" + s] = val;
+            }
+            // ── Không khớp nhóm nào: đã lưu rawKey ở bước trước, không cần làm thêm ──
+        }
+
+        /// <summary>
         /// Tính giá trị công thức với ánh xạ biến tùy chỉnh.
         /// </summary>
         private static decimal? EvaluateAdvancedFormula(string formula, Products p, Dictionary<string, string> dictValues)
@@ -713,88 +909,27 @@ namespace ECQ_Soft
             if (string.IsNullOrWhiteSpace(formula)) return null;
             try
             {
-                // 1. Chuẩn hóa công thức: bỏ dấu '=', bỏ khoảng trắng, đổi sang chữ thường
-                // Thống nhất thay ~ và / thành _ để khớp với quản lý biến
+                // 1. Chuẩn hóa công thức
                 string expr = formula.TrimStart('=').Trim().ToLower()
                                      .Replace("~", "_")
                                      .Replace("/", "_");
 
-                // 2. Thu thập giá trị từ Sản phẩm (nếu có) làm giá trị mặc định
-                decimal pL = 0, pW = 0, pH = 0, pPrice = 0;
-                if (p != null)
-                {
-                    decimal.TryParse(p.Length, out pL);
-                    decimal.TryParse(p.Width, out pW);
-                    decimal.TryParse(p.Height, out pH);
-                    decimal.TryParse(p.Price?.Replace(".", "").Replace(",", ""), out pPrice);
-                }
+                // 2. Xây dựng bản đồ biến
+                var values = BuildVariableMap(p, dictValues);
 
-                // Từ điển chứa tất cả các biến có thể xuất hiện trong công thức
-                var values = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-
-                // Ánh xạ mặc định từ SP
-                values["l"] = (double)pL; values["a"] = (double)pL;
-                values["w"] = (double)pW; values["b"] = (double)pW;
-                values["h"] = (double)pH; values["c"] = (double)pH;
-                values["p"] = (double)pPrice; values["gv"] = (double)pPrice;
-                values["d"] = (double)pL; // deep
-
-                // 3. Ghi đè bằng giá trị từ các ô nhập liệu dynamic (Phase 2)
-                foreach (var kvp in dictValues)
-                {
-                    // Tên biến từ Label cũng phải chuẩn hóa (thay ~ và / thành _)
-                    string rawKey = kvp.Key.ToLower().Replace("~", "_").Replace("/", "_");
-                    if (double.TryParse(kvp.Value, out double userVal))
-                    {
-                        // Lưu biến gốc đã chuẩn hóa
-                        values[rawKey] = userVal;
-                        
-                        // Ánh xạ đa hướng (Multi-mapping) theo yêu cầu User và thực tế file Excel
-                        if (rawKey.Contains("height") || rawKey.Contains("cao")) 
-                        { 
-                            values["h"] = userVal; values["a"] = userVal; 
-                        }
-                        else if (rawKey.Contains("width") || rawKey.Contains("rộng")) 
-                        { 
-                            values["w"] = userVal; values["b"] = userVal; 
-                        }
-                        else if (rawKey.Contains("deep") || rawKey.Contains("dài") || rawKey.Contains("sâu") || rawKey.Contains("length")) 
-                        { 
-                            values["d"] = userVal; values["l"] = userVal; 
-                        }
-                        else if (rawKey.Contains("color") || rawKey.Contains("màu")) 
-                        { 
-                            values["c"] = userVal; 
-                        }
-                        else if (rawKey.Contains("gia vốn") || rawKey.Contains("gv")) 
-                        { 
-                            values["gv"] = userVal; values["p"] = userVal; 
-                        }
-                        else if (rawKey.Contains("khối lượng") || rawKey.Contains("kl")) 
-                        { 
-                            values["kl"] = userVal; 
-                        }
-                        else if (rawKey.Contains("m2")) 
-                        { 
-                            values["m2"] = userVal; 
-                        }
-                    }
-                }
-
-                // 4. Thay thế biến trong biểu thức bằng giá trị số dùng REGEX để tránh thay thế nhầm chuỗi con
-                // (VD: tránh thay 'a' trong 'm2' hay 'aa')
+                // 3. Thay thế biến trong biểu thức (dài trước để tránh thay nhầm chuỗi con)
                 var sortedKeys = values.Keys.OrderByDescending(k => k.Length).ToList();
                 foreach (var k in sortedKeys)
                 {
                     string pattern = @"\b" + System.Text.RegularExpressions.Regex.Escape(k) + @"\b";
                     expr = System.Text.RegularExpressions.Regex.Replace(
-                        expr, 
-                        pattern, 
-                        values[k].ToString(System.Globalization.CultureInfo.InvariantCulture), 
+                        expr,
+                        pattern,
+                        values[k].ToString(System.Globalization.CultureInfo.InvariantCulture),
                         System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 }
 
-                // 5. Tính toán bằng DataTable.Compute
+                // 4. Tính toán bằng DataTable.Compute
                 var result = new System.Data.DataTable().Compute(expr, null);
                 return Convert.ToDecimal(result);
             }
