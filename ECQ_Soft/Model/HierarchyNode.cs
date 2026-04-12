@@ -25,6 +25,12 @@ namespace ECQ_Soft.Model
         /// </summary>
         public string Formula { get; set; } = "";
 
+        public string Type { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string OnlyOne { get; set; } = "";
+        public string Nghia { get; set; } = "";
+        public string Bien { get; set; } = "";
+
 
         public HierarchyNode(string name)
         {
