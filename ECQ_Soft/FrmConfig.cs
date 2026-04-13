@@ -3086,83 +3086,115 @@ namespace ECQ_Soft
         {
             using (var frm = new FrmAdvancedConfig())
             {
-                // Sử dụng biến spreadsheetId đã có sẵn trong class thay vì ConfigurationManager
                 await frm.LoadDataAsync(_sheetsService, spreadsheetId);
 
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
-                    AddAdvancedConfigResult(frm.SelectedHeader, frm.SelectedComponents);
+                    int addedCount = 0;
+                    foreach (var item in frm.SelectedAdvancedItems)
+                    {
+                        if (string.IsNullOrEmpty(item.TenCauHinh)) continue;
+
+                        // Ưu tiên dùng ReferenceProduct đã khớp sẵn trong FrmAdvancedConfig
+                        Products prod = item.ReferenceProduct;
+
+                        // Nếu không có thì tạo object Products từ thông tin trong item
+                        if (prod == null)
+                        {
+                            prod = allProducts.FirstOrDefault(p =>
+                                string.Equals(p.Name?.Trim(), item.TenCauHinh, StringComparison.OrdinalIgnoreCase));
+                        }
+
+                        if (prod == null)
+                        {
+                            // Tạo mới Products chỉ từ tên + giá
+                            prod = new Products
+                            {
+                                Id    = 0,
+                                Name  = item.TenCauHinh,
+                                Price = item.DonGia.ToString(),
+                            };
+                        }
+
+                        // Tránh thêm trùng (kiểm tra theo tên)
+                        if (childProducts.Any(p => string.Equals(p.Name, prod.Name, StringComparison.OrdinalIgnoreCase)))
+                            continue;
+
+                        childProducts.Add(prod);
+                        addedCount++;
+                    }
+
+                    if (addedCount > 0)
+                    {
+                        RefreshAllProductsGrayOut();
+                    }
                 }
             }
         }
 
-        private void AddAdvancedConfigResult(string headerName, List<string> components)
+        private void AddAdvancedConfigResult(string headerName, List<AdvancedConfigResultItem> items)
         {
-            if (string.IsNullOrEmpty(headerName)) return;
+            if (items == null || items.Count == 0) return;
 
-            // 1. Thêm dòng Header mới
-            configProducts.Add(new ConfigProductItem
+            // 1. Thêm dòng Header (nếu có tên)
+            if (!string.IsNullOrEmpty(headerName))
             {
-                TenHang = headerName,
-                MaHang = "",
-                XuatXu = "VNECCO",
-                DonVi = "TỦ",
-                SoLuong = 1,
-                DonGiaVND = 0,
-                ThanhTienVND = 0,
-                GiaNhap = 0,
-                ThanhTien = 0,
-                BangGia = 0,
-                IsHeader = true
-            });
+                configProducts.Add(new ConfigProductItem
+                {
+                    TenHang = headerName,
+                    MaHang = "",
+                    XuatXu = "VNECCO",
+                    DonVi = "TỦ",
+                    SoLuong = 1,
+                    DonGiaVND = 0,
+                    ThanhTienVND = 0,
+                    GiaNhap = 0,
+                    ThanhTien = 0,
+                    BangGia = 0,
+                    IsHeader = true
+                });
+            }
 
-            // 2. Thêm các dòng linh kiện con
-            foreach (var compName in components)
+            // 2. Thêm từng dòng sản phẩm từ AdvancedConfig
+            foreach (var item in items)
             {
-                // Thử tìm sản phẩm khớp tên trong database (nếu có)
-                var matched = allProducts.FirstOrDefault(p =>
-                    string.Equals(p.Name?.Trim(), compName, StringComparison.OrdinalIgnoreCase));
+                if (string.IsNullOrEmpty(item.TenCauHinh)) continue;
+
+                // Ưu tiên dùng ReferenceProduct (sản phẩm đã khớp trong FrmAdvancedConfig)
+                var matched = item.ReferenceProduct;
+
+                // Nếu không có ReferenceProduct thì thử tìm lại theo tên
+                if (matched == null)
+                {
+                    matched = allProducts.FirstOrDefault(p =>
+                        string.Equals(p.Name?.Trim(), item.TenCauHinh, StringComparison.OrdinalIgnoreCase));
+                }
+
+                decimal price = item.DonGia;
+                decimal priceCost = 0;
 
                 if (matched != null)
                 {
-                    decimal price = 0;
-                    decimal.TryParse(matched.Price?.Replace(".", "").Replace(",", ""), out price);
-                    decimal priceCost = 0;
+                    if (price == 0)
+                        decimal.TryParse(matched.Price?.Replace(".", "").Replace(",", ""), out price);
                     decimal.TryParse(matched.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+                }
 
-                    configProducts.Add(new ConfigProductItem
-                    {
-                        TenHang = matched.Name,
-                        MaHang = matched.SKU,
-                        XuatXu = matched.HÃNG,
-                        DonVi = "Cái",
-                        SoLuong = 1,
-                        DonGiaVND = price,
-                        ThanhTienVND = price,
-                        GiaNhap = priceCost > 0 ? priceCost : price,
-                        ThanhTien = priceCost > 0 ? priceCost : price,
-                        BangGia = price - (priceCost > 0 ? priceCost : price),
-                        IsHeader = false
-                    });
-                }
-                else
+                configProducts.Add(new ConfigProductItem
                 {
-                    // Nếu không khớp, thêm dòng trống chỉ có tên
-                    configProducts.Add(new ConfigProductItem
-                    {
-                        TenHang = compName,
-                        MaHang = "",
-                        XuatXu = "",
-                        DonVi = "Cái",
-                        SoLuong = 1,
-                        DonGiaVND = 0,
-                        ThanhTienVND = 0,
-                        GiaNhap = 0,
-                        ThanhTien = 0,
-                        BangGia = 0,
-                        IsHeader = false
-                    });
-                }
+                    TenHang = item.TenCauHinh,
+                    MaHang  = matched?.SKU ?? "",
+                    XuatXu  = matched?.HÃNG ?? "",
+                    DonVi   = "Cái",
+                    SoLuong = item.SoLuong > 0 ? item.SoLuong : 1,
+                    DonGiaVND   = price,
+                    ThanhTienVND = price * (item.SoLuong > 0 ? item.SoLuong : 1),
+                    GhiChu  = item.ThuocTinh ?? "",
+                    GiaNhap  = priceCost > 0 ? priceCost : price,
+                    ThanhTien = (priceCost > 0 ? priceCost : price) * (item.SoLuong > 0 ? item.SoLuong : 1),
+                    BangGia  = price - (priceCost > 0 ? priceCost : price),
+                    IsHeader = false
+                });
             }
 
             // 3. Cập nhật lại STT toàn bộ
@@ -3174,6 +3206,11 @@ namespace ECQ_Soft
 
             button5.Text = "Lưu";
             currentEditingConfigName = null;
+        }
+
+        private void groupBox2_Enter(object sender, EventArgs e)
+        {
+
         }
     }
 }

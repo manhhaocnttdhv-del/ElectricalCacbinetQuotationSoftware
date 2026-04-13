@@ -25,9 +25,13 @@ namespace ECQ_Soft
             this.btnReload = new System.Windows.Forms.Button();
             this.btnAddToGrid = new System.Windows.Forms.Button();
             this.dgvSelectedItems = new System.Windows.Forms.DataGridView();
+            this.colSTT = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTen = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colThuocTinh = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colSoLuong = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colGhiChu = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDonGia = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colTienDo = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colGiaTien = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colXoa = new System.Windows.Forms.DataGridViewButtonColumn();
             this.splitterMain = new System.Windows.Forms.Splitter();
             this.lblDivider = new System.Windows.Forms.Label();
@@ -157,9 +161,13 @@ namespace ECQ_Soft
             this.dgvSelectedItems.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvSelectedItems.ColumnHeadersHeight = 36;
             this.dgvSelectedItems.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colSTT,
             this.colTen,
+            this.colThuocTinh,
             this.colSoLuong,
-            this.colGhiChu,
+            this.colDonGia,
+            this.colTienDo,
+            this.colGiaTien,
             this.colXoa});
             this.dgvSelectedItems.EnableHeadersVisualStyles = false;
             this.dgvSelectedItems.Font = new System.Drawing.Font("Segoe UI", 9.5F);
@@ -172,24 +180,50 @@ namespace ECQ_Soft
             this.dgvSelectedItems.Size = new System.Drawing.Size(1184, 388);
             this.dgvSelectedItems.TabIndex = 13;
             // 
+            // colSTT
+            // 
+            this.colSTT.FillWeight = 5F;
+            this.colSTT.HeaderText = "STT";
+            this.colSTT.Name = "colSTT";
+            this.colSTT.ReadOnly = true;
+            // 
             // colTen
             // 
-            this.colTen.FillWeight = 40F;
+            this.colTen.FillWeight = 25F;
             this.colTen.HeaderText = "Tên cấu hình";
             this.colTen.Name = "colTen";
             this.colTen.ReadOnly = true;
             // 
+            // colThuocTinh
+            // 
+            this.colThuocTinh.FillWeight = 25F;
+            this.colThuocTinh.HeaderText = "Thuộc tính";
+            this.colThuocTinh.Name = "colThuocTinh";
+            // 
             // colSoLuong
             // 
-            this.colSoLuong.FillWeight = 15F;
+            this.colSoLuong.FillWeight = 10F;
             this.colSoLuong.HeaderText = "Số lượng";
             this.colSoLuong.Name = "colSoLuong";
             // 
-            // colGhiChu
+            // colDonGia
             // 
-            this.colGhiChu.FillWeight = 35F;
-            this.colGhiChu.HeaderText = "Ghi chú";
-            this.colGhiChu.Name = "colGhiChu";
+            this.colDonGia.FillWeight = 15F;
+            this.colDonGia.HeaderText = "Đơn giá";
+            this.colDonGia.Name = "colDonGia";
+            // 
+            // colTienDo
+            // 
+            this.colTienDo.FillWeight = 15F;
+            this.colTienDo.HeaderText = "Tiến độ";
+            this.colTienDo.Name = "colTienDo";
+            // 
+            // colGiaTien
+            // 
+            this.colGiaTien.FillWeight = 15F;
+            this.colGiaTien.HeaderText = "Giá tiền";
+            this.colGiaTien.Name = "colGiaTien";
+            this.colGiaTien.ReadOnly = true;
             // 
             // colXoa
             // 
@@ -197,7 +231,7 @@ namespace ECQ_Soft
             dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(50)))), ((int)(((byte)(47)))));
             dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
             this.colXoa.DefaultCellStyle = dataGridViewCellStyle2;
-            this.colXoa.FillWeight = 10F;
+            this.colXoa.FillWeight = 8F;
             this.colXoa.HeaderText = "";
             this.colXoa.Name = "colXoa";
             this.colXoa.Text = "Xóa";
@@ -271,9 +305,13 @@ namespace ECQ_Soft
         private System.Windows.Forms.Button btnAddToGrid;
         private System.Windows.Forms.Panel pnlControls;
         private System.Windows.Forms.DataGridView dgvSelectedItems;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colSTT;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTen;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colThuocTinh;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSoLuong;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colGhiChu;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDonGia;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colTienDo;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colGiaTien;
         private System.Windows.Forms.DataGridViewButtonColumn colXoa;
         private System.Windows.Forms.Splitter splitterMain;
         private System.Windows.Forms.Button btnReload;
