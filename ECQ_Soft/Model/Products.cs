@@ -25,6 +25,7 @@ namespace ECQ_Soft.Model
         public string HÃNG { get; set; }
         public string PriceList { get; set; }
         public bool IsSelected { get; set; }
+        // public string TienDo { get; set; }
 
         /// <summary>
         /// Các thuộc tính mở rộng ngoài cột chuẩn (icu, ir, pole, color...).

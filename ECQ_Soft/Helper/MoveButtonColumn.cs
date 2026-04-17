@@ -111,9 +111,33 @@ namespace ECQ_Soft.Helper
             if (dgv != null && rowIndex >= 0 && rowIndex < dgv.Rows.Count)
             {
                 var item = dgv.Rows[rowIndex].DataBoundItem as ConfigProductItem;
-                if (item != null && (item.IsHeader || item.IsSummary))
+                if (item != null)
                 {
-                    isSpecialRow = true;
+                    if (item.IsHeader || item.IsSummary || ConfigProductItem.IsPinned(item.TenHang))
+                    {
+                        isSpecialRow = true;
+                    }
+                }
+                
+                // Cũng ẩn cho dòng đầu tiên và 3 dòng cuối (Dự phòng cho trường hợp không có DataBoundItem)
+                if (!isSpecialRow)
+                {
+                    if (rowIndex == 0 || rowIndex >= dgv.Rows.Count - 3)
+                    {
+                        // Kiểm tra an toàn sự tồn tại của cột tên (có thể là TenHang hoặc colTen...)
+                        string[] nameCols = { "TenHang", "colTen", "Name" };
+                        string cellVal = "";
+                        foreach (var col in nameCols)
+                        {
+                            if (dgv.Columns.Contains(col))
+                            {
+                                cellVal = dgv.Rows[rowIndex].Cells[col].Value?.ToString() ?? "";
+                                break;
+                            }
+                        }
+
+                        if (ConfigProductItem.IsPinned(cellVal)) isSpecialRow = true;
+                    }
                 }
             }
 

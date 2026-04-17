@@ -53,15 +53,16 @@ namespace ECQ_Soft
                 cboExisting.Items.Clear();
 
                 // Các tab hệ thống cần ẩn khỏi danh sách chọn
-                var hiddenTabs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "Products_Table", "Products_Relatation"
-                };
+          var hiddenTabs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Products_Table", "Products_Relatation", "Workflow", "Lỗi cần fix", "Lợi nhuận",  "Cấu hình nháp"
+            };
 
-                var sheetNames = spreadsheet.Sheets
-                    .Where(s => !hiddenTabs.Contains(s.Properties.Title))
-                    .OrderBy(s => s.Properties.Title)
-                    .ToList();
+            var sheetNames = spreadsheet.Sheets
+                .Where(s => !hiddenTabs.Contains(s.Properties.Title)
+                        && !s.Properties.Title.StartsWith("Donggoi_", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(s => s.Properties.Title)
+                .ToList();
 
                 foreach (var sheet in sheetNames)
                 {

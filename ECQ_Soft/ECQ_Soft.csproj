@@ -140,7 +140,9 @@
     <Compile Include="FrmSheetSelector.Designer.cs">
       <DependentUpon>FrmSheetSelector.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmAdvancedConfig.cs" />
+    <Compile Include="FrmAdvancedConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FrmAdvancedConfig.Designer.cs">
       <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
     </Compile>

@@ -43,6 +43,7 @@ namespace ECQ_Soft
             this.button10 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.gbTimkiemSanPham = new System.Windows.Forms.GroupBox();
+            this.cboCategory = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.button3 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
@@ -54,7 +55,6 @@ namespace ECQ_Soft
             this.button11 = new System.Windows.Forms.Button();
             this.button8 = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.cboCategory = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.lstSavedConfigs = new ECQ_Soft.Helper.CheckedComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
@@ -93,14 +93,14 @@ namespace ECQ_Soft
             this.label5.AutoSize = true;
             this.label5.Location = new System.Drawing.Point(7, 366);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(0, 16);
+            this.label5.Size = new System.Drawing.Size(0, 13);
             this.label5.TabIndex = 35;
             // 
             // textBox2
             // 
             this.textBox2.Location = new System.Drawing.Point(71, 32);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(156, 22);
+            this.textBox2.Size = new System.Drawing.Size(156, 20);
             this.textBox2.TabIndex = 54;
             // 
             // button9
@@ -122,7 +122,7 @@ namespace ECQ_Soft
             this.label9.AutoSize = true;
             this.label9.Location = new System.Drawing.Point(68, 16);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(68, 16);
+            this.label9.Size = new System.Drawing.Size(55, 13);
             this.label9.TabIndex = 53;
             this.label9.Text = "Sản phẩm";
             // 
@@ -159,7 +159,7 @@ namespace ECQ_Soft
             this.label6.AutoSize = true;
             this.label6.Location = new System.Drawing.Point(908, 330);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(0, 16);
+            this.label6.Size = new System.Drawing.Size(0, 13);
             this.label6.TabIndex = 61;
             // 
             // button5
@@ -223,7 +223,7 @@ namespace ECQ_Soft
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(230, 16);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(67, 16);
+            this.label1.Size = new System.Drawing.Size(56, 13);
             this.label1.TabIndex = 71;
             this.label1.Text = "Danh mục";
             // 
@@ -243,6 +243,17 @@ namespace ECQ_Soft
             this.gbTimkiemSanPham.TabIndex = 72;
             this.gbTimkiemSanPham.TabStop = false;
             this.gbTimkiemSanPham.Text = "Bảng tìm kiếm lựa chọn sản phẩm";
+            // 
+            // cboCategory
+            // 
+            this.cboCategory.DropDownHeight = 1;
+            this.cboCategory.FormattingEnabled = true;
+            this.cboCategory.IntegralHeight = false;
+            this.cboCategory.Location = new System.Drawing.Point(233, 32);
+            this.cboCategory.Name = "cboCategory";
+            this.cboCategory.ReadOnly = false;
+            this.cboCategory.Size = new System.Drawing.Size(180, 21);
+            this.cboCategory.TabIndex = 70;
             // 
             // dataGridView1
             // 
@@ -302,7 +313,7 @@ namespace ECQ_Soft
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Location = new System.Drawing.Point(7, 55);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(200, 24);
+            this.comboBox1.Size = new System.Drawing.Size(200, 21);
             this.comboBox1.TabIndex = 57;
             // 
             // label3
@@ -310,7 +321,7 @@ namespace ECQ_Soft
             this.label3.AutoSize = true;
             this.label3.Location = new System.Drawing.Point(4, 34);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(113, 16);
+            this.label3.Size = new System.Drawing.Size(94, 13);
             this.label3.TabIndex = 56;
             this.label3.Text = "Đóng gói cấu hình";
             // 
@@ -390,28 +401,17 @@ namespace ECQ_Soft
     "eo dõi chi tiết...)";
             this.groupBox2.Enter += new System.EventHandler(this.groupBox2_Enter);
             // 
-            // cboCategory
-            // 
-            this.cboCategory.DropDownHeight = 1;
-            this.cboCategory.FormattingEnabled = true;
-            this.cboCategory.IntegralHeight = false;
-            this.cboCategory.Location = new System.Drawing.Point(233, 32);
-            this.cboCategory.Name = "cboCategory";
-            this.cboCategory.ReadOnly = false;
-            this.cboCategory.Size = new System.Drawing.Size(180, 24);
-            this.cboCategory.TabIndex = 70;
-            // 
             // lstSavedConfigs
             // 
             this.lstSavedConfigs.DropDownHeight = 1;
             this.lstSavedConfigs.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.lstSavedConfigs.FormattingEnabled = true;
             this.lstSavedConfigs.IntegralHeight = false;
-            this.lstSavedConfigs.ItemHeight = 16;
+            this.lstSavedConfigs.ItemHeight = 13;
             this.lstSavedConfigs.Location = new System.Drawing.Point(855, 14);
             this.lstSavedConfigs.Name = "lstSavedConfigs";
             this.lstSavedConfigs.Placeholder = "-- Chọn cấu hình --";
-            this.lstSavedConfigs.Size = new System.Drawing.Size(203, 24);
+            this.lstSavedConfigs.Size = new System.Drawing.Size(203, 21);
             this.lstSavedConfigs.TabIndex = 62;
             // 
             // FrmConfig
@@ -426,7 +426,7 @@ namespace ECQ_Soft
             this.Controls.Add(this.label5);
             this.Controls.Add(this.groupBox2);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(959, 371);
+            this.Size = new System.Drawing.Size(942, 354);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();

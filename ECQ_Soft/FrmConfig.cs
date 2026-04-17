@@ -524,6 +524,12 @@ namespace ECQ_Soft
 
             var item = configProducts[idx];
 
+            // Chặn di chuyển nếu là dòng Pinned (Vỏ tủ, Đồng, Phụ kiện, Nhân công)
+            if (ConfigProductItem.IsPinned(item.TenHang))
+            {
+                return;
+            }
+
             if (item.IsHeader)
             {
                 // Xác định nhóm (header + các sản phẩm bên dưới cho đến header kế tiếp)
@@ -628,9 +634,17 @@ namespace ECQ_Soft
             if (newIdx < 0 || newIdx >= childProducts.Count) return;
 
             // Swap trong childProducts (BindingList)
-            var tmp = childProducts[idx];
-            childProducts[idx]    = childProducts[newIdx];
-            childProducts[newIdx] = tmp;
+            var currentItem = childProducts[idx];
+            var targetItem = childProducts[newIdx];
+
+            // Chặn di chuyển nếu một trong hai là dòng Pinned
+            if (ConfigProductItem.IsPinned(currentItem.Name) || ConfigProductItem.IsPinned(targetItem.Name))
+            {
+                return;
+            }
+
+            childProducts[idx]    = targetItem;
+            childProducts[newIdx] = currentItem;
 
             // Giữ selection vào dòng vừa di chuyển
             dataGridView1.ClearSelection();
@@ -836,7 +850,7 @@ namespace ECQ_Soft
         {
             try
             {
-                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A2:M").ExecuteAsync();
+                var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sheetName}!A2:N").ExecuteAsync();
                 if (response.Values != null && response.Values.Count > 0)
                 {
                     var newProducts = new List<Products>();
@@ -858,7 +872,8 @@ namespace ECQ_Soft
                             Height = row.Count > 9 ? row[9]?.ToString() : "0",
                             Category = row.Count > 10 ? row[10]?.ToString() : "",
                             HÃNG = row.Count > 11 ? row[11]?.ToString() : "",
-                            PriceList = row.Count > 12 ? row[12]?.ToString() : ""
+                            PriceList = row.Count > 12 ? row[12]?.ToString() : "",
+                            // TienDo = row.Count > 13 ? row[13]?.ToString() : ""
                         });
                     }
                     allProducts.Clear();
@@ -1605,6 +1620,7 @@ namespace ECQ_Soft
                 GiaNhap = priceCost,
                 ThanhTien = priceCost,
                 BangGia = price - priceCost,
+                // TienDo = product.TienDo,
                 IsHeader = false
             };
         }
@@ -2116,6 +2132,11 @@ namespace ECQ_Soft
                     dgv.Columns["GiaNhap"].DefaultCellStyle.Format = "N0";
                     dgv.Columns["GiaNhap"].Visible = true;
                 }
+                if (dgv.Columns.Contains("TienDo")) 
+                {
+                    dgv.Columns["TienDo"].HeaderText = "Tiến độ";
+                    dgv.Columns["TienDo"].Visible = true;
+                }
                 if (dgv.Columns.Contains("ThanhTien"))
                 {
                     dgv.Columns["ThanhTien"].HeaderText = "Thành Tiền";
@@ -2279,6 +2300,20 @@ namespace ECQ_Soft
                     }
                     e.Value = (childIndex + 1).ToString();
                     e.FormattingApplied = true;
+                }
+            }
+
+            // HIỂN THỊ DẤU "-" CHO CÁC Ô TRỐNG (MÃ HÀNG, XUẤT XỨ, ĐƠN VỊ, TIẾN ĐỘ)
+            if (!item.IsSummary && !item.IsHeader)
+            {
+                var dashCols = new[] { "MaHang", "XuatXu", "DonVi", "TienDo" };
+                if (Array.IndexOf(dashCols, colName) >= 0)
+                {
+                    if (e.Value == null || string.IsNullOrWhiteSpace(e.Value.ToString()))
+                    {
+                        e.Value = "-";
+                        e.FormattingApplied = true;
+                    }
                 }
             }
 
@@ -2519,7 +2554,15 @@ namespace ECQ_Soft
                 // Thêm các sản phẩm con xuống dưới header
                 foreach (var product in allItems)
                 {
-                    if (!configProducts.Any(x => x.MaHang == product.SKU))
+                    // Logic cũ: if (!configProducts.Any(x => x.MaHang == product.SKU))
+                    // Sửa lại: Nếu SKU trống -> Kiểm tra theo Tên. Nếu có SKU -> Kiểm tra theo SKU.
+                    bool isDuplicate = false;
+                    if (!string.IsNullOrEmpty(product.SKU))
+                        isDuplicate = configProducts.Any(x => x.MaHang == product.SKU);
+                    else
+                        isDuplicate = configProducts.Any(x => string.IsNullOrEmpty(x.MaHang) && x.TenHang == product.Name);
+
+                    if (!isDuplicate)
                     {
                         decimal price = 0; decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
                         decimal priceCost = 0; decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
@@ -2538,7 +2581,13 @@ namespace ECQ_Soft
 
                 foreach (var product in allItems)
                 {
-                    if (!configProducts.Any(x => x.MaHang == product.SKU))
+                    bool isDuplicate = false;
+                    if (!string.IsNullOrEmpty(product.SKU))
+                        isDuplicate = configProducts.Any(x => x.MaHang == product.SKU);
+                    else
+                        isDuplicate = configProducts.Any(x => string.IsNullOrEmpty(x.MaHang) && x.TenHang == product.Name);
+
+                    if (!isDuplicate)
                     {
                         decimal price = 0; decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
                         decimal priceCost = 0; decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);

@@ -27,7 +27,6 @@ namespace ECQ_Soft
             this.dgvSelectedItems = new System.Windows.Forms.DataGridView();
             this.colSTT = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTen = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colThuocTinh = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colSoLuong = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDonGia = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTienDo = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -152,18 +151,17 @@ namespace ECQ_Soft
             this.dgvSelectedItems.BackgroundColor = System.Drawing.Color.White;
             this.dgvSelectedItems.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(242)))), ((int)(((byte)(245)))));
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Yellow;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.DarkBlue;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.Gold;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.Color.DarkBlue;
             dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
             this.dgvSelectedItems.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvSelectedItems.ColumnHeadersHeight = 36;
             this.dgvSelectedItems.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colSTT,
             this.colTen,
-            this.colThuocTinh,
             this.colSoLuong,
             this.colDonGia,
             this.colTienDo,
@@ -193,12 +191,6 @@ namespace ECQ_Soft
             this.colTen.HeaderText = "Tên cấu hình";
             this.colTen.Name = "colTen";
             this.colTen.ReadOnly = true;
-            // 
-            // colThuocTinh
-            // 
-            this.colThuocTinh.FillWeight = 25F;
-            this.colThuocTinh.HeaderText = "Thuộc tính";
-            this.colThuocTinh.Name = "colThuocTinh";
             // 
             // colSoLuong
             // 
@@ -273,7 +265,7 @@ namespace ECQ_Soft
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(1034, 761);
+            this.ClientSize = new System.Drawing.Size(1034, 600);
             this.Controls.Add(this.btnAddToGrid);
             this.Controls.Add(this.lblGridTitle);
             this.Controls.Add(this.lblDivider);
@@ -307,7 +299,6 @@ namespace ECQ_Soft
         private System.Windows.Forms.DataGridView dgvSelectedItems;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSTT;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTen;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colThuocTinh;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSoLuong;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDonGia;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTienDo;
