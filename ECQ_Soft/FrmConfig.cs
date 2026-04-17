@@ -158,6 +158,7 @@ namespace ECQ_Soft
             dataGridView1.SelectionChanged += DataGridView1_SelectionChanged;
             // Gray-out + ngăn click dòng bị disable trên dgvAllProducts
             dgvAllProducts.CellFormatting += DgvAllProducts_CellFormatting;
+            dataGridView1.CellFormatting += DataGridView1_CellFormatting;
             dgvAllProducts.CellMouseClick += DgvAllProducts_CellMouseClick;
 
             SetupHeaderCheckBox(dataGridView1, chkSelectAllChildProducts, "IsSelected");
@@ -1156,15 +1157,25 @@ namespace ECQ_Soft
 
             try
             {
-                dgv.ColumnHeadersVisible = true;
-                dgv.RowHeadersVisible = false; // Ẩn cột Row Header xám ngoài cùng bên trái
-                // Sử dụng mảng cố định để duyệt để tránh lỗi đồng bộ
+                dgv.EnableHeadersVisualStyles = false;
+                dgv.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.Yellow,
+                    ForeColor = Color.FromArgb(31, 73, 125),
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                };
+                dgv.ColumnHeadersHeight = 40;
+                dgv.RowHeadersVisible = false;
+                dgv.BackgroundColor = Color.White;
+                dgv.BorderStyle = BorderStyle.FixedSingle;
+                dgv.GridColor = Color.LightGray;
+
                 var cols = dgv.Columns.Cast<DataGridViewColumn>().ToList();
 
                 foreach (var col in cols)
                 {
                     if (col == null || col.DataGridView == null) continue;
-
                     string colName = col.Name;
 
                     // 1. Hide unwanted columns
@@ -1174,47 +1185,95 @@ namespace ECQ_Soft
                         continue;
                     }
 
+                    if (colName == "ColMove")
+                    {
+                        col.Visible = true;
+                        col.DisplayIndex = 0;
+                        col.HeaderText = "";
+                        continue;
+                    }
+
+                    col.Visible = true;
+
                     // 2. Set headers and format
                     if (colName == "Id")
                     {
-                        col.HeaderText = "ID";
-                        col.Visible = true;
+                        col.HeaderText = "STT";
+                        col.DisplayIndex = 1;
+                        col.FillWeight = 70;
                     }
-                    else if (colName == "Name") col.HeaderText = "Tên sản phẩm";
-                    else if (colName == "Model") col.HeaderText = "Model";
-                    else if (colName == "SKU") col.HeaderText = "Mã SKU";
+                    else if (colName == "Name")
+                    {
+                        col.HeaderText = "Tên sản phẩm";
+                        col.DisplayIndex = 2;
+                        col.FillWeight = 100;
+                    }
+                    else if (colName == "Model")
+                    {
+                        col.HeaderText = "Model";
+                        col.DisplayIndex = 3;
+                        col.FillWeight = 100;
+                    }
+                    else if (colName == "SKU")
+                    {
+                        col.HeaderText = "Mã SKU";
+                        col.DisplayIndex = 4;
+                        col.FillWeight = 100;
+                    }
                     else if (colName == "Price")
                     {
                         col.HeaderText = "Giá bán";
                         col.DefaultCellStyle.Format = "N0";
+                        col.DisplayIndex = 5;
+                        col.FillWeight = 90;
                     }
                     else if (colName == "PriceCost")
                     {
                         col.HeaderText = "Giá nhập";
                         col.DefaultCellStyle.Format = "N0";
+                        col.DisplayIndex = 6;
+                        col.FillWeight = 90;
                     }
-                    else if (colName == "HÃNG") col.HeaderText = "Hãng";
-                    else if (colName == "Category") col.HeaderText = "Danh mục";
+                    else if (colName == "Category")
+                    {
+                        col.HeaderText = "Danh mục";
+                        col.DisplayIndex = 7;
+                        col.FillWeight = 100;
+                    }
+                    else if (colName == "Type")
+                    {
+                        col.HeaderText = "Type";
+                        col.DisplayIndex = 8;
+                        col.FillWeight = 80;
+                    }
+                    else if (colName == "HÃNG")
+                    {
+                        col.HeaderText = "Hãng";
+                        col.DisplayIndex = 9;
+                        col.FillWeight = 70;
+                    }
                     else if (colName == "IsSelected")
                     {
-                        // Chỉ hiện checkbox ở dataGridView1 (grid phải - Sản phẩm con/relation)
                         if (dgv == dataGridView1)
                         {
                             col.HeaderText = "Chọn";
-                            try { col.ReadOnly = false; } catch { }
-                            try { col.DisplayIndex = dgv.Columns.Count - 1; } catch { }
+                            col.ReadOnly = false;
+                            col.DisplayIndex = 10;
+                            col.FillWeight = 40;
                         }
                         else
                         {
                             col.Visible = false;
-                            continue;
                         }
                     }
-
-                    // 3. Global ReadOnly
-                    if (colName != "IsSelected")
+                    else
                     {
-                        try { col.ReadOnly = true; } catch { }
+                        col.Visible = false;
+                    }
+
+                    if (colName != "IsSelected" && colName != "ColMove")
+                    {
+                        col.ReadOnly = true;
                     }
                 }
 
@@ -1222,10 +1281,7 @@ namespace ECQ_Soft
                 dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
                 dgv.MultiSelect = true;
             }
-            catch (Exception)
-            {
-                // Silently ignore layout-related exceptions during binding
-            }
+            catch (Exception) { }
         }
         // ══════════════════════════════════════════════════════════════════
         // BỘ LỌC QUAN HỆ (COMBO SẢN PHẨM CHÍNH – DANH MỤC PR)
@@ -3109,7 +3165,16 @@ namespace ECQ_Soft
         /// </summary>
         private void DgvAllProducts_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (_baseRelatedIds == null || e.RowIndex < 0) return;
+            if (e.RowIndex < 0) return;
+
+            // Hiển thị STT thay cho ID
+            if (dgvAllProducts.Columns[e.ColumnIndex].Name == "Id")
+            {
+                e.Value = (e.RowIndex + 1).ToString();
+                e.FormattingApplied = true;
+            }
+
+            if (_baseRelatedIds == null) return;
 
             var product = dgvAllProducts.Rows[e.RowIndex].DataBoundItem as Products;
             if (product == null) return;
@@ -3131,6 +3196,15 @@ namespace ECQ_Soft
             }
         }
 
+        private void DataGridView1_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex >= 0 && dataGridView1.Columns[e.ColumnIndex].Name == "Id")
+            {
+                e.Value = (e.RowIndex + 1).ToString();
+                e.FormattingApplied = true;
+            }
+        }
+
         private async void button11_Click(object sender, EventArgs e)
         {
             using (var frm = new FrmAdvancedConfig())
@@ -3139,6 +3213,7 @@ namespace ECQ_Soft
 
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
+                    childProducts.Clear();
                     int addedCount = 0;
                     foreach (var item in frm.SelectedAdvancedItems)
                     {

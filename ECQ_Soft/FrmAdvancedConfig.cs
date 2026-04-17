@@ -35,8 +35,28 @@ namespace ECQ_Soft
 
         // Key = TreePath (VD: "TỦ ĐIỆN - TỦ PHÂN PHỐI - ...")
         // Value = List các cấu hình nháp (Tên Sản Phẩm, Số Lượng, Thuộc tính)
-        private Dictionary<string, List<Tuple<string, int, string>>> _pendingDraftItems = new Dictionary<string, List<Tuple<string, int, string>>>();
         private string _currentDraftName = string.Empty;
+        
+        private class RowData
+        {
+            public string ItemName;
+            public string Model;
+            public string SKU;
+            public string XuatXu;
+            public string DonVi;
+            public int Quantity;
+            public decimal UnitPrice;
+            public string TotalPrice;
+            public string GiaNhap;
+            public string DanhMuc;
+            public string Type;
+            public string Hang;
+            public string Progress;
+            public object Tag; // Products object
+            public string FormId;
+            public string Attributes; // Ghi chú / Thuộc tính mở rộng (Height, Width, etc.)
+        }
+        private Dictionary<string, List<RowData>> _formProductsCache = new Dictionary<string, List<RowData>>();
 
         public FrmAdvancedConfig()
         {
@@ -86,6 +106,8 @@ namespace ECQ_Soft
             dgvSelectedItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colType", HeaderText = "Type", ReadOnly = false, FillWeight = 70 });
             dgvSelectedItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHang", HeaderText = "Hãng", ReadOnly = false, FillWeight = 70 });
             dgvSelectedItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colTienDo", HeaderText = "Tiến độ", ReadOnly = false, FillWeight = 70 });
+            dgvSelectedItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colFormId", HeaderText = "FormId", Visible = false });
+            dgvSelectedItems.Columns.Add(new DataGridViewTextBoxColumn { Name = "colAttributes", HeaderText = "Attributes", Visible = false }); 
             dgvSelectedItems.Columns.Add(new DataGridViewButtonColumn
             {
                 Name = "colXoa",
@@ -106,6 +128,8 @@ namespace ECQ_Soft
             dgvSelectedItems.Columns["colDanhMuc"].Visible = false;
             dgvSelectedItems.Columns["colType"].Visible = false;
             dgvSelectedItems.Columns["colHang"].Visible = false;
+            dgvSelectedItems.Columns["colFormId"].Visible = false;
+            dgvSelectedItems.Columns["colAttributes"].Visible = false;
         }
 
         private void InitDefaultRows()
@@ -127,7 +151,7 @@ namespace ECQ_Soft
 
                 if (!alreadyExists)
                 {
-                    AddSelectedItemRow(defaultItemName, 1, 0, "0", "0", null, true);
+                    AddSelectedItemRow(defaultItemName, 1, 0, "0", "0", null, true, null, "GLOBAL");
                 }
                 else
                 {
@@ -257,8 +281,19 @@ namespace ECQ_Soft
             string totalPrice = "0",
             object tag = null,
             bool isDefaultRow = false,
-            int? insertIndex = null)
+            int? insertIndex = null,
+            string formId = "",
+            string attributes = "")
         {
+            // --- GLOBAL DUPLICATE GUARD ---
+            if (!string.IsNullOrEmpty(formId) && formId != "GLOBAL")
+            {
+                var existingRow = dgvSelectedItems.Rows.Cast<DataGridViewRow>()
+                    .FirstOrDefault(gr => (gr.Cells["colFormId"].Value?.ToString() ?? "") == formId && 
+                                       (gr.Cells["colTen"].Value?.ToString() ?? "") == itemName);
+                if (existingRow != null) return existingRow.Index;
+            }
+
             string qtyText = Math.Max(0, quantity).ToString();
             string progressText = progress ?? "0";
             var product = tag as Products;
@@ -301,7 +336,9 @@ namespace ECQ_Soft
                     product?.Category ?? "",
                     product?.Type ?? "",
                     brand,
-                    progressText);
+                    progressText,
+                    formId ?? "",
+                    attributes ?? "");
                 rowIndex = insertIndex.Value;
             }
             else
@@ -320,7 +357,9 @@ namespace ECQ_Soft
                     product?.Category ?? "",
                     product?.Type ?? "",
                     brand,
-                    progressText);
+                    progressText,
+                    formId ?? "",
+                    attributes ?? "");
             }
 
             var row = dgvSelectedItems.Rows[rowIndex];
@@ -332,15 +371,24 @@ namespace ECQ_Soft
                 row.Cells["colTen"].ToolTipText = "Chuột phải để hiển thị Tính Toán";
             }
 
+
             RenumberGridSTT();
             return rowIndex;
         }
 
         private void RenumberGridSTT()
         {
+            int stt = 1;
             for (int i = 0; i < dgvSelectedItems.Rows.Count; i++)
             {
-                dgvSelectedItems.Rows[i].Cells["colSTT"].Value = (i + 1).ToString();
+                if (dgvSelectedItems.Rows[i].Visible)
+                {
+                    dgvSelectedItems.Rows[i].Cells["colSTT"].Value = (stt++).ToString();
+                }
+                else
+                {
+                    dgvSelectedItems.Rows[i].Cells["colSTT"].Value = "";
+                }
             }
         }
 
@@ -441,8 +489,27 @@ namespace ECQ_Soft
                         for (int ci = 0; ci < _productColumnHeaders.Count && ci < row.Count; ci++)
                         {
                             string colKey = _productColumnHeaders[ci];
-                            if (!string.IsNullOrEmpty(colKey) && !standardKeys.Contains(colKey))
+                            if (string.IsNullOrEmpty(colKey)) continue;
+
+                            // Nếu là cột gộp "Các thuộc tính", ta bóc tách từng key:value
+                            if (colKey == "các thuộc tính" || colKey == "cacthuoctinh" || colKey == "attributes")
+                            {
+                                string raw = row[ci]?.ToString() ?? "";
+                                var pairs = raw.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var pStr in pairs)
+                                {
+                                    var kv = pStr.Split(new[] { ':' }, 2);
+                                    if (kv.Length == 2)
+                                    {
+                                        string k = kv[0].Trim().ToLower();
+                                        prod.ExtraAttributes[k] = kv[1].Trim();
+                                    }
+                                }
+                            }
+                            else if (!standardKeys.Contains(colKey))
+                            {
                                 prod.ExtraAttributes[colKey] = row[ci]?.ToString() ?? "";
+                            }
                         }
                         _allProducts.Add(prod);
                     }
@@ -547,7 +614,7 @@ namespace ECQ_Soft
                             EnsureDefaultRowsPresent();
  
                             var selectedRows = draftGroups[draftKey];
-                            _pendingDraftItems.Clear();
+                            _formProductsCache.Clear();
                             foreach (var r in selectedRows)
                             {
                                 string viTri = r.Count > 0 ? r[0]?.ToString()?.Trim() : "";
@@ -560,29 +627,41 @@ namespace ECQ_Soft
 
                                 if (!string.IsNullOrEmpty(viTri) && !string.IsNullOrEmpty(tenSP))
                                 {
-                                    if (!_pendingDraftItems.ContainsKey(viTri)) _pendingDraftItems[viTri] = new List<Tuple<string, int, string>>();
-                                    _pendingDraftItems[viTri].Add(new Tuple<string, int, string>(tenSP, qty, thuocTinh));
-
+                                    if (!_formProductsCache.ContainsKey(viTri)) _formProductsCache[viTri] = new List<RowData>();
+                                    
                                     // Hiển thị tên sản phẩm sạch (không có tiền tố) trong Grid
                                     string finalName = tenSP;
                                     if (finalName.Contains(": ")) finalName = finalName.Substring(finalName.IndexOf(": ") + 2);
 
-                                    bool isDuplicate = false;
-                                    foreach (DataGridViewRow existing in dgvSelectedItems.Rows)
+                                    var matchedProduct = _allProducts.FirstOrDefault(p =>
+                                            string.Equals((p.Name ?? "").Trim(), finalName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                                    _formProductsCache[viTri].Add(new RowData {
+                                        ItemName = finalName,
+                                        Quantity = qty,
+                                        Progress = "0",
+                                        TotalPrice = "0",
+                                        Tag = matchedProduct,
+                                        FormId = viTri,
+                                        Attributes = thuocTinh
+                                    });
+
+                                    // Nếu formId trùng với currentActiveTypeCMB (hoặc chưa có active), nạp luôn vào Grid
+                                    string currentPath = (_currentActiveTypeCMB != null) ? _currentActiveTypeCMB.FullPath : "";
+                                    if (viTri == currentPath || string.IsNullOrEmpty(currentPath))
                                     {
-                                        if (existing.Cells["colTen"].Value?.ToString() == finalName)
-                                        { isDuplicate = true; break; }
-                                    }
-                                    if (!isDuplicate)
-                                    {
-                                        int insIdx = GetInsertIndex();
-                                        string rawName = finalName;
-                                        
-                                        var matchedProduct = _allProducts.FirstOrDefault(p =>
-                                            string.Equals((p.Name ?? "").Trim(), rawName.Trim(), StringComparison.OrdinalIgnoreCase));
-                                        
-                                        AddSelectedItemRow(finalName, qty, 0, "0", "0", matchedProduct, false, insIdx);
-                                        btnApply.Enabled = true;
+                                        bool isDuplicate = false;
+                                        foreach (DataGridViewRow existing in dgvSelectedItems.Rows)
+                                        {
+                                            if (existing.Cells["colTen"].Value?.ToString() == finalName)
+                                            { isDuplicate = true; break; }
+                                        }
+                                        if (!isDuplicate)
+                                        {
+                                            int insIdx = GetInsertIndex();
+                                            AddSelectedItemRow(finalName, qty, 0, "0", "0", matchedProduct, false, insIdx, viTri, thuocTinh);
+                                            btnApply.Enabled = true;
+                                        }
                                     }
                                 }
                             }
@@ -1025,6 +1104,7 @@ namespace ECQ_Soft
                     var dictValues = new Dictionary<string, string>();
                     foreach (var kvAttr in row.Attrs)
                     {
+                        if (kvAttr.Key == "_internal_qty_") continue; // Không lưu số lượng nội bộ vào chuỗi thuộc tính
                         string val = kvAttr.Value.Text.Trim();
                         noteItems.Add($"{kvAttr.Key}: {val}");
                         dictValues[kvAttr.Key] = val;
@@ -1042,41 +1122,33 @@ namespace ECQ_Soft
                 }
             }
 
-            foreach (var kv in _pendingDraftItems)
+            foreach (var kv in _formProductsCache)
             {
                 string path = kv.Key;
                 foreach(var dItem in kv.Value)
-                    draftItems.Add(new Tuple<string, string, string, string>(path, dItem.Item1, dItem.Item2.ToString(), dItem.Item3));
+                    draftItems.Add(new Tuple<string, string, string, string>(path, dItem.ItemName, dItem.Quantity.ToString(), dItem.Attributes ?? ""));
             }
 
-            if (draftItems.Count == 0)
+            string fallbackPath = SelectedHeader;
+            if (string.IsNullOrWhiteSpace(fallbackPath))
+                fallbackPath = (_modernTreeView?.SelectedNode?.Text ?? "Sản phẩm đã chọn").Trim();
+
+            foreach (DataGridViewRow row in dgvSelectedItems.Rows)
             {
-                string fallbackPath = SelectedHeader;
-                if (string.IsNullOrWhiteSpace(fallbackPath))
-                    fallbackPath = (_modernTreeView?.SelectedNode?.Text ?? "Sản phẩm đã chọn").Trim();
+                if (row.IsNewRow) continue;
+                string tenHang = row.Cells["colTen"].Value?.ToString()?.Trim() ?? "";
+                if (string.IsNullOrEmpty(tenHang)) continue;
+                string itemFormId = row.Cells["colFormId"].Value?.ToString() ?? "";
+                if (itemFormId == "GLOBAL") continue;
 
-                foreach (DataGridViewRow row in dgvSelectedItems.Rows)
-                {
-                    if (row.IsNewRow) continue;
-                    string tenHang = row.Cells["colTen"].Value?.ToString()?.Trim() ?? "";
-                    if (string.IsNullOrEmpty(tenHang)) continue;
+                // Tránh trùng lặp nếu đã lấy từ _expandStateCache
+                if (draftItems.Any(x => x.Item2 == tenHang)) continue;
 
-                    string ghiChu = string.Join(" | ", new[] {
-                        $"Model: {row.Cells["colModel"].Value?.ToString() ?? ""}",
-                        $"SKU: {row.Cells["colSKU"].Value?.ToString() ?? ""}",
-                        $"Xuất xứ: {row.Cells["colXuatXu"].Value?.ToString() ?? ""}",
-                        $"Đơn vị: {row.Cells["colDonVi"].Value?.ToString() ?? ""}",
-                        $"Đơn giá: {row.Cells["colDonGia"].Value?.ToString() ?? "0"}",
-                        $"Thành tiền: {row.Cells["colGiaTien"].Value?.ToString() ?? "0"}",
-                        $"Giá nhập: {row.Cells["colGiaNhap"].Value?.ToString() ?? "0"}",
-                        $"Danh mục: {row.Cells["colDanhMuc"].Value?.ToString() ?? ""}",
-                        $"Type: {row.Cells["colType"].Value?.ToString() ?? ""}",
-                        $"Hãng: {row.Cells["colHang"].Value?.ToString() ?? ""}",
-                        $"Tiến độ: {row.Cells["colTienDo"].Value?.ToString() ?? "0"}"
-                    }.Where(x => !x.EndsWith(": ")));
+                string itemPath = row.Cells["colFormId"].Value?.ToString() ?? fallbackPath;
 
-                    draftItems.Add(new Tuple<string, string, string, string>(fallbackPath, tenHang, "1", ghiChu));
-                }
+                string ghiChu = row.Cells["colAttributes"].Value?.ToString() ?? "";
+
+                draftItems.Add(new Tuple<string, string, string, string>(itemPath, tenHang, row.Cells["colSoLuong"].Value?.ToString() ?? "1", ghiChu));
             }
 
             if (draftItems.Count == 0)
@@ -1209,7 +1281,7 @@ namespace ECQ_Soft
                     await _service.Spreadsheets.BatchUpdate(new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = cReqs }, _spreadsheetId).ExecuteAsync();
                 }
 
-                _expandStateCache.Clear(); _pendingDraftItems.Clear(); _currentDraftName = draftName;
+                _expandStateCache.Clear(); _formProductsCache.Clear(); _currentDraftName = draftName;
                 return true;
             }
             catch (Exception ex) { MessageBox.Show("Lỗi lưu nháp: " + ex.Message); return false; }
@@ -1322,7 +1394,8 @@ namespace ECQ_Soft
         private class ConfigRow
         {
             public Helper.ProductSearchDropdown SearchControl;
-            public Dictionary<string, TextBox> Attrs = new Dictionary<string, TextBox>();
+            public TextBox QtyInput;
+            public Dictionary<string, TextBox> Attrs = new Dictionary<string, TextBox>(StringComparer.OrdinalIgnoreCase);
             public Products SelectedProduct;
             public TableLayoutPanel RowPanel;
             public DataGridViewRow GridRowReference; // Link to the row in dgvSelectedItems
@@ -1476,16 +1549,65 @@ namespace ECQ_Soft
             _pnlRowsContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             pnlMiddle.Controls.Add(_pnlRowsContainer);
 
-            // --- KIỂM TRA PENDING DRAFTS ĐỂ TỰ ĐỘNG NẠP LẠI (LAZY HYDRATION) ---
+            // --- KIỂM TRA DỮ LIỆU ĐỂ TỰ ĐỘNG NẠP LẠI (LAZY HYDRATION) ---
             string nodePath = GetFullPathForNode(_expandedNode, _modernTreeView.Nodes) ?? _expandedNode.Name;
-            if (_pendingDraftItems.ContainsKey(nodePath) && _pendingDraftItems[nodePath].Count > 0)
+            // Đảm bảo nodePath không kết thúc bằng dấu gạch chéo để khớp với colFormId
+            if (nodePath.EndsWith("\\")) nodePath = nodePath.Substring(0, nodePath.Length - 1);
+            
+            // 1. ƯU TIÊN: Tìm các dòng trong Grid đã có sẵn cho node này (Vừa được restore bởi SwitchFormContext)
+            var gridRowsForNode = dgvSelectedItems.Rows.Cast<DataGridViewRow>()
+                .Where(gr => (gr.Cells["colFormId"].Value?.ToString() ?? "") == nodePath)
+                .ToList();
+
+            if (gridRowsForNode.Count > 0)
             {
-                var draftsForNode = _pendingDraftItems[nodePath];
+                foreach (var gr in gridRowsForNode)
+                {
+                    AddConfigRowUI(attrKeys, attrLabels, formula, false, hasSearch ? filteredProducts : null);
+                    var rowUI = _configRows.Last();
+                    rowUI.GridRowReference = gr;
+                    
+                    // Nạp sản phẩm
+                    var p = gr.Tag as Products;
+                    if (p != null)
+                    {
+                        if (rowUI.SearchControl != null) rowUI.SearchControl.Text = p.Name;
+                        rowUI.SelectedProduct = p;
+                    }
+                    
+                    // Nạp số lượng
+                    if (rowUI.QtyInput != null) rowUI.QtyInput.Text = gr.Cells["colSoLuong"].Value?.ToString() ?? "1";
+
+                    // Nạp thuộc tính từ cột ẩn colAttributes
+                    string targetAttributes = gr.Cells["colAttributes"].Value?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(targetAttributes))
+                    {
+                        var dictAttrs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        var splitAttrs = targetAttributes.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach(var pair in splitAttrs)
+                        {
+                            var kv = pair.Split(new[] { ':' }, 2);
+                            if(kv.Length == 2) dictAttrs[kv[0].Trim()] = kv[1].Trim();
+                        }
+                        foreach (var kv in rowUI.Attrs)
+                        {
+                            if (dictAttrs.TryGetValue(kv.Key, out string val))
+                            {
+                                kv.Value.Text = val;
+                            }
+                        }
+                    }
+                }
+            }
+            // 2. Nếu không có trong Grid, thử tìm trong Cache
+            else if (_formProductsCache.ContainsKey(nodePath) && _formProductsCache[nodePath].Count > 0)
+            {
+                var draftsForNode = _formProductsCache[nodePath];
                 foreach (var draft in draftsForNode)
                 {
-                    string targetProductName = draft.Item1;
-                    int targetQty = draft.Item2; 
-                    string targetAttrsStr = draft.Item3; 
+                    string targetProductName = draft.ItemName;
+                    int targetQty = draft.Quantity; 
+                    // ... (Thuộc tính sẽ được nạp sau nếu có logic lưu thuộc tính vào RowData)
 
                     // Bơm UI
                     AddConfigRowUI(attrKeys, attrLabels, formula, false, hasSearch ? filteredProducts : null);
@@ -1503,7 +1625,8 @@ namespace ECQ_Soft
 
                     // Nạp lại Ghi chú / Thuộc tính
                     var dictAttrs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    var splitAttrs = targetAttrsStr.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                    string targetAttributes = draft.Attributes ?? "";
+                    var splitAttrs = targetAttributes.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                     foreach(var pair in splitAttrs)
                     {
                         var kv = pair.Split(new[] { ':' }, 2);
@@ -1530,7 +1653,7 @@ namespace ECQ_Soft
                     }
                 }
                 // Xóa để tránh nạp lại lần 2
-                _pendingDraftItems.Remove(nodePath);
+                _formProductsCache.Remove(nodePath);
             }
             else
             {
@@ -1617,6 +1740,7 @@ namespace ECQ_Soft
                 }
             };
             row.Attrs["_internal_qty_"] = txtQty;
+            row.QtyInput = txtQty;
 
             // Thêm Search Controls vào TRƯỚC (để nằm bên Tái)
             if (products != null)
@@ -1740,6 +1864,17 @@ namespace ECQ_Soft
                     txt.BackColor = Color.FromArgb(240, 240, 240); // Luôn khóa và làm xám ô
                 }
             }
+            SyncAttributesToGrid(row);
+        }
+
+        private void SyncAttributesToGrid(ConfigRow row)
+        {
+            if (row.GridRowReference != null && dgvSelectedItems.Rows.Contains(row.GridRowReference))
+            {
+                // Chỉ lấy các thuộc tính thực tế (bỏ qua Số lượng nội bộ nếu có)
+                string attrsStr = string.Join(" | ", row.Attrs.Where(kv => kv.Key != "_internal_qty_").Select(kv => $"{kv.Key}: {kv.Value.Text}"));
+                row.GridRowReference.Cells["colAttributes"].Value = attrsStr;
+            }
         }
 
         private void AutoAddProductToGrid(ConfigRow row, Products p, string slText, List<string> attrKeys, string formula)
@@ -1778,8 +1913,22 @@ namespace ECQ_Soft
             {
                 // Thêm dòng mới và lưu reference
                 int insIdx = GetInsertIndex();
-                int rowIndex = AddSelectedItemRow(finalName, sl, donGia, "0", "0", p, false, insIdx);
+                string currentNodePath = GetFullPathForNode(_expandedNode, _modernTreeView.Nodes) ?? _expandedNode.Name;
+                string attrsStr = string.Join(" | ", row.Attrs.Where(kv => kv.Key != "_internal_qty_").Select(kv => $"{kv.Key}: {kv.Value.Text}"));
+
+                int rowIndex = AddSelectedItemRow(finalName, sl, donGia, "0", "0", p, false, insIdx, currentNodePath, attrsStr);
                 row.GridRowReference = dgvSelectedItems.Rows[rowIndex];
+
+                // Cập nhật thêm các cột ẩn
+                var gr = row.GridRowReference;
+                gr.Cells["colModel"].Value = p.Model ?? "";
+                gr.Cells["colSKU"].Value = p.SKU ?? "";
+                gr.Cells["colXuatXu"].Value = GetProductBrand(p);
+                gr.Cells["colDonVi"].Value = "Cái";
+                gr.Cells["colGiaNhap"].Value = p.PriceCost;
+                gr.Cells["colDanhMuc"].Value = p.Category;
+                gr.Cells["colType"].Value = p.Type;
+                gr.Cells["colHang"].Value = GetProductBrand(p);
             }
 
             btnApply.Enabled = true;
@@ -2238,7 +2387,8 @@ namespace ECQ_Soft
             }
 
             int insIdx = GetInsertIndex();
-            AddSelectedItemRow(finalName, 1, 0, "0", "0", null, false, insIdx);
+            string currentFormId = (_currentActiveTypeCMB != null) ? _currentActiveTypeCMB.FullPath : "";
+            AddSelectedItemRow(finalName, 1, 0, "0", "0", null, false, insIdx, currentFormId);
             btnApply.Enabled = true;
 
             if (_lblProductInfo != null) 
@@ -2264,32 +2414,12 @@ namespace ECQ_Soft
 
             if (activeTypeCMB != _currentActiveTypeCMB)
             {
-                // Chỉ reset khi chuyển đổi giữa các nhóm tủ chính (TypeCMB) khác nhau.
-                // Nếu _currentActiveTypeCMB đang null (mới mở form hoặc mới load nháp), không được xóa dữ liệu.
-                if (_currentActiveTypeCMB != null)
-                {
-                    foreach (var kvp in _expandStateCache)
-                    {
-                        kvp.Value.ContentPanel?.Dispose();
-                    }
-                    _expandStateCache.Clear();
-
-                    // Clear both the form cache AND the selected items grid to fully reset the previous form's state
-                    dgvSelectedItems.Rows.Clear();
-                    InitDefaultRows();
-                }
-
+                SwitchFormContext(_currentActiveTypeCMB, activeTypeCMB);
                 _currentActiveTypeCMB = activeTypeCMB;
             }
 
             if (treeNode?.Tag is HierarchyNode node && !string.IsNullOrEmpty(node.Config))
             {
-                // Force clear cache for this node to ensure the new "Enabled = false" logic is applied
-                if (_expandStateCache.ContainsKey(node))
-                {
-                    _expandStateCache[node].ContentPanel?.Dispose();
-                    _expandStateCache.Remove(node);
-                }
 
                 // Node có cột Config có giá trị → hiện nút expand
                 _expandedNode = node;
@@ -2313,6 +2443,131 @@ namespace ECQ_Soft
             }
             RecalculateLayout();
         }
+
+        private void SwitchFormContext(TreeNode oldForm, TreeNode newForm)
+        {
+            string newPath = newForm?.FullPath ?? "";
+
+            // 1. Lưu và xóa sản phẩm không thuộc về Form mới
+            var rowsToRemove = new List<DataGridViewRow>();
+            foreach (DataGridViewRow row in dgvSelectedItems.Rows)
+            {
+                if (row.IsNewRow) continue;
+                string rowFormId = row.Cells["colFormId"].Value?.ToString() ?? "";
+                if (rowFormId == "GLOBAL") continue; // Không bao giờ xóa dòng mặc định
+
+                // Một item được giữ lại nếu nó thuộc về Form mới đang được chọn
+                // So sánh prefix để bao gồm cả các item của node con trong Form đó
+                bool belongsToNewForm = !string.IsNullOrEmpty(newPath) && 
+                    (rowFormId == newPath || rowFormId.StartsWith(newPath + "\\"));
+
+                if (!belongsToNewForm)
+                {
+                    // Cất vào cache của node mà nó thuộc về (rowFormId lưu path chi tiết của node)
+                    string targetCachePath = !string.IsNullOrEmpty(rowFormId) ? rowFormId : (oldForm?.FullPath ?? "");
+                    if (!string.IsNullOrEmpty(targetCachePath))
+                    {
+                        if (!_formProductsCache.ContainsKey(targetCachePath))
+                            _formProductsCache[targetCachePath] = new List<RowData>();
+
+                        string rowName = row.Cells["colTen"].Value?.ToString() ?? "";
+                        
+                        // Cố gắng lấy Attributes từ colAttributes hoặc UI hiện tại
+                        string currentAttrs = row.Cells["colAttributes"].Value?.ToString() ?? "";
+                        var configRow = _configRows?.FirstOrDefault(cr => cr.GridRowReference == row);
+                        if (configRow != null)
+                        {
+                            currentAttrs = string.Join(" | ", configRow.Attrs.Select(kv => $"{kv.Key}: {kv.Value.Text}"));
+                        }
+
+                        _formProductsCache[targetCachePath].Add(new RowData
+                        {
+                            ItemName = rowName,
+                            Model = row.Cells["colModel"].Value?.ToString() ?? "",
+                            SKU = row.Cells["colSKU"].Value?.ToString() ?? "",
+                            XuatXu = row.Cells["colXuatXu"].Value?.ToString() ?? "",
+                            DonVi = row.Cells["colDonVi"].Value?.ToString() ?? "",
+                            Quantity = int.TryParse(row.Cells["colSoLuong"].Value?.ToString(), out int q) ? q : 1,
+                            UnitPrice = ParseCurrencyValue(row.Cells["colDonGia"].Value?.ToString()),
+                            Progress = row.Cells["colTienDo"].Value?.ToString() ?? "0",
+                            TotalPrice = row.Cells["colGiaTien"].Value?.ToString() ?? "0",
+                            GiaNhap = row.Cells["colGiaNhap"].Value?.ToString() ?? "0",
+                            DanhMuc = row.Cells["colDanhMuc"].Value?.ToString() ?? "",
+                            Type = row.Cells["colType"].Value?.ToString() ?? "",
+                            Hang = row.Cells["colHang"].Value?.ToString() ?? "",
+                            Tag = row.Tag,
+                            FormId = rowFormId,
+                            Attributes = currentAttrs
+                        });
+                    }
+                    rowsToRemove.Add(row);
+                }
+            }
+
+            foreach (var row in rowsToRemove)
+            {
+                dgvSelectedItems.Rows.Remove(row);
+            }
+
+            // 2. Khôi phục sản phẩm của Form mới từ Cache
+            if (!string.IsNullOrEmpty(newPath))
+            {
+                var keysToRestore = _formProductsCache.Keys.Where(k => k == newPath || k.StartsWith(newPath + "\\")).ToList();
+                foreach (var key in keysToRestore)
+                {
+                    var cachedItems = _formProductsCache[key];
+                    foreach (var item in cachedItems)
+                    {
+                        // Kiểm tra trùng lặp trong Grid trước khi nạp lại
+                        bool alreadyInGrid = dgvSelectedItems.Rows.Cast<DataGridViewRow>()
+                            .Any(gr => (gr.Cells["colFormId"].Value?.ToString() ?? "") == key && 
+                                       (gr.Cells["colTen"].Value?.ToString() ?? "") == item.ItemName);
+
+                        if (!alreadyInGrid)
+                        {
+                            int rowIndex = AddSelectedItemRow(item.ItemName, item.Quantity, item.UnitPrice, item.Progress, item.TotalPrice, item.Tag, false, GetInsertIndex(), key, item.Attributes);
+                            var newRow = dgvSelectedItems.Rows[rowIndex];
+
+                            newRow.Cells["colModel"].Value = item.Model;
+                            newRow.Cells["colSKU"].Value = item.SKU;
+                            newRow.Cells["colXuatXu"].Value = item.XuatXu;
+                            newRow.Cells["colDonVi"].Value = item.DonVi;
+                            newRow.Cells["colGiaNhap"].Value = item.GiaNhap;
+                            newRow.Cells["colDanhMuc"].Value = item.DanhMuc;
+                            newRow.Cells["colType"].Value = item.Type;
+                            newRow.Cells["colHang"].Value = item.Hang;
+
+                            UpdateExpandStateGridReference(item.ItemName, newRow);
+                        }
+                    }
+                    _formProductsCache.Remove(key); 
+                }
+            }
+
+            RenumberGridSTT();
+        }
+
+        private void UpdateExpandStateGridReference(string itemName, DataGridViewRow newRow)
+        {
+            foreach (var state in _expandStateCache.Values)
+            {
+                foreach (var configRow in state.ConfigRows)
+                {
+                    if (configRow.SelectedProduct == null) continue;
+
+                    string cleanName = configRow.SelectedProduct.Name;
+                    
+                    // So sánh itemName từ Grid (có thể có prefix) với cleanName từ UI
+                    bool isMatch = (itemName == cleanName) || itemName.EndsWith(": " + cleanName);
+
+                    if (isMatch)
+                    {
+                        configRow.GridRowReference = newRow;
+                    }
+                }
+            }
+        }
+
 
         private void ToggleExpandPanel()
         {
