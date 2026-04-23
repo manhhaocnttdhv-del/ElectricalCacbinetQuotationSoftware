@@ -3399,6 +3399,8 @@ namespace ECQ_Soft
             using (var frm = new FrmAdvancedConfig())
             {
                 await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                
+                if (frm.IsCanceled) return;
 
                 if (frm.ShowDialog() == DialogResult.OK)
                 {

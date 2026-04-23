@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ECQ_Soft.Helper
@@ -14,7 +15,7 @@ namespace ECQ_Soft.Helper
     public class ProductSearchDropdown : ComboBox
     {
         private List<Products> _allProducts = new List<Products>();
-        private DataGridView _grid;
+        internal DataGridView _grid;
         private ToolStripControlHost _host;
         private ToolStripDropDown _dropDown;
         private Timer _typingTimer;
@@ -24,6 +25,9 @@ namespace ECQ_Soft.Helper
         public Products SelectedProduct { get; private set; }
         public event EventHandler<Products> ProductSelected;
 
+        // ── Bắt click toàn app để đóng dropdown khi click ra ngoài ──
+        private ClickOutsideFilter _clickFilter;
+
         public ProductSearchDropdown()
         {
             this.DropDownStyle = ComboBoxStyle.DropDown;
@@ -31,14 +35,12 @@ namespace ECQ_Soft.Helper
             this.AutoCompleteSource = AutoCompleteSource.None;
             this.DropDownHeight = 1; // Ẩn dropdown gốc của WinForms
 
-            _typingTimer = new Timer { Interval = 300 }; // Tăng lên 300ms để gõ mượt hơn, tránh reset liên tục
+            _typingTimer = new Timer { Interval = 300 };
             _typingTimer.Tick += TypingTimer_Tick;
 
             // VÔ HIỆU HÓA bôi đen tự động khi nhấn vào ô, giữ vị trí con trỏ hiện tại
-            this.GotFocus += (s, ev) => 
+            this.GotFocus += (s, ev) =>
             {
-                // Chỉ reset con trỏ về cuối nếu text vừa được set mới (SelectionLength == Text.Length)
-                // và chúng ta KHÔNG đang gõ (nếu đang gõ SelectionLength thường là 0)
                 if (this.SelectionLength > 0 && this.SelectionLength == this.Text.Length)
                 {
                     this.BeginInvoke(new Action(() => {
@@ -53,10 +55,28 @@ namespace ECQ_Soft.Helper
             this.TextChanged += ProductSearchDropdown_TextChanged;
             this.Leave += (s, e) => { if (!_dropDown.Focused && !_grid.Focused) _dropDown.Close(); };
 
-            // Tự đóng khi ComboBox bị di chuyển (ví dụ do kéo splitter hoặc cuộn trang)
+            // Tự đóng khi ComboBox bị di chuyển
             this.LocationChanged += (s, e) => { if (_dropDown.Visible) _dropDown.Close(); };
             this.ParentChanged += (s, e) => SubscribeToParentEvents();
             this.HandleCreated += (s, e) => SubscribeToParentEvents();
+
+            // Đăng ký filter bắt click ra ngoài
+            _clickFilter = new ClickOutsideFilter(this, () =>
+            {
+                if (_dropDown != null && _dropDown.Visible)
+                    _dropDown.Close();
+            });
+            Application.AddMessageFilter(_clickFilter);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Application.RemoveMessageFilter(_clickFilter);
+                _typingTimer?.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         private bool _eventsSubscribed = false;
@@ -105,9 +125,9 @@ namespace ECQ_Soft.Helper
                 BorderStyle = BorderStyle.None,
                 ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
                 {
-                    BackColor = Color.FromArgb(220, 235, 255),
+                    BackColor = Color.FromArgb(255, 165, 0),
                     Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(30, 60, 130)
+                    ForeColor = Color.Black
                 },
                 EnableHeadersVisualStyles = false,
                 RowTemplate = { Height = 28 },
@@ -118,10 +138,10 @@ namespace ECQ_Soft.Helper
             typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                 .SetValue(_grid, true, null);
 
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colName", HeaderText = "Tên sản phẩm", FillWeight = 40 });
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colModel", HeaderText = "Model", FillWeight = 20 });
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSKU", HeaderText = "SKU", FillWeight = 20 });
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colPrice", HeaderText = "Thông số (Giá, D×R×C)", FillWeight = 20 });
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colName", HeaderText = "Tên sản phẩm", FillWeight = 35 });
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colModel", HeaderText = "Model", FillWeight = 18 });
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSKU", HeaderText = "SKU", FillWeight = 15 });
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSpecs", HeaderText = "Pole | Ir | Icu", FillWeight = 32 });
 
             _grid.CellDoubleClick += Grid_CellDoubleClick;
             _grid.KeyDown += Grid_KeyDown;
@@ -201,7 +221,10 @@ namespace ECQ_Soft.Helper
 
                 results = _allProducts.Where(p =>
                 {
-                    string searchable = $"{(p.Name ?? "")} {(p.SKU ?? "")} {(p.Model ?? "")}".ToLower();
+                    string pole = p.GetAttribute("pole");
+                    string ir   = p.GetAttribute("ir");
+                    string icu  = p.GetAttribute("icu");
+                    string searchable = $"{(p.Name ?? "")} {(p.SKU ?? "")} {(p.Model ?? "")} {pole} {ir} {icu}".ToLower();
                     return tokens.All(t => searchable.Contains(t));
                 }).Take(100).ToList();
             }
@@ -212,18 +235,18 @@ namespace ECQ_Soft.Helper
                 _grid.Rows.Clear();
                 foreach (var p in results)
                 {
-                    decimal.TryParse(p.Price?.Replace(".", "").Replace(",", ""), out decimal price);
+                    string pole = p.GetAttribute("pole");
+                    if (string.IsNullOrWhiteSpace(pole)) pole = "0";
 
-                    string sizeStr = "";
-                    bool hasL = decimal.TryParse(p.Length, out decimal L) && L > 0;
-                    bool hasW = decimal.TryParse(p.Width, out decimal W) && W > 0;
-                    bool hasH = decimal.TryParse(p.Height, out decimal H) && H > 0;
-                    if (hasL || hasW || hasH) sizeStr = $"{(hasL ? L.ToString("0.##") : "?")}×{(hasW ? W.ToString("0.##") : "?")}×{(hasH ? H.ToString("0.##") : "?")}";
+                    string ir = p.GetAttribute("ir");
+                    if (string.IsNullOrWhiteSpace(ir)) ir = "0";
 
-                    string priceCol = price > 0 ? price.ToString("N0") + "₫" : "";
-                    if (!string.IsNullOrEmpty(sizeStr)) priceCol += $" | {sizeStr}";
+                    string icu = p.GetAttribute("icu");
+                    if (string.IsNullOrWhiteSpace(icu)) icu = "0";
 
-                    int idx = _grid.Rows.Add(p.Name, p.Model, p.SKU, priceCol);
+                    string specs = $"{pole} | {ir} | {icu}";
+
+                    int idx = _grid.Rows.Add(p.Name, p.Model, p.SKU, specs);
                     _grid.Rows[idx].Tag = p;
                 }
             }
@@ -400,6 +423,64 @@ namespace ECQ_Soft.Helper
                 cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
                 return cp;
             }
+        }
+    }
+
+    /// <summary>
+    /// Bắt WM_LBUTTONDOWN / WM_RBUTTONDOWN toàn application.
+    /// Nếu click xảy ra ngoài vùng ComboBox + Dropdown → đóng dropdown.
+    /// </summary>
+    internal class ClickOutsideFilter : IMessageFilter
+    {
+        private const int WM_LBUTTONDOWN  = 0x0201;
+        private const int WM_RBUTTONDOWN  = 0x0204;
+        private const int WM_NCLBUTTONDOWN = 0x00A1;
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(System.Drawing.Point pt);
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out System.Drawing.Point pt);
+
+        private readonly Control _owner;
+        private readonly Action  _closeAction;
+
+        public ClickOutsideFilter(Control owner, Action closeAction)
+        {
+            _owner       = owner;
+            _closeAction = closeAction;
+        }
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (m.Msg == WM_LBUTTONDOWN || m.Msg == WM_RBUTTONDOWN || m.Msg == WM_NCLBUTTONDOWN)
+            {
+                GetCursorPos(out System.Drawing.Point cursor);
+                IntPtr hWnd = WindowFromPoint(cursor);
+
+                // Kiểm tra handle có thuộc ComboBox hoặc Dropdown không
+                Control clicked = Control.FromHandle(hWnd);
+
+                bool insideOwner = clicked != null && IsChildOf(clicked, _owner);
+                bool insideGrid  = clicked != null && _owner is ProductSearchDropdown psd
+                                   && IsChildOf(clicked, psd._grid);
+
+                if (!insideOwner && !insideGrid)
+                {
+                    _closeAction?.Invoke();
+                }
+            }
+            return false; // không nuốt message
+        }
+
+        private static bool IsChildOf(Control child, Control parent)
+        {
+            Control c = child;
+            while (c != null)
+            {
+                if (c == parent) return true;
+                c = c.Parent;
+            }
+            return false;
         }
     }
 }
