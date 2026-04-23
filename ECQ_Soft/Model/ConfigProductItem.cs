@@ -43,9 +43,9 @@ namespace ECQ_Soft.Model
         public static bool IsPinned(string itemName)
         {
             if (string.IsNullOrEmpty(itemName)) return false;
-            // Kiểm tra khớp hoàn toàn hoặc chứa từ khóa đặc thù (để linh hoạt hơn)
+            // Kiểm tra khớp hoàn toàn hoặc bắt đầu bằng cụm từ cố định (để hỗ trợ "Vỏ tủ... - Kích thước : ...")
             return PinnedItemNames.Any(p => itemName.Equals(p, StringComparison.OrdinalIgnoreCase) 
-                                         || (p.Length > 20 && itemName.Contains(p.Substring(0, 20))));
+                                         || itemName.StartsWith(p, StringComparison.OrdinalIgnoreCase));
         }
 
         public ConfigProductItem Clone()

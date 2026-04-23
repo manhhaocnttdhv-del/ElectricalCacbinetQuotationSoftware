@@ -201,7 +201,7 @@ namespace ECQ_Soft
             this.button4.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.button4.Size = new System.Drawing.Size(78, 28);
             this.button4.TabIndex = 64;
-            this.button4.Text = "Xóa";
+            this.button4.Text = "Xóa tất cả";
             this.button4.UseVisualStyleBackColor = false;
             // 
             // button10

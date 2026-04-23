@@ -178,6 +178,8 @@
     </Compile>
     <Compile Include="Helper\MoveButtonColumn.cs" />
     <Compile Include="Helpers\ExcelHelper.cs" />
+    <Compile Include="Helpers\CalculationEngine.cs" />
+    <Compile Include="Helpers\FormulaHelper.cs" />
     <Compile Include="Model\CabinetType.cs" />
     <Compile Include="Model\MarketPrice.cs" />
     <Compile Include="Model\Material.cs" />

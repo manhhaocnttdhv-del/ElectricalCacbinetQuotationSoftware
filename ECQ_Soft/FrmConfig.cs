@@ -1586,79 +1586,283 @@ namespace ECQ_Soft
             }
         }
 
-        private void Button5_Click(object sender, EventArgs e)
+        private async void Button5_Click(object sender, EventArgs e)
         {
-            var selectedItems = childProducts.Where(p => p.IsSelected).ToList();
-            if (selectedItems.Count == 0) return;
-
-            // Xác định tên nhóm (header) từ Danh mục PR
-            string catPR = comboBox1.SelectedItem?.ToString();
-            bool hasCatPR = !string.IsNullOrEmpty(catPR) && catPR != "-- Tất cả danh mục --";
-            string headerName = hasCatPR ? catPR : "Sản phẩm liên quan";
-
-            // Tìm vị trí header khớp tên trong danh sách cấu hình hiện tại
-            int headerIdx = configProducts.FindIndex(p =>
-                p.IsHeader && string.Equals(p.TenHang?.Trim(), headerName?.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            if (headerIdx < 0)
+            if (string.IsNullOrEmpty(configSheetName))
             {
-                // Nếu chưa có header này, tạo mới và thêm các sản phẩm con vào dưới
-                configProducts.Add(new ConfigProductItem
+                MessageBox.Show("Vui lòng chọn hoặc tạo tab báo giá trước khi lưu!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (configProducts.Count == 0)
+            {
+                MessageBox.Show("Danh sách báo giá đang trống!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                bool saved = await SaveCurrentQuotationToSheetAsync();
+                this.Cursor = Cursors.Default;
+
+                if (saved)
                 {
-                    STT = (configProducts.Count + 1).ToString(),
-                    TenHang = headerName,
-                    MaHang = "",
+                    MessageBox.Show($"Đã lưu báo giá vào tab '{configSheetName}' thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Cursor = Cursors.Default;
+                MessageBox.Show($"Lỗi khi lưu báo giá: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task<bool> SaveCurrentQuotationToSheetAsync()
+        {
+            if (_sheetsService == null) InitGoogleSheetsService();
+
+            // 1. Đọc dữ liệu hiện có từ sheet để gộp
+            var response = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{configSheetName}!A2:L").ExecuteAsync();
+            var existingGroups = new List<(string name, List<ConfigProductItem> items)>();
+            
+            if (response.Values != null)
+            {
+                string currentGroupName = null;
+                var currentGroupItems = new List<ConfigProductItem>();
+
+                for (int i = 0; i < response.Values.Count; i++)
+                {
+                    var row = response.Values[i];
+                    if (row.Count < 2) continue;
+                    
+                    string tenHang = row[1]?.ToString()?.Trim() ?? "";
+                    if (tenHang.StartsWith("TỔNG CỘNG") || tenHang.StartsWith("THUẾ VAT") || tenHang.StartsWith("THÀNH TIỀN") || string.IsNullOrEmpty(tenHang)) 
+                        continue;
+
+                    bool isHeader = row.Count > 4 && row[4]?.ToString()?.Trim() == "TỦ";
+
+                    Func<string, decimal> parseCurrency = (s) => {
+                        if (string.IsNullOrEmpty(s)) return 0;
+                        string clean = s.Replace(".", "").Replace(",", "").Replace("₫", "").Trim();
+                        decimal.TryParse(clean, out decimal res);
+                        return res;
+                    };
+
+                    var item = new ConfigProductItem
+                    {
+                        STT = row.Count > 0 ? row[0]?.ToString() : "",
+                        TenHang = tenHang,
+                        MaHang = row.Count > 2 ? row[2]?.ToString() : "",
+                        XuatXu = row.Count > 3 ? row[3]?.ToString() : "",
+                        DonVi = row.Count > 4 ? row[4]?.ToString() : "",
+                        SoLuong = (row.Count > 5 && int.TryParse(row[5]?.ToString(), out int sl)) ? sl : 0,
+                        DonGiaVND = parseCurrency(row.Count > 6 ? row[6]?.ToString() : "0"),
+                        ThanhTienVND = parseCurrency(row.Count > 7 ? row[7]?.ToString() : "0"),
+                        GhiChu = row.Count > 8 ? row[8]?.ToString() : "",
+                        GiaNhap = parseCurrency(row.Count > 9 ? row[9]?.ToString() : "0"),
+                        ThanhTien = parseCurrency(row.Count > 10 ? row[10]?.ToString() : "0"),
+                        BangGia = parseCurrency(row.Count > 11 ? row[11]?.ToString() : "0"),
+                        IsHeader = isHeader
+                    };
+
+                    if (isHeader)
+                    {
+                        if (currentGroupName != null) existingGroups.Add((currentGroupName, currentGroupItems));
+                        currentGroupName = tenHang;
+                        currentGroupItems = new List<ConfigProductItem>();
+                    }
+                    else
+                    {
+                        currentGroupItems.Add(item);
+                    }
+                }
+                if (currentGroupName != null) existingGroups.Add((currentGroupName, currentGroupItems));
+            }
+
+            // 2. Parse configProducts hiện tại vào các nhóm để gộp
+            var sessionGroups = new List<(string name, List<ConfigProductItem> items)>();
+            string sessionCurGroupName = null;
+            var sessionCurGroupItems = new List<ConfigProductItem>();
+
+            foreach (var item in configProducts)
+            {
+                if (item.IsHeader)
+                {
+                    if (sessionCurGroupName != null) sessionGroups.Add((sessionCurGroupName, sessionCurGroupItems));
+                    sessionCurGroupName = item.TenHang;
+                    sessionCurGroupItems = new List<ConfigProductItem>();
+                }
+                else if (!item.IsSummary)
+                {
+                    sessionCurGroupItems.Add(item);
+                }
+            }
+            if (sessionCurGroupName != null) sessionGroups.Add((sessionCurGroupName, sessionCurGroupItems));
+
+            // 3. Gộp Session vào Existing
+            foreach (var sGroup in sessionGroups)
+            {
+                var matchIdx = existingGroups.FindIndex(g => string.Equals(g.name?.Trim(), sGroup.name?.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (matchIdx >= 0)
+                {
+                    // Gộp sản phẩm vào nhóm đã có, tránh trùng SKU/Tên
+                    var existingList = existingGroups[matchIdx].items;
+                    foreach (var sItem in sGroup.items)
+                    {
+                        bool isDuplicate = !string.IsNullOrEmpty(sItem.MaHang) 
+                            ? existingList.Any(x => x.MaHang == sItem.MaHang)
+                            : existingList.Any(x => x.TenHang == sItem.TenHang && string.IsNullOrEmpty(x.MaHang));
+
+                        if (!isDuplicate) existingList.Add(sItem);
+                    }
+                }
+                else
+                {
+                    // Nhóm mới hoàn toàn -> Thêm vào cuối
+                    existingGroups.Add((sGroup.name, sGroup.items));
+                }
+            }
+
+            // 4. Flatten toàn bộ và tính toán lại totals
+            var finalItems = new List<ConfigProductItem>();
+            foreach (var g in existingGroups)
+            {
+                // Thêm Header
+                var header = new ConfigProductItem
+                {
+                    TenHang = g.name,
                     XuatXu = "VNECCO",
                     DonVi = "TỦ",
                     SoLuong = 1,
-                    DonGiaVND = 0,
-                    ThanhTienVND = 0,
-                    GhiChu = "",
-                    GiaNhap = 0,
-                    ThanhTien = 0,
-                    BangGia = 0,
                     IsHeader = true
-                });
+                };
+                
+                // Tính tổng cho header từ các items con
+                header.DonGiaVND = g.items.Sum(p => p.DonGiaVND * p.SoLuong);
+                header.ThanhTienVND = g.items.Sum(p => p.ThanhTienVND);
+                header.GiaNhap = g.items.Sum(p => p.GiaNhap * p.SoLuong);
+                header.ThanhTien = g.items.Sum(p => p.ThanhTien);
+                header.BangGia = g.items.Sum(p => p.BangGia);
 
-                foreach (var product in selectedItems)
-                {
-                    if (!configProducts.Any(x => x.MaHang == product.SKU))
-                    {
-                        decimal price = 0; decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
-                        decimal priceCost = 0; decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
-                        configProducts.Add(CreateConfigItem(product, price, priceCost));
-                    }
-                    product.IsSelected = false; // Bỏ chọn sau khi thêm
-                }
+                finalItems.Add(header);
+                finalItems.AddRange(g.items);
             }
-            else
+
+            // Tính tổng Toàn Sheet
+            decimal tongCongGiaNhap = finalItems.Where(p => !p.IsHeader).Sum(p => p.ThanhTien);
+            decimal tongCongThanhTien = finalItems.Where(p => !p.IsHeader).Sum(p => p.ThanhTienVND);
+            decimal vatRate = 0.08m;
+            decimal vatGiaNhap = tongCongGiaNhap * vatRate;
+            decimal vatThanhTien = tongCongThanhTien * vatRate;
+
+            finalItems.Add(new ConfigProductItem { TenHang = "TỔNG CỘNG (Giá chưa bao gồm VAT)", ThanhTienVND = tongCongThanhTien, ThanhTien = tongCongThanhTien - tongCongGiaNhap, GiaNhap = tongCongThanhTien - tongCongGiaNhap, IsSummary = true });
+            finalItems.Add(new ConfigProductItem { TenHang = "THUẾ VAT 8%", ThanhTienVND = vatThanhTien, ThanhTien = vatGiaNhap, IsSummary = true });
+            finalItems.Add(new ConfigProductItem { TenHang = "THÀNH TIỀN", DonGiaVND = tongCongThanhTien + vatThanhTien, ThanhTienVND = tongCongThanhTien + vatThanhTien, ThanhTien = tongCongGiaNhap + vatGiaNhap, GiaNhap = tongCongGiaNhap + vatGiaNhap, IsSummary = true });
+
+            // Build Rows to Save
+            var allRows = new List<IList<object>>();
+            var headerRowIndices = new List<int>();
+            var summaryRowIndices = new List<int>();
+
+            for (int i = 0; i < finalItems.Count; i++)
             {
-                // Nếu đã có header, tìm vị trí kết thúc của nhóm này (trước header tiếp theo hoặc cuối danh sách)
-                int insertIdx = headerIdx + 1;
-                while (insertIdx < configProducts.Count && !configProducts[insertIdx].IsHeader)
-                {
-                    insertIdx++;
-                }
+                var item = finalItems[i];
+                item.STT = (i + 1).ToString(); // Đánh lại STT toàn bộ
 
-                foreach (var product in selectedItems)
+                var rowFields = new List<object>
                 {
-                    if (!configProducts.Any(x => x.MaHang == product.SKU))
-                    {
-                        decimal price = 0; decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
-                        decimal priceCost = 0; decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
-                        configProducts.Insert(insertIdx++, CreateConfigItem(product, price, priceCost));
-                    }
-                    product.IsSelected = false;
-                }
+                    item.IsSummary ? "" : item.STT,
+                    item.TenHang,
+                    item.MaHang,
+                    item.XuatXu,
+                    item.DonVi,
+                    item.IsHeader || item.IsSummary ? "" : (object)item.SoLuong,
+                    item.DonGiaVND,
+                    item.ThanhTienVND,
+                    item.GhiChu ?? "",
+                    item.GiaNhap,
+                    item.ThanhTien,
+                    item.BangGia
+                };
+
+                allRows.Add(rowFields);
+                if (item.IsHeader) headerRowIndices.Add(i);
+                if (item.IsSummary) summaryRowIndices.Add(i);
             }
 
-            // Cập nhật lại STT
-            for (int i = 0; i < configProducts.Count; i++)
-                configProducts[i].STT = (i + 1).ToString();
+            // 5. Ghi dữ liệu
+            await _sheetsService.Spreadsheets.Values.Clear(
+                new Google.Apis.Sheets.v4.Data.ClearValuesRequest(), spreadsheetId, $"{configSheetName}!A2:L2000").ExecuteAsync();
 
-            UpdateHeaderSum();
-            UpdateConfigGrid();
-            dataGridView1.Refresh();
+            if (allRows.Count > 0)
+            {
+                var valueRange = new Google.Apis.Sheets.v4.Data.ValueRange { Values = allRows };
+                var updateReq = _sheetsService.Spreadsheets.Values.Update(valueRange, spreadsheetId, $"{configSheetName}!A2");
+                updateReq.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                await updateReq.ExecuteAsync();
+            }
+
+            // 6. Formatting
+            await ApplyQuotationFormattingAsync(configSheetName, headerRowIndices, summaryRowIndices);
+
+            return true;
+        }
+
+        private async Task ApplyQuotationFormattingAsync(string sheetName, List<int> headerRowIndices, List<int> summaryRowIndices)
+        {
+            var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
+            var sheet = spreadsheet.Sheets.FirstOrDefault(s => s.Properties.Title == sheetName);
+            if (sheet == null) return;
+            int sheetId = sheet.Properties.SheetId.Value;
+
+            var requests = new List<Google.Apis.Sheets.v4.Data.Request>();
+
+            // Reset format vùng dữ liệu
+            requests.Add(new Google.Apis.Sheets.v4.Data.Request
+            {
+                RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                {
+                    Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = sheetId, StartRowIndex = 1, EndRowIndex = 2000, StartColumnIndex = 0, EndColumnIndex = 12 },
+                    Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 1, Green = 1, Blue = 1 }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = false } } },
+                    Fields = "userEnteredFormat(backgroundColor,textFormat)"
+                }
+            });
+
+            // Format Group Headers (Xanh lá)
+            foreach (int hi in headerRowIndices)
+            {
+                int sheetRowIdx = hi + 1; // Row 1-based, +1 for headers
+                requests.Add(new Google.Apis.Sheets.v4.Data.Request
+                {
+                    RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                    {
+                        Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = sheetId, StartRowIndex = sheetRowIdx, EndRowIndex = sheetRowIdx + 1, StartColumnIndex = 0, EndColumnIndex = 12 },
+                        Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.57f, Green = 0.82f, Blue = 0.31f }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true } } },
+                        Fields = "userEnteredFormat(backgroundColor,textFormat)"
+                    }
+                });
+            }
+
+            // Format Summary Rows (Vàng)
+            foreach (int si in summaryRowIndices)
+            {
+                int sheetRowIdx = si + 1;
+                requests.Add(new Google.Apis.Sheets.v4.Data.Request
+                {
+                    RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                    {
+                        Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = sheetId, StartRowIndex = sheetRowIdx, EndRowIndex = sheetRowIdx + 1, StartColumnIndex = 0, EndColumnIndex = 12 },
+                        Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 1f, Green = 1f, Blue = 0f }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true } } },
+                        Fields = "userEnteredFormat(backgroundColor,textFormat)"
+                    }
+                });
+            }
+
+            if (requests.Count > 0)
+            {
+                await _sheetsService.Spreadsheets.BatchUpdate(new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = requests }, spreadsheetId).ExecuteAsync();
+            }
         }
 
         private ConfigProductItem CreateConfigItem(Products product, decimal price, decimal priceCost)
@@ -2036,29 +2240,14 @@ namespace ECQ_Soft
 
         private void BtnRemoveParent_Click(object sender, EventArgs e)
         {
-            if (dgvParentProducts.SelectedRows.Count > 0)
+            if (configProducts.Count > 0)
             {
-                foreach (DataGridViewRow row in dgvParentProducts.SelectedRows)
+                if (MessageBox.Show("Bạn có chắc chắn muốn xóa toàn bộ danh sách báo giá?", "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
-                    var product = row.DataBoundItem as ConfigProductItem;
-                    if (product != null)
-                    {
-                        // Không cho phép XÓA dòng Header bằng nút Delete này 
-                        if (!product.IsHeader)
-                        {
-                            configProducts.RemoveAll(p => p.MaHang == product.MaHang && !p.IsHeader);
-                        }
-                    }
+                    configProducts.Clear();
+                    UpdateHeaderSum();
+                    UpdateConfigGrid();
                 }
-
-                // Cập nhật lại STT sau khi xóa
-                for (int i = 0; i < configProducts.Count; i++)
-                {
-                    configProducts[i].STT = (i + 1).ToString();
-                }
-
-                UpdateHeaderSum();
-                UpdateConfigGrid();
             }
         }
 
