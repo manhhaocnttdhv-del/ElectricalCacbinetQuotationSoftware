@@ -1298,7 +1298,7 @@ namespace ECQ_Soft
                         }
                     }
 
-                    if (tenHang.Contains("Vỏ tủ trong nhà"))
+                    if (tenHang.StartsWith("Vỏ tủ", StringComparison.OrdinalIgnoreCase))
                     {
                         CalculateAndApplyCabinetDimensions(row, tenHang, rawData, workflowNode);
                     }

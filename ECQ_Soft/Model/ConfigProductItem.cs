@@ -43,7 +43,10 @@ namespace ECQ_Soft.Model
         public static bool IsPinned(string itemName)
         {
             if (string.IsNullOrEmpty(itemName)) return false;
-            // Kiểm tra khớp hoàn toàn hoặc bắt đầu bằng cụm từ cố định (để hỗ trợ "Vỏ tủ... - Kích thước : ...")
+            // Bất kỳ biến thể "Vỏ tủ..." nào đều là pinned (Vỏ tủ điện trong nhà, Vỏ tủ điện ngoài trời, ...)
+            if (itemName.StartsWith("Vỏ tủ", StringComparison.OrdinalIgnoreCase))
+                return true;
+            // Kiểm tra khớp hoàn toàn hoặc bắt đầu bằng cụm từ cố định còn lại
             return PinnedItemNames.Any(p => itemName.Equals(p, StringComparison.OrdinalIgnoreCase) 
                                          || itemName.StartsWith(p, StringComparison.OrdinalIgnoreCase));
         }
