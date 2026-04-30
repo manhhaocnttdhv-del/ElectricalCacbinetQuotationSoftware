@@ -19,6 +19,7 @@ namespace ECQ_Soft.Model
         public string GhiChu { get; set; }
         public decimal GiaNhap { get; set; }
         public decimal ThanhTien { get; set; }
+        public decimal LoiNhuan { get; set; }
         public decimal BangGia { get; set; }
         // public string TienDo { get; set; }
         

@@ -149,5 +149,36 @@ namespace ECQ_Soft
             FrmLogin frmLogin = new FrmLogin();
             frmLogin.ShowDialog();
         }
+
+        private async void btnRefresh_Click(object sender, EventArgs e)
+        {
+            this.Cursor = Cursors.WaitCursor;
+            try
+            {
+                btnRefresh.Enabled = false;
+                btnRefresh.Text = "Đang tải...";
+                
+                // Chỉ gọi hàm LoadDataAsync của từng tab thay vì tạo lại control
+                var loadTasks = new List<Task>
+                {
+                    _frmQuotation.LoadDataAsync(),
+                    _frmRelation.LoadDataAsync(),
+                    _frmConfig.LoadDataAsync()
+                };
+                await Task.WhenAll(loadTasks);
+                
+                MessageBox.Show("Đã tải lại toàn bộ dữ liệu thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Có lỗi khi tải lại dữ liệu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnRefresh.Text = "Tải lại dữ liệu";
+                btnRefresh.Enabled = true;
+                this.Cursor = Cursors.Default;
+            }
+        }
     }
 }

@@ -25,6 +25,8 @@ namespace ECQ_Soft.Model
         public string HÃNG { get; set; }
         public string PriceList { get; set; }
         public bool IsSelected { get; set; }
+        /// <summary>Số lượng từ gói đóng gói khi tải về dataGridView1.</summary>
+        public int SoLuong { get; set; } = 1;
         // public string TienDo { get; set; }
 
         /// <summary>

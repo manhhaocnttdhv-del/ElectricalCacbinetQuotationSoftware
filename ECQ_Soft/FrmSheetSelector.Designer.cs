@@ -20,6 +20,7 @@ namespace ECQ_Soft
             this.panelContent = new System.Windows.Forms.Panel();
             this.rdoNew = new System.Windows.Forms.RadioButton();
             this.rdoExisting = new System.Windows.Forms.RadioButton();
+            this.rdoRename = new System.Windows.Forms.RadioButton();
             this.lblNewName = new System.Windows.Forms.Label();
             this.txtNewName = new System.Windows.Forms.TextBox();
             this.lblExisting = new System.Windows.Forms.Label();
@@ -59,6 +60,7 @@ namespace ECQ_Soft
             // 
             this.panelContent.Controls.Add(this.rdoExisting);
             this.panelContent.Controls.Add(this.rdoNew);
+            this.panelContent.Controls.Add(this.rdoRename);
             this.panelContent.Controls.Add(this.lblExisting);
             this.panelContent.Controls.Add(this.cboExisting);
             this.panelContent.Controls.Add(this.lblNewName);
@@ -89,13 +91,25 @@ namespace ECQ_Soft
             // 
             this.rdoNew.AutoSize = true;
             this.rdoNew.Font = new System.Drawing.Font("Times New Roman", 10F);
-            this.rdoNew.Location = new System.Drawing.Point(200, 16);
+            this.rdoNew.Location = new System.Drawing.Point(140, 16);
             this.rdoNew.Name = "rdoNew";
             this.rdoNew.Size = new System.Drawing.Size(140, 23);
             this.rdoNew.TabIndex = 1;
             this.rdoNew.Text = "Tạo tab mới";
             this.rdoNew.UseVisualStyleBackColor = true;
             this.rdoNew.CheckedChanged += new System.EventHandler(this.rdoNew_CheckedChanged);
+            // 
+            // rdoRename
+            // 
+            this.rdoRename.AutoSize = true;
+            this.rdoRename.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.rdoRename.Location = new System.Drawing.Point(260, 16);
+            this.rdoRename.Name = "rdoRename";
+            this.rdoRename.Size = new System.Drawing.Size(100, 23);
+            this.rdoRename.TabIndex = 7;
+            this.rdoRename.Text = "Đổi tên tab";
+            this.rdoRename.UseVisualStyleBackColor = true;
+            this.rdoRename.CheckedChanged += new System.EventHandler(this.rdoRename_CheckedChanged);
             // 
             // lblExisting
             // 
@@ -110,7 +124,9 @@ namespace ECQ_Soft
             // 
             // cboExisting
             // 
-            this.cboExisting.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboExisting.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
+            this.cboExisting.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.cboExisting.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cboExisting.Font = new System.Drawing.Font("Times New Roman", 10F);
             this.cboExisting.Location = new System.Drawing.Point(20, 78);
             this.cboExisting.Name = "cboExisting";
@@ -168,9 +184,9 @@ namespace ECQ_Soft
             this.btnConfirm.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnConfirm.Font = new System.Drawing.Font("Times New Roman", 10F, System.Drawing.FontStyle.Bold);
             this.btnConfirm.ForeColor = System.Drawing.Color.White;
-            this.btnConfirm.Location = new System.Drawing.Point(237, 12);
+            this.btnConfirm.Location = new System.Drawing.Point(217, 12);
             this.btnConfirm.Name = "btnConfirm";
-            this.btnConfirm.Size = new System.Drawing.Size(105, 32);
+            this.btnConfirm.Size = new System.Drawing.Size(125, 32);
             this.btnConfirm.TabIndex = 0;
             this.btnConfirm.Text = "✔ Xác nhận";
             this.btnConfirm.UseVisualStyleBackColor = false;
@@ -221,6 +237,7 @@ namespace ECQ_Soft
         private System.Windows.Forms.Panel panelContent;
         private System.Windows.Forms.RadioButton rdoExisting;
         private System.Windows.Forms.RadioButton rdoNew;
+        private System.Windows.Forms.RadioButton rdoRename;
         private System.Windows.Forms.Label lblExisting;
         private System.Windows.Forms.ComboBox cboExisting;
         private System.Windows.Forms.Label lblNewName;

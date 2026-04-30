@@ -13,7 +13,10 @@ namespace ECQ_Soft.Helper
         private ToolStripDropDown _dropDown;
         private Panel _container;
         private Button _btnConfirm;
+        private CheckBox _chkSelectAll;
         public event EventHandler Confirmed;
+
+        private bool _isUpdatingSelectAll = false;
 
         private bool _isUpdatingText = false;
         private const int CB_SETCUEBANNER = 0x1703;
@@ -40,16 +43,20 @@ namespace ECQ_Soft.Helper
             _checkedListBox.CheckOnClick = true;
             _checkedListBox.BorderStyle = BorderStyle.None;
             _checkedListBox.Dock = DockStyle.Fill;
-            _checkedListBox.IntegralHeight = false; // Tắt làm tròn để co giãn khít hơn
+            _checkedListBox.IntegralHeight = false;
             _checkedListBox.ItemCheck += CheckedListBox_ItemCheck;
+            _checkedListBox.Font = new Font("Segoe UI", 9.5f);
+            _checkedListBox.BackColor = Color.White;
+            _checkedListBox.Cursor = Cursors.Hand;
 
             _btnConfirm = new Button();
             _btnConfirm.Text = "Xác nhận";
-            _btnConfirm.Dock = DockStyle.Bottom;
-            _btnConfirm.Height = 30;
+            _btnConfirm.Dock = DockStyle.Fill;
             _btnConfirm.FlatStyle = FlatStyle.Flat;
-            _btnConfirm.BackColor = Color.FromArgb(0, 122, 204);
+            _btnConfirm.FlatAppearance.BorderSize = 0;
+            _btnConfirm.BackColor = Color.FromArgb(0, 120, 215);
             _btnConfirm.ForeColor = Color.White;
+            _btnConfirm.Font = new Font("Segoe UI", 9f, FontStyle.Bold);
             _btnConfirm.Cursor = Cursors.Hand;
             _btnConfirm.Click += (s, e) => 
             {
@@ -57,10 +64,44 @@ namespace ECQ_Soft.Helper
                 _dropDown.Close();
             };
 
+            Panel pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 45, BackColor = Color.WhiteSmoke };
+            pnlBottom.Padding = new Padding(10, 8, 10, 8);
+            pnlBottom.Controls.Add(_btnConfirm);
+            Panel sepBottom = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Color.FromArgb(230, 230, 230) };
+            pnlBottom.Controls.Add(sepBottom);
+
+            _chkSelectAll = new CheckBox();
+            _chkSelectAll.Text = "Chọn tất cả";
+            _chkSelectAll.Dock = DockStyle.Fill;
+            _chkSelectAll.Padding = new Padding(12, 0, 0, 0);
+            _chkSelectAll.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            _chkSelectAll.ForeColor = Color.FromArgb(30, 30, 30);
+            _chkSelectAll.BackColor = Color.White;
+            _chkSelectAll.Cursor = Cursors.Hand;
+            _chkSelectAll.CheckedChanged += ChkSelectAll_CheckedChanged;
+
+            Panel pnlTop = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Color.White };
+            pnlTop.Controls.Add(_chkSelectAll);
+            Panel sepTop = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(230, 230, 230) };
+            pnlTop.Controls.Add(sepTop);
+
+            Panel pnlMiddle = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            pnlMiddle.Padding = new Padding(10, 6, 10, 6);
+            pnlMiddle.Controls.Add(_checkedListBox);
+
             _container = new Panel();
-            _container.BorderStyle = BorderStyle.FixedSingle;
-            _container.Controls.Add(_checkedListBox);
-            _container.Controls.Add(_btnConfirm);
+            _container.BackColor = Color.White;
+            _container.BorderStyle = BorderStyle.None;
+            // The order of adding determines Z-order for docking.
+            // Controls added first have highest Z-order (Fill takes remaining space)
+            _container.Controls.Add(pnlMiddle);
+            _container.Controls.Add(pnlTop);
+            _container.Controls.Add(pnlBottom);
+
+            _container.Paint += (s, e) =>
+            {
+                ControlPaint.DrawBorder(e.Graphics, _container.ClientRectangle, Color.FromArgb(204, 204, 204), ButtonBorderStyle.Solid);
+            };
 
             _controlHost = new ToolStripControlHost(_container);
             _controlHost.Padding = Padding.Empty;
@@ -69,6 +110,7 @@ namespace ECQ_Soft.Helper
 
             _dropDown = new ToolStripDropDown();
             _dropDown.Padding = Padding.Empty;
+            _dropDown.DropShadowEnabled = true;
             _dropDown.Items.Add(_controlHost);
 
             this.DropDownHeight = 1;
@@ -89,7 +131,44 @@ namespace ECQ_Soft.Helper
 
         private void CheckedListBox_ItemCheck(object sender, ItemCheckEventArgs e)
         {
-            this.BeginInvoke(new MethodInvoker(UpdateText));
+            this.BeginInvoke(new MethodInvoker(() => 
+            {
+                UpdateText();
+                UpdateSelectAllState();
+            }));
+        }
+
+        private void UpdateSelectAllState()
+        {
+            if (_isUpdatingSelectAll) return;
+            _isUpdatingSelectAll = true;
+            if (_checkedListBox.Items.Count > 0)
+            {
+                _chkSelectAll.Checked = _checkedListBox.CheckedItems.Count == _checkedListBox.Items.Count;
+            }
+            else
+            {
+                _chkSelectAll.Checked = false;
+            }
+            _isUpdatingSelectAll = false;
+        }
+
+        private void ChkSelectAll_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_isUpdatingSelectAll) return;
+            
+            bool isChecked = _chkSelectAll.Checked;
+            _isUpdatingText = true; // Ngăn không cho tính toán lại text cho từng mục
+            _isUpdatingSelectAll = true; // Tránh đệ quy
+
+            for (int i = 0; i < _checkedListBox.Items.Count; i++)
+            {
+                _checkedListBox.SetItemChecked(i, isChecked);
+            }
+
+            _isUpdatingSelectAll = false;
+            _isUpdatingText = false;
+            UpdateText();
         }
 
         private void UpdateText()
@@ -122,34 +201,33 @@ namespace ECQ_Soft.Helper
 
         public void ShowDropDown()
         {
-            int itemHeight = _checkedListBox.ItemHeight;
+            int itemHeight = _checkedListBox.ItemHeight > 0 ? _checkedListBox.ItemHeight : 18;
             int count = _checkedListBox.Items.Count;
             
-            // 1. Tính toán chiều rộng động dựa trên nội dung dài nhất
-            int maxWidth = this.Width; // Tối thiểu bằng chiều rộng combo box
+            // 1. Tính toán chiều rộng động
+            int maxWidth = this.Width;
             using (Graphics g = _checkedListBox.CreateGraphics())
             {
                 foreach (var item in _checkedListBox.Items)
                 {
-                    // Lấy chiều rộng của text + khoảng đệm cho checkbox (25px) + lề (10px)
-                    int itemWidth = (int)g.MeasureString(item.ToString(), _checkedListBox.Font).Width + 35;
+                    // Lấy chiều rộng của text + checkbox width + padding
+                    int itemWidth = (int)g.MeasureString(item.ToString(), _checkedListBox.Font).Width + 50;
                     if (itemWidth > maxWidth) maxWidth = itemWidth;
                 }
             }
-            // Nếu có scrollbar thì cộng thêm 20px nữa
-            if (count > 10) maxWidth += 20;
-            // Giới hạn chiều rộng tối đa để không tràn màn hình (ví dụ 500px)
+            if (count > 10) maxWidth += 20; // Scrollbar
             maxWidth = Math.Min(maxWidth, 600);
 
-            // 2. Tính toán chiều cao (tối đa 10 mục)
+            // 2. Tính toán chiều cao
             int displayCount = Math.Min(count, 10);
-            int listHeight = (displayCount * itemHeight) + 12; // Tăng đệm lên 12px
-            if (count == 0) listHeight = 25;
+            int listHeight = (displayCount * itemHeight) + 12; // + padding top/bottom
+            if (count == 0) listHeight = 30;
 
-            int finalHeight = listHeight + 35; // Tăng chiều cao vùng nút lên 35px
+            // finalHeight = middle(listHeight) + top(36) + bottom(45)
+            int finalHeight = listHeight + 36 + 45;
 
             _controlHost.Size = new Size(maxWidth, finalHeight);
-            _dropDown.Show(this, 0, this.Height);
+            _dropDown.Show(this, 0, this.Height + 2); // Show slightly below the combobox
         }
 
         // Hỗ trợ thêm các phương thức tiện ích

@@ -55,7 +55,9 @@ namespace ECQ_Soft
             this.button11 = new System.Windows.Forms.Button();
             this.button8 = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.lblCurrentTab = new System.Windows.Forms.Label();
             this.lstSavedConfigs = new ECQ_Soft.Helper.CheckedComboBox();
+            this.btnChangeSheet = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
             this.gbTimkiemSanPham.SuspendLayout();
@@ -168,7 +170,7 @@ namespace ECQ_Soft
             this.button5.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
             this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button5.ForeColor = System.Drawing.Color.White;
-            this.button5.Location = new System.Drawing.Point(1182, 14);
+            this.button5.Location = new System.Drawing.Point(1034, 14);
             this.button5.Name = "button5";
             this.button5.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.button5.Size = new System.Drawing.Size(88, 28);
@@ -182,7 +184,7 @@ namespace ECQ_Soft
             this.button6.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
             this.button6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button6.ForeColor = System.Drawing.Color.White;
-            this.button6.Location = new System.Drawing.Point(1069, 14);
+            this.button6.Location = new System.Drawing.Point(921, 14);
             this.button6.Name = "button6";
             this.button6.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.button6.Size = new System.Drawing.Size(107, 28);
@@ -196,7 +198,7 @@ namespace ECQ_Soft
             this.button4.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
             this.button4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button4.ForeColor = System.Drawing.Color.White;
-            this.button4.Location = new System.Drawing.Point(1279, 350);
+            this.button4.Location = new System.Drawing.Point(1128, 14);
             this.button4.Name = "button4";
             this.button4.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.button4.Size = new System.Drawing.Size(78, 28);
@@ -210,13 +212,14 @@ namespace ECQ_Soft
             this.button10.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(160)))), ((int)(((byte)(80)))));
             this.button10.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button10.ForeColor = System.Drawing.Color.White;
-            this.button10.Location = new System.Drawing.Point(1363, 350);
+            this.button10.Location = new System.Drawing.Point(1212, 14);
             this.button10.Name = "button10";
             this.button10.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.button10.Size = new System.Drawing.Size(88, 28);
             this.button10.TabIndex = 66;
-            this.button10.Text = "Xuất excel";
+            this.button10.Text = "Xuất file";
             this.button10.UseVisualStyleBackColor = false;
+            this.button10.Click += new System.EventHandler(this.btnExportFile_Click);
             // 
             // label1
             // 
@@ -340,7 +343,7 @@ namespace ECQ_Soft
             this.groupBox1.Size = new System.Drawing.Size(709, 327);
             this.groupBox1.TabIndex = 73;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Bảng cấu hình (Đóng gói sản phẩm)";
+            this.groupBox1.Text = "XÂY DỰNG CẤU HÌNH";
             // 
             // btn_baogia
             // 
@@ -388,6 +391,10 @@ namespace ECQ_Soft
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.lblCurrentTab);
+            this.groupBox2.Controls.Add(this.btnChangeSheet);
+            this.groupBox2.Controls.Add(this.button10);
+            this.groupBox2.Controls.Add(this.button4);
             this.groupBox2.Controls.Add(this.dgvParentProducts);
             this.groupBox2.Controls.Add(this.lstSavedConfigs);
             this.groupBox2.Controls.Add(this.button6);
@@ -397,9 +404,19 @@ namespace ECQ_Soft
             this.groupBox2.Size = new System.Drawing.Size(1463, 289);
             this.groupBox2.TabIndex = 75;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Bảng báo giá (Dùng để gửi cho khách hàng và triển khai nội bộ, đề xuất vật tư, th" +
-    "eo dõi chi tiết...)";
+            this.groupBox2.Text = "BẢNG BAO GIÁ/ DỰ TOÁN";
             this.groupBox2.Enter += new System.EventHandler(this.groupBox2_Enter);
+            // 
+            // lblCurrentTab
+            // 
+            this.lblCurrentTab.AutoSize = true;
+            this.lblCurrentTab.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblCurrentTab.ForeColor = System.Drawing.Color.MediumBlue;
+            this.lblCurrentTab.Location = new System.Drawing.Point(10, 16);
+            this.lblCurrentTab.Name = "lblCurrentTab";
+            this.lblCurrentTab.Size = new System.Drawing.Size(130, 19);
+            this.lblCurrentTab.TabIndex = 80;
+            this.lblCurrentTab.Text = "Tab: [Chưa chọn]";
             // 
             // lstSavedConfigs
             // 
@@ -408,11 +425,26 @@ namespace ECQ_Soft
             this.lstSavedConfigs.FormattingEnabled = true;
             this.lstSavedConfigs.IntegralHeight = false;
             this.lstSavedConfigs.ItemHeight = 13;
-            this.lstSavedConfigs.Location = new System.Drawing.Point(855, 14);
+            this.lstSavedConfigs.Location = new System.Drawing.Point(712, 14);
             this.lstSavedConfigs.Name = "lstSavedConfigs";
             this.lstSavedConfigs.Placeholder = "-- Chọn cấu hình --";
             this.lstSavedConfigs.Size = new System.Drawing.Size(203, 21);
             this.lstSavedConfigs.TabIndex = 62;
+            // 
+            // btnChangeSheet
+            // 
+            this.btnChangeSheet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
+            this.btnChangeSheet.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
+            this.btnChangeSheet.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnChangeSheet.ForeColor = System.Drawing.Color.White;
+            this.btnChangeSheet.Location = new System.Drawing.Point(1306, 14);
+            this.btnChangeSheet.Name = "btnChangeSheet";
+            this.btnChangeSheet.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
+            this.btnChangeSheet.Size = new System.Drawing.Size(140, 28);
+            this.btnChangeSheet.TabIndex = 66;
+            this.btnChangeSheet.Text = "Đổi Tab Google Sheet";
+            this.btnChangeSheet.UseVisualStyleBackColor = false;
+            this.btnChangeSheet.Click += new System.EventHandler(this.btnChangeSheet_Click);
             // 
             // FrmConfig
             // 
@@ -420,13 +452,11 @@ namespace ECQ_Soft
             this.Controls.Add(this.button8);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.gbTimkiemSanPham);
-            this.Controls.Add(this.button10);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.button4);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.groupBox2);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(942, 354);
+            this.Size = new System.Drawing.Size(925, 337);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();
@@ -498,5 +528,7 @@ namespace ECQ_Soft
         private System.Windows.Forms.Button button11;
         private System.Windows.Forms.Button btn_baogia;
         private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Label lblCurrentTab;
+        private System.Windows.Forms.Button btnChangeSheet;
     }
 }
