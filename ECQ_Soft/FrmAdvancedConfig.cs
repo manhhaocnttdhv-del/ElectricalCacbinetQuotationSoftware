@@ -1253,7 +1253,7 @@ namespace ECQ_Soft
 
             // Menustrip để hiển thị Modal tính toán khi chuột phải vào dòng mặc định
             var ctxMenu = new ContextMenuStrip();
-            ctxMenu.Items.Add("Tính toán...", null, (s, ev) =>
+            ctxMenu.Items.Add("Tính toán...", null, async (s, ev) =>
             {
                 if (dgvSelectedItems.SelectedRows.Count > 0)
                 {
@@ -1304,8 +1304,25 @@ namespace ECQ_Soft
                     }
                     else if (tenHang == "Hệ thống đồng thanh cái")
                     {
-                        int count = rawData?.Count ?? 0;
-                        MessageBox.Show($"Đang mở bảng tính toán cho ĐỒNG THANH CÁI\n(Tìm thấy {count} linh kiện trong bản nháp)");
+                        await CalculateAndApplyBusbarSpec(row, tenHang, rawData, false);
+                    }
+                }
+            });
+            ctxMenu.Items.Add("Xem chi tiết tính toán", null, async (s, ev) =>
+            {
+                if (dgvSelectedItems.SelectedRows.Count > 0)
+                {
+                    var row = dgvSelectedItems.SelectedRows[0];
+                    string tenHang = row.Cells["colTen"].Value?.ToString() ?? "";
+                    if (tenHang.StartsWith("Hệ thống đồng thanh cái"))
+                    {
+                        List<IList<object>> rawData = null;
+                        if (!string.IsNullOrEmpty(_currentDraftName) && _allDraftGroups.ContainsKey(_currentDraftName))
+                        {
+                            var allRows = _allDraftGroups[_currentDraftName];
+                            if (allRows.Count > 4) rawData = allRows.Skip(1).Take(allRows.Count - 4).ToList();
+                        }
+                        await CalculateAndApplyBusbarSpec(row, tenHang, rawData, true);
                     }
                 }
             });
@@ -1773,6 +1790,272 @@ namespace ECQ_Soft
                 catch (Exception ex)
                 {
                     MessageBox.Show("Lỗi khi tính toán công thức: " + ex.Message, "Lỗi tính toán", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private async Task CalculateAndApplyBusbarSpec(DataGridViewRow gridRow, string tenHang, List<IList<object>> rawData, bool showModal = false)
+        {
+            if (rawData == null) return;
+
+            // Fetch the busbar calculation sheet
+            IList<IList<object>> busbarSheetData = null;
+            try
+            {
+                var resp = await _service.Spreadsheets.Values.Get(_spreadsheetId, "Tính toán đồng thanh cái!A:Z").ExecuteAsync();
+                busbarSheetData = resp.Values;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể tải sheet 'Tính toán đồng thanh cái'. Vui lòng kiểm tra lại tên sheet.\nLỗi: " + ex.Message);
+                return;
+            }
+
+            int dimCol = -1;
+            int sellPriceCol = -1;
+            int buyPriceCol = -1;
+
+            // Detect columns from header (row 0 and 1)
+            if (busbarSheetData != null)
+            {
+                for (int r = 0; r < Math.Min(2, busbarSheetData.Count); r++)
+                {
+                    var header = busbarSheetData[r];
+                    for (int i = 0; i < header.Count; i++)
+                    {
+                        string colName = header[i]?.ToString()?.ToLower() ?? "";
+                        if (colName.Contains("tiết diện") || colName.Contains("kích thước") || colName.Contains("tên") || colName.Contains("đồng"))
+                            if (dimCol == -1) dimCol = i;
+                            
+                        if (colName.Contains("mua") || colName.Contains("nhập"))
+                            if (buyPriceCol == -1) buyPriceCol = i;
+
+                        if (colName.Contains("giá") || colName.Contains("tiền") || colName.Contains("bán"))
+                            if (!colName.Contains("mua") && !colName.Contains("nhập"))
+                                if (sellPriceCol == -1) sellPriceCol = i;
+                    }
+                }
+            }
+            // Defaults if not found
+            if (dimCol == -1) dimCol = 0; 
+            if (sellPriceCol == -1) sellPriceCol = 1;
+            if (buyPriceCol == -1) buyPriceCol = sellPriceCol; // Fallback
+
+            double cabinetWidth = 800; // Mặc định bề ngang tủ nếu không tìm thấy
+            foreach (var draftRow in rawData)
+            {
+                string rowPath = draftRow.Count > 0 ? draftRow[0]?.ToString() ?? "" : "";
+                if (rowPath.IndexOf("TỦ", StringComparison.OrdinalIgnoreCase) >= 0 || 
+                    rowPath.IndexOf("FORM", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    string attrStr = draftRow.Count > 14 ? draftRow[14]?.ToString() ?? "" : "";
+                    var wMatch = System.Text.RegularExpressions.Regex.Match(attrStr, @"\bwidth\s*:\s*([\d.]+)|\bw\s*:\s*([\d.]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (wMatch.Success)
+                    {
+                        string wStr = !string.IsNullOrEmpty(wMatch.Groups[1].Value) ? wMatch.Groups[1].Value : wMatch.Groups[2].Value;
+                        if (double.TryParse(wStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double wVal))
+                        {
+                            if (wVal > 300) cabinetWidth = wVal;
+                        }
+                    }
+                }
+            }
+
+            // Gom nhóm các loại Át và Đồng
+            var busbarGroups = new Dictionary<string, (string BreakerName, string DongKichThuoc, bool IsTong, double LengthMmPerItem, double TotalQty, string DoanText)>();
+
+            foreach (var draftRow in rawData)
+            {
+                string rowPath = draftRow.Count > 0 ? draftRow[0]?.ToString() ?? "" : "";
+                string[] pathParts = rowPath.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                string lastSegment = pathParts.Length > 0 ? pathParts[pathParts.Length - 1].Trim() : "";
+
+                string attrStr = draftRow.Count > 14 ? draftRow[14]?.ToString() ?? "" : "";
+                var irMatch = System.Text.RegularExpressions.Regex.Match(attrStr, @"\bir\s*:\s*([\d.]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (irMatch.Success && double.TryParse(irMatch.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double irVal))
+                {
+                    double qty = 1;
+                    if (draftRow.Count > 6 && double.TryParse(draftRow[6]?.ToString(), out double q)) qty = q;
+
+                    bool isTong = lastSegment.IndexOf("tổng", StringComparison.OrdinalIgnoreCase) >= 0;
+                    bool isMCB = lastSegment.IndexOf("MCB", StringComparison.OrdinalIgnoreCase) >= 0 && lastSegment.IndexOf("MCCB", StringComparison.OrdinalIgnoreCase) < 0;
+
+                    string dongKichThuoc = "";
+                    double lengthMm = 0;
+                    string doanText = "";
+
+                    // Tra cứu kích thước theo giá trị ir chính xác
+                    if (isMCB) 
+                    { 
+                        dongKichThuoc = "8x3"; 
+                        lengthMm = 0; // Chưa có quy định 3 đoạn cho MCB từ user, tạm để 0 hoặc có thể dùng chiều dài tủ
+                    }
+                    else 
+                    {
+                        // Quy tắc tiết diện
+                        if (irVal < 100) dongKichThuoc = "15x3";
+                        else if (irVal == 120 || irVal == 125) dongKichThuoc = "15x4";
+                        else if (irVal == 150 || irVal == 160 || irVal == 175) dongKichThuoc = "20x4";
+                        else if (irVal == 180 || irVal == 200 || irVal == 230) dongKichThuoc = "20x5";
+                        else if (irVal == 250) dongKichThuoc = "25x5";
+                        else if (irVal == 300 || irVal == 320) dongKichThuoc = "30x5";
+                        else if (irVal == 350 || irVal == 400) dongKichThuoc = "30x6";
+                        else if (irVal == 500) dongKichThuoc = "40x6";
+                        else if (irVal == 600) dongKichThuoc = "40x8";
+                        else if (irVal == 800) dongKichThuoc = "40x10"; // hoặc 50x8
+                        else if (irVal == 1000) dongKichThuoc = "50x10";
+                        else if (irVal == 1200 || irVal == 1250) dongKichThuoc = "60x10";
+                        else if (irVal == 1500 || irVal == 1600) dongKichThuoc = "80x10";
+                        else if (irVal == 2000) dongKichThuoc = "100x10";
+                        else if (irVal == 2500) dongKichThuoc = "120x10"; // hoặc 80x8 chập đôi
+                        else if (irVal == 3000 || irVal == 3200) dongKichThuoc = "100x10 chập đôi"; // hoặc 100x8 chập đôi
+                        else dongKichThuoc = "Kích thước cần xác định"; // Fallback nếu không khớp
+
+                        // Quy tắc 3 đoạn chiều dài
+                        double[] len1000 = { 1000, 1200, 1250, 1600 };
+                        double[] len300 = { 300, 320, 350, 400, 500, 600, 800 };
+                        double[] len50 = { 50, 75, 80, 100, 125, 150, 175, 180, 200, 225, 250 };
+
+                        if (len1000.Contains(irVal)) { lengthMm = 1009; doanText = "3 đoạn 258-333-418"; }
+                        else if (len300.Contains(irVal)) { lengthMm = 855; doanText = "3 đoạn 210-280-365"; }
+                        else if (len50.Contains(irVal) || irVal < 300) { lengthMm = 540; doanText = "3 đoạn 130-180-230"; } // Fallback <300
+                        else { lengthMm = 1009; doanText = "Cần xác định chiều dài"; } // Fallback cho >1600A
+                    }
+
+                    // Xử lý Át Tổng
+                    if (isTong) 
+                    {
+                        double danTong = cabinetWidth - 100;
+                        
+                        // Nếu là MCB nhưng lại là Tổng, có thể người dùng chưa định nghĩa, nhưng ta cứ cộng dàn tổng
+                        lengthMm += danTong;
+                        
+                        if (string.IsNullOrEmpty(doanText)) 
+                            doanText = $"Dàn tổng {danTong}mm";
+                        else 
+                            doanText += $" + Dàn tổng {danTong}mm";
+                    }
+
+                    string groupKey = $"{lastSegment}_{dongKichThuoc}_{(isTong ? "Tong" : "Nhanh")}";
+                    if (!busbarGroups.ContainsKey(groupKey))
+                    {
+                        busbarGroups[groupKey] = (lastSegment, dongKichThuoc, isTong, lengthMm, 0, doanText);
+                    }
+                    var current = busbarGroups[groupKey];
+                    busbarGroups[groupKey] = (current.BreakerName, current.DongKichThuoc, current.IsTong, current.LengthMmPerItem, current.TotalQty + qty, current.DoanText);
+                }
+            }
+
+            DataGridView dgv = gridRow.DataGridView;
+            if (dgv == null) return;
+            
+            decimal totalGrandSell = 0;
+            decimal totalGrandBuy = 0;
+
+            // Chuẩn bị dữ liệu cho Modal
+            var detailData = new List<object[]>();
+
+            foreach (var kvp in busbarGroups)
+            {
+                var info = kvp.Value;
+
+                // Lookup price in sheet
+                decimal unitPriceSell = 0;
+                decimal unitPriceBuy = 0;
+                
+                if (busbarSheetData != null)
+                {
+                    string searchDim = info.DongKichThuoc.Replace(" chập đôi", "").Trim();
+                    
+                    foreach (var row in busbarSheetData.Skip(1)) 
+                    {
+                        if (row.Count > dimCol)
+                        {
+                            string dimVal = row[dimCol]?.ToString()?.Replace(" ", "") ?? "";
+                            if (dimVal == searchDim || dimVal.StartsWith(searchDim + "x", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (row.Count > sellPriceCol) unitPriceSell = ParseCurrencyValue(row[sellPriceCol]?.ToString() ?? "0");
+                                if (row.Count > buyPriceCol) unitPriceBuy = ParseCurrencyValue(row[buyPriceCol]?.ToString() ?? "0");
+
+                                // Auto-correct missing thousands for busbar prices
+                                // (If user typed 150 instead of 150,000 or 1228 instead of 1,228,000)
+                                if (unitPriceSell > 0 && unitPriceSell < 50000) unitPriceSell *= 1000;
+                                if (unitPriceBuy > 0 && unitPriceBuy < 50000) unitPriceBuy *= 1000;
+
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                double totalLengthMeters = (info.LengthMmPerItem * info.TotalQty) / 1000.0;
+                decimal totalBuy = unitPriceBuy * (decimal)totalLengthMeters;
+                decimal totalSell = unitPriceSell * (decimal)totalLengthMeters;
+                
+                totalGrandSell += totalSell;
+                totalGrandBuy += totalBuy;
+
+                string tenChiTiet = $"Đồng thanh cái {info.DongKichThuoc} ({info.DoanText}) cho {info.BreakerName}";
+                detailData.Add(new object[] { 
+                    tenChiTiet, 
+                    totalLengthMeters.ToString("0.00"), 
+                    FormatCurrencyVnd(unitPriceBuy), 
+                    FormatCurrencyVnd(unitPriceSell), 
+                    FormatCurrencyVnd(totalSell) 
+                });
+            }
+
+            // Cập nhật dòng Hệ thống đồng thanh cái (Dòng tổng) trên Grid chính
+            if (dgv != null)
+            {
+                if (dgv.Columns.Contains("colTen")) gridRow.Cells["colTen"].Value = "Hệ thống đồng thanh cái (Đã tính toán chi tiết)";
+                if (dgv.Columns.Contains("colDonGia")) gridRow.Cells["colDonGia"].Value = "";
+                if (dgv.Columns.Contains("colSoLuong")) gridRow.Cells["colSoLuong"].Value = "1";
+                if (dgv.Columns.Contains("colGiaTien")) gridRow.Cells["colGiaTien"].Value = FormatCurrencyVnd(totalGrandSell);
+                if (dgv.Columns.Contains("colGiaNhap")) gridRow.Cells["colGiaNhap"].Value = FormatCurrencyVnd(totalGrandBuy);
+            }
+
+            // --- Hiển thị Modal Xem Chi Tiết ---
+            if (showModal)
+            {
+                using (var frm = new Form())
+                {
+                    frm.Text = "Chi tiết tính toán Hệ thống Đồng thanh cái";
+                    frm.Size = new System.Drawing.Size(900, 400);
+                    frm.StartPosition = FormStartPosition.CenterParent;
+                    frm.ShowIcon = false;
+
+                    var grid = new DataGridView();
+                    grid.Dock = DockStyle.Fill;
+                    grid.AllowUserToAddRows = false;
+                    grid.ReadOnly = true;
+                    grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                    grid.RowHeadersVisible = false;
+                    grid.BackgroundColor = System.Drawing.Color.White;
+
+                    grid.Columns.Add("colTen", "Mô tả chi tiết");
+                    grid.Columns.Add("colSoLuong", "Số lượng (m)");
+                    grid.Columns.Add("colGiaMua", "Đơn giá mua/m");
+                    grid.Columns.Add("colGiaBan", "Đơn giá bán/m");
+                    grid.Columns.Add("colThanhTien", "Thành tiền bán (VNĐ)");
+
+                    grid.Columns["colTen"].FillWeight = 250;
+
+                    foreach (var rowData in detailData)
+                    {
+                        grid.Rows.Add(rowData);
+                    }
+
+                    // Thêm dòng tổng cộng vào cuối Modal
+                    int rowIndex = grid.Rows.Add();
+                    grid.Rows[rowIndex].Cells["colTen"].Value = "TỔNG CỘNG";
+                    grid.Rows[rowIndex].Cells["colThanhTien"].Value = FormatCurrencyVnd(totalGrandSell);
+                    grid.Rows[rowIndex].DefaultCellStyle.Font = new System.Drawing.Font(grid.Font, System.Drawing.FontStyle.Bold);
+                    grid.Rows[rowIndex].DefaultCellStyle.BackColor = System.Drawing.Color.LightYellow;
+
+                    frm.Controls.Add(grid);
+                    frm.ShowDialog();
                 }
             }
         }
