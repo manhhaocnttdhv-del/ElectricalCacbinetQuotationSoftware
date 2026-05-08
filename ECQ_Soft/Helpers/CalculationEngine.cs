@@ -84,29 +84,43 @@ namespace ECQ_Soft.Helpers
         /// </summary>
         private static string ExpandWildcardFunctions(string expression, Dictionary<string, double> variables)
         {
-            // Pattern tìm MAX( hoặc MIN( với một tham số đơn (không có dấu phẩy = chỉ 1 biến prefix)
-            var pattern = new Regex(@"\b(MAX|MIN)\((\s*[a-z][a-z0-9]*\s*)\)", RegexOptions.IgnoreCase);
+            // Regex mới: bắt MAX hoặc MIN và toàn bộ nội dung bên trong ngoặc
+            var pattern = new Regex(@"\b(MAX|MIN)\(([^)]+)\)", RegexOptions.IgnoreCase);
 
             return pattern.Replace(expression, match =>
             {
                 string funcName = match.Groups[1].Value.ToUpper();
-                string varName = match.Groups[2].Value.Trim().ToLower();
+                string inner = match.Groups[2].Value.Trim();
 
-                // Tìm tất cả instance keys: varName_1, varName_2, ...
-                var instanceKeys = variables.Keys
-                    .Where(k => Regex.IsMatch(k, $@"^{Regex.Escape(varName)}_\d+$", RegexOptions.IgnoreCase))
-                    .OrderBy(k => k)
-                    .ToList();
+                // Tách các tham số bằng dấu phẩy (ví dụ: MAX(h102, h103))
+                var args = inner.Split(',').Select(s => s.Trim()).ToList();
+                var expandedArgs = new List<string>();
 
-                if (instanceKeys.Count == 0)
+                foreach (var arg in args)
                 {
-                    // Không có instance → giữ nguyên, dùng giá trị cộng dồn
-                    return match.Value;
+                    // Kiểm tra nếu tham số là một tên biến đơn (ví dụ "h102", không chứa toán tử)
+                    if (Regex.IsMatch(arg, @"^[a-z][a-z0-9]*$", RegexOptions.IgnoreCase))
+                    {
+                        string varName = arg.ToLower();
+                        // Tìm tất cả instance keys: varName_1, varName_2... trong variables
+                        var instanceKeys = variables.Keys
+                            .Where(k => Regex.IsMatch(k, $@"^{Regex.Escape(varName)}_\d+$", RegexOptions.IgnoreCase))
+                            .OrderBy(k => k)
+                            .ToList();
+
+                        if (instanceKeys.Count > 0)
+                        {
+                            // Nếu có instance, bung chúng ra thành danh sách giá trị tham số riêng biệt
+                            expandedArgs.AddRange(instanceKeys.Select(k => variables[k].ToString(CultureInfo.InvariantCulture)));
+                            continue;
+                        }
+                    }
+
+                    // Nếu là biểu thức hoặc không có instance, giữ nguyên để xử lý sau bằng vòng lặp thay thế biến chính
+                    expandedArgs.Add(arg);
                 }
 
-                // Bung ra danh sách giá trị instance: MAX(500, 800, ...)
-                string expanded = string.Join(", ", instanceKeys.Select(k => variables[k].ToString(CultureInfo.InvariantCulture)));
-                return $"{funcName}({expanded})";
+                return $"{funcName}({string.Join(", ", expandedArgs)})";
             });
         }
 

@@ -211,7 +211,7 @@ namespace ECQ_Soft.Helper
             if (string.IsNullOrEmpty(keyword))
             {
                 // Mặc định gợi ý sản phẩm gốc
-                results = _allProducts.Take(100).ToList();
+                results = _allProducts.Take(500).ToList();
                 SelectedProduct = null;
             }
             else
@@ -226,7 +226,7 @@ namespace ECQ_Soft.Helper
                     string icu  = p.GetAttribute("icu");
                     string searchable = $"{(p.Name ?? "")} {(p.SKU ?? "")} {(p.Model ?? "")} {pole} {ir} {icu}".ToLower();
                     return tokens.All(t => searchable.Contains(t));
-                }).Take(100).ToList();
+                }).Take(500).ToList();
             }
 
             _grid.SuspendLayout();
