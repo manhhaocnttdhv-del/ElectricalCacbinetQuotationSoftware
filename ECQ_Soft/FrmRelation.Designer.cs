@@ -191,6 +191,7 @@ namespace ECQ_Soft
             // 
             this.dgvAllProducts.AllowUserToAddRows = false;
             this.dgvAllProducts.AllowUserToDeleteRows = false;
+            this.dgvAllProducts.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left)));
             this.dgvAllProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvAllProducts.Location = new System.Drawing.Point(15, 100);
             this.dgvAllProducts.Name = "dgvAllProducts";
@@ -280,34 +281,8 @@ namespace ECQ_Soft
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button btnSearch;
 
-        // LEFT SIDE
-        private System.Windows.Forms.Label lblSearch;
-        private System.Windows.Forms.TextBox txtSearch;
-        private System.Windows.Forms.Label lblHang;
-        private System.Windows.Forms.TextBox txtHang;
-        private System.Windows.Forms.Label lblCategory;
-        private System.Windows.Forms.TextBox txtCategory;
-        private System.Windows.Forms.DataGridView dgvProducts;
-        // private System.Windows.Forms.Button btnAddMain;
-        // private System.Windows.Forms.Button btnAddChild;
 
-        // RIGHT SIDE - TOP
-        private System.Windows.Forms.Label lblParentSelected;
-        private System.Windows.Forms.ListBox lstParent;
-        private System.Windows.Forms.Label lblChildSelected;
-        private System.Windows.Forms.ListBox lstChild;
-        private System.Windows.Forms.Button btnApply;
 
-        // BOTTOM SECTION
-        private System.Windows.Forms.Panel panelBottom;
-        private System.Windows.Forms.Label lblCauHinh;
-        private System.Windows.Forms.Label lblChonSanPham;
-        private System.Windows.Forms.ComboBox cboSanPham;
-        private System.Windows.Forms.Label lblLinhVuc;
-        private System.Windows.Forms.CheckedListBox lstLinhVuc;
-        private System.Windows.Forms.Label lblPhanLoai;
-        private System.Windows.Forms.DataGridView dgvPhanLoai;
-        private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.Button btnAddParent;
         private System.Windows.Forms.Button btnAddChild;
         private System.Windows.Forms.DataGridView dgvParentProducts;

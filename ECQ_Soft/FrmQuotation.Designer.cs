@@ -1,4 +1,4 @@
-﻿namespace ECQ_Soft
+namespace ECQ_Soft
 {
     partial class FrmQuotation
     {
@@ -106,6 +106,7 @@
             this.groupBox2.Controls.Add(this.label4);
             this.groupBox2.Controls.Add(this.txtHeight);
             this.groupBox2.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.Location = new System.Drawing.Point(1, 9);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
@@ -416,6 +417,7 @@
             // 
             this.cboCabinetType.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cboCabinetType.FormattingEnabled = true;
+            this.cboCabinetType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.cboCabinetType.Location = new System.Drawing.Point(247, 66);
             this.cboCabinetType.Margin = new System.Windows.Forms.Padding(2);
             this.cboCabinetType.Name = "cboCabinetType";
@@ -438,6 +440,7 @@
             // 
             this.cboMaterial.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cboMaterial.FormattingEnabled = true;
+            this.cboMaterial.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.cboMaterial.Location = new System.Drawing.Point(247, 37);
             this.cboMaterial.Margin = new System.Windows.Forms.Padding(2);
             this.cboMaterial.Name = "cboMaterial";
@@ -579,6 +582,7 @@
             // btnExporttoExcel
             // 
             this.btnExporttoExcel.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnExporttoExcel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnExporttoExcel.Location = new System.Drawing.Point(1261, 670);
             this.btnExporttoExcel.Margin = new System.Windows.Forms.Padding(2);
             this.btnExporttoExcel.Name = "btnExporttoExcel";
@@ -602,6 +606,7 @@
             // btnAdd
             // 
             this.btnAdd.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnAdd.Location = new System.Drawing.Point(1027, 382);
             this.btnAdd.Margin = new System.Windows.Forms.Padding(2);
             this.btnAdd.Name = "btnAdd";
@@ -625,6 +630,7 @@
             // 
             // dgvRecord
             // 
+            this.dgvRecord.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvRecord.BackgroundColor = System.Drawing.Color.White;
             this.dgvRecord.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvRecord.Location = new System.Drawing.Point(3, 427);
@@ -658,6 +664,7 @@
             this.Controls.Add(this.btnTinhGia);
             this.Controls.Add(this.dgvRecord);
             this.Controls.Add(this.groupBox2);
+            this.AutoScroll = true;
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "FrmQuotation";
             this.Size = new System.Drawing.Size(1435, 782);

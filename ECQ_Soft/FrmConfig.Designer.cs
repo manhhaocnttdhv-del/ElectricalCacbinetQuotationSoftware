@@ -69,6 +69,7 @@ namespace ECQ_Soft
             // dgvParentProducts
             // 
             this.dgvParentProducts.AllowUserToAddRows = false;
+            this.dgvParentProducts.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvParentProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvParentProducts.Location = new System.Drawing.Point(0, 48);
             this.dgvParentProducts.Name = "dgvParentProducts";
@@ -399,6 +400,7 @@ namespace ECQ_Soft
             this.groupBox2.Controls.Add(this.lstSavedConfigs);
             this.groupBox2.Controls.Add(this.button6);
             this.groupBox2.Controls.Add(this.button5);
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.Location = new System.Drawing.Point(3, 336);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(1463, 289);
@@ -473,33 +475,8 @@ namespace ECQ_Soft
 
         #endregion
 
-        // LEFT SIDE
-        private System.Windows.Forms.Label lblSearch;
-        private System.Windows.Forms.TextBox txtSearch;
-        private System.Windows.Forms.Label lblHang;
-        private System.Windows.Forms.TextBox txtHang;
-        private System.Windows.Forms.Label lblCategory;
-        private System.Windows.Forms.TextBox txtCategory;
-        private System.Windows.Forms.DataGridView dgvProducts;
-        // private System.Windows.Forms.Button btnAddMain;
-        // private System.Windows.Forms.Button btnAddChild;
 
-        // RIGHT SIDE - TOP
-        private System.Windows.Forms.Label lblParentSelected;
-        private System.Windows.Forms.ListBox lstParent;
-        private System.Windows.Forms.Label lblChildSelected;
-        private System.Windows.Forms.ListBox lstChild;
 
-        // BOTTOM SECTION
-        private System.Windows.Forms.Panel panelBottom;
-        private System.Windows.Forms.Label lblCauHinh;
-        private System.Windows.Forms.Label lblChonSanPham;
-        private System.Windows.Forms.ComboBox cboSanPham;
-        private System.Windows.Forms.Label lblLinhVuc;
-        private System.Windows.Forms.CheckedListBox lstLinhVuc;
-        private System.Windows.Forms.Label lblPhanLoai;
-        private System.Windows.Forms.DataGridView dgvPhanLoai;
-        private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.DataGridView dgvParentProducts;
         private System.Windows.Forms.DataGridView dgvAllProducts;
         private System.Windows.Forms.Label label5;
