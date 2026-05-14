@@ -328,7 +328,7 @@ namespace ECQ_Soft
             string unitPriceText = FormatCurrencyVnd(parsedPrice);
             string totalText = FormatCurrencyVnd(parsedTotal);
             string brand = GetProductBrand(product);
-            
+
             string model = product?.Model ?? "";
             string sku = product?.SKU ?? "";
             string xuatXu = brand;
@@ -503,19 +503,35 @@ namespace ECQ_Soft
                     }
                     else
                     {
-                        // Fallback: gán tên cột mặc định
-                        _productColumnHeaders = new List<string> { "id", "name", "model", "sku", "price", "pricecost", "weight", "length", "width", "height", "category", "hãng", "pricelist" };
+                        // Fallback: gán tên cột mặc định theo đúng thứ tự sheet thực tế
+                        _productColumnHeaders = new List<string> { "id", "name", "model", "sku", "price", "pricecost", "weight", "width", "height", "length", "category", "type", "hãng", "pricelist" };
                     }
 
-                    // Thứ tự cột chuẩn (0-indexed)
-                    // 0:id, 1:name, 2:model, 3:sku, 4:price, 5:pricecost, 6:weight,
-                    // 7:length, 8:width, 9:height, 10:category, 11:type, 12:hãng, 13:pricelist
-                    // Các cột thuộc tính mở rộng (định nghĩa bằng header): pole, ir, icu...
+                    // Thứ tự cột chuẩn theo sheet thực tế (0-indexed):
+                    // 0:id, 1:name, 2:model, 3:sku, 4:price, 5:pricecost,
+                    // 6:weight(G), 7:width/rộng(H), 8:height/cao(I), 9:length/sâu(J),
+                    // 10:category, 11:type, 12:hãng, 13:pricelist
 
-                    // Xây dựng bản đồ vị trí cột dựa theo header đã đọc
+                    // Xây dựng bản đồ vị trí cột - hỗ trợ header có mô tả trong ngoặc
+                    // Ví dụ: "Width (Rộng)" → strip → "width" để khớp với key tra cứu
                     var colIdx = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                     for (int hi = 0; hi < _productColumnHeaders.Count; hi++)
-                        colIdx[_productColumnHeaders[hi]] = hi;
+                    {
+                        string fullHeader = _productColumnHeaders[hi];
+                        colIdx[fullHeader] = hi; // Lưu nguyên văn
+                        // Strip nội dung trong ngoặc: "width (rộng)" → "width"
+                        string stripped = System.Text.RegularExpressions.Regex.Replace(fullHeader, @"\s*\(.*?\)\s*", "").Trim();
+                        if (!string.IsNullOrEmpty(stripped) && !colIdx.ContainsKey(stripped))
+                            colIdx[stripped] = hi;
+                        // Thêm alias tiếng Việt phổ biến
+                        var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            { "rộng", "width" }, { "cao", "height" }, { "sâu", "length" }, { "dài", "length" },
+                            { "nặng", "weight" }, { "khối lượng", "weight" }
+                        };
+                        if (aliases.ContainsKey(stripped) && !colIdx.ContainsKey(aliases[stripped]))
+                            colIdx[aliases[stripped]] = hi;
+                    }
 
                     // Hàm tiện lợi đọc cột theo header key, fallback về index cột cứng
                     string ReadCol(IList<object> row, string key, int fallbackIdx)
@@ -536,10 +552,10 @@ namespace ECQ_Soft
                             SKU = ReadCol(row, "sku", 3),
                             Price = ReadCol(row, "price", 4),
                             PriceCost = ReadCol(row, "pricecost", 5),
-                            Weight = ReadCol(row, "weight", 6),
-                            Length = ReadCol(row, "length", 7),
-                            Width = ReadCol(row, "width", 8),
-                            Height = ReadCol(row, "height", 9),
+                            Weight = ReadCol(row, "weight", 6),  // G
+                            Width = ReadCol(row, "width", 7),  // H = Rộng
+                            Height = ReadCol(row, "height", 8),  // I = Cao
+                            Length = ReadCol(row, "length", 9),  // J = Sâu/Dài
                             Category = ReadCol(row, "category", 10),
                             Type = ReadCol(row, "type", 11),
                             HÃNG = ReadCol(row, "hãng", 12),
@@ -684,24 +700,24 @@ namespace ECQ_Soft
                         Padding = new System.Windows.Forms.Padding(5, 0, 0, 0)
                     };
 
-                    var colInfo = new DataGridViewTextBoxColumn 
-                    { 
-                        Name = "colInfo", 
-                        HeaderText = "Tên cấu hình", 
+                    var colInfo = new DataGridViewTextBoxColumn
+                    {
+                        Name = "colInfo",
+                        HeaderText = "Tên cấu hình",
                         ReadOnly = true,
                         FillWeight = 85
                     };
-                    var colDel = new DataGridViewButtonColumn 
-                    { 
-                        Name = "colDel", 
-                        HeaderText = "", 
-                        Text = "X", 
-                        UseColumnTextForButtonValue = true, 
+                    var colDel = new DataGridViewButtonColumn
+                    {
+                        Name = "colDel",
+                        HeaderText = "",
+                        Text = "X",
+                        UseColumnTextForButtonValue = true,
                         Width = 40,
                         FillWeight = 15,
                         FlatStyle = FlatStyle.Standard
                     };
-                    
+
                     dgvDrafts.Columns.Add(colInfo);
                     dgvDrafts.Columns.Add(colDel);
 
@@ -725,9 +741,9 @@ namespace ECQ_Soft
                             string selectedItem = dgvDrafts.Rows[e.RowIndex].Cells["colInfo"].Value.ToString();
                             string draftKey = selectedItem.Substring(0, selectedItem.LastIndexOf('(')).Trim();
 
-                            var dr = MessageBox.Show($"Bạn có muốn xóa cấu hình nháp '{draftKey}' khỏi Google Sheets không?", 
+                            var dr = MessageBox.Show($"Bạn có muốn xóa cấu hình nháp '{draftKey}' khỏi Google Sheets không?",
                                 "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                            
+
                             if (dr == DialogResult.Yes)
                             {
                                 bool deleted = await DeleteDraftFromSheetsAsync(draftKey);
@@ -812,7 +828,7 @@ namespace ECQ_Soft
                                         {
                                             string existingName = existing.Cells["colTen"].Value?.ToString() ?? "";
                                             bool isMatch = (existingName == finalName);
-                                            
+
                                             // Nếu là các item cố định (Vỏ tủ, H? th?ng d?ng thanh ci,...)
                                             if (!isMatch && ConfigProductItem.IsPinned(existingName))
                                             {
@@ -861,7 +877,8 @@ namespace ECQ_Soft
 
                     // Nhấn nút "Tải cấu hình đã chọn" hoặc double-click vào tên cấu hình => tải luôn
                     btnLoad.Click += (s, e) => loadSelectedDraft();
-                    dgvDrafts.CellDoubleClick += (s, e) => {
+                    dgvDrafts.CellDoubleClick += (s, e) =>
+                    {
                         if (e.RowIndex >= 0 && e.ColumnIndex != dgvDrafts.Columns["colDel"].Index)
                             loadSelectedDraft();
                     };
@@ -1093,7 +1110,11 @@ namespace ECQ_Soft
                     string bien = row[15]?.ToString()?.Trim()?.ToLower() ?? "";
                     if (!string.IsNullOrEmpty(nghia) && !string.IsNullOrEmpty(bien) && nghia != "nghĩa")
                     {
-                        _attributeAliasMap[nghia] = bien;
+                        nghia = System.Text.RegularExpressions.Regex.Replace(nghia, @"\s*\(.*?\)\s*", "").Trim();
+                        if (!string.IsNullOrEmpty(nghia))
+                        {
+                            _attributeAliasMap[nghia] = bien;
+                        }
                     }
                 }
             }
@@ -1291,7 +1312,7 @@ namespace ECQ_Soft
             var ctxMenu = new ContextMenuStrip();
             ctxMenu.Items.Add("Tính toán...", null, async (s, ev) =>
             {
-                if(!string.IsNullOrEmpty(_currentDraftName))
+                if (!string.IsNullOrEmpty(_currentDraftName))
                 {
                     if (dgvSelectedItems.SelectedRows.Count > 0)
                     {
@@ -1370,16 +1391,16 @@ namespace ECQ_Soft
                         {
                             if (r.IsNewRow) continue;
                             var rowVals = new object[15]; // Tương ứng cột A đến O trong Sheet
-                            rowVals[0]  = r.Cells["colFormId"].Value;
-                            rowVals[1]  = r.Cells["colTen"].Value;
-                            rowVals[2]  = r.Cells["colModel"].Value;
-                            rowVals[3]  = r.Cells["colSKU"].Value;
-                            rowVals[4]  = r.Cells["colXuatXu"].Value;
-                            rowVals[5]  = r.Cells["colDonVi"].Value;
-                            rowVals[6]  = r.Cells["colSoLuong"].Value;
-                            rowVals[7]  = r.Cells["colDonGia"].Value;
-                            rowVals[8]  = r.Cells["colGiaTien"].Value;
-                            rowVals[9]  = r.Cells["colGiaNhap"].Value;
+                            rowVals[0] = r.Cells["colFormId"].Value;
+                            rowVals[1] = r.Cells["colTen"].Value;
+                            rowVals[2] = r.Cells["colModel"].Value;
+                            rowVals[3] = r.Cells["colSKU"].Value;
+                            rowVals[4] = r.Cells["colXuatXu"].Value;
+                            rowVals[5] = r.Cells["colDonVi"].Value;
+                            rowVals[6] = r.Cells["colSoLuong"].Value;
+                            rowVals[7] = r.Cells["colDonGia"].Value;
+                            rowVals[8] = r.Cells["colGiaTien"].Value;
+                            rowVals[9] = r.Cells["colGiaNhap"].Value;
                             rowVals[10] = r.Cells["colDanhMuc"].Value;
                             rowVals[11] = r.Cells["colType"].Value;
                             rowVals[12] = r.Cells["colHang"].Value;
@@ -1427,7 +1448,7 @@ namespace ECQ_Soft
                         }
                     }
                 }
-                
+
             });
             ctxMenu.Items.Add("Xem chi tiết tính toán", null, async (s, ev) =>
             {
@@ -1457,7 +1478,17 @@ namespace ECQ_Soft
                     {
                         dgvSelectedItems.ClearSelection();
                         dgvSelectedItems.Rows[e.RowIndex].Selected = true;
-                        ctxMenu.Show(Cursor.Position);
+
+                        // Ẩn/hiện menu "Xem chi tiết tính toán" tùy thuộc vào loại dòng
+                        foreach (System.Windows.Forms.ToolStripItem item in ctxMenu.Items)
+                        {
+                            if (item.Text == "Xem chi tiết tính toán")
+                            {
+                                item.Visible = rowName.StartsWith("Hệ thống đồng thanh cái", StringComparison.OrdinalIgnoreCase);
+                            }
+                        }
+
+                        ctxMenu.Show(System.Windows.Forms.Cursor.Position);
                     }
                 }
             };
@@ -1494,7 +1525,7 @@ namespace ECQ_Soft
                         // remainingH được tính trong RecalculateLayout, ở đây ta ước lượng hoặc ép scale
                         // Cách tốt nhất là thay đổi treeH trực tiếp nếu ta biết remainingH, 
                         // nhưng vì RecalculateLayout dùng tỷ lệ nên ta biến đổi tỷ lệ.
-                        
+
                         int availableH = pnlControls.Top - pnlStepsContainer.Top - 15;
                         int expandToggleH = (_btnExpandToggle != null && _btnExpandToggle.Visible) ? 38 : 0;
                         int expandPanelH = (_expandPanelVisible && _expandPanel != null) ? 170 : 0;
@@ -1529,7 +1560,7 @@ namespace ECQ_Soft
 
             foreach (var draftRow in rawData)
             {
-                string fullPath = draftRow.Count > 0 ? draftRow[0]?.ToString() ?? "" : "";
+                string fullPath = (draftRow.Count > 0 && draftRow[0] != null) ? draftRow[0].ToString() : "";
                 string[] parts = fullPath.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
                 string rowCabinetConfigName = (parts.Length > 3) ? parts[3].Trim() : "";
 
@@ -1558,6 +1589,25 @@ namespace ECQ_Soft
                         // sl chung (nếu công thức chỉ ghi 'sl' - dùng cho trường hợp đơn giản hoặc tổng quát)
                         if (!varMap.ContainsKey("sl")) varMap["sl"] = 0;
                         varMap["sl"] += currentQty;
+
+                        // --- THIẾT LẬP KHOẢNG CÁCH HÀNG (s) THEO ÁT TỔNG ---
+                        string productName = draftRow.Count > 1 ? draftRow[1]?.ToString() ?? "" : "";
+                        string uName = productName.ToUpper();
+                        bool isTong = fullPath.IndexOf("nhánh", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                      uName.IndexOf("Nhánh", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                        if (isTong)
+                        {
+                            double defaultS = 0;
+                            if (uName.Contains("MCCB")) defaultS = 300;
+                            else if (uName.Contains("MCB")) defaultS = 150;
+
+                            if (defaultS > 0)
+                            {
+                                if (!varMap.ContainsKey("s")) varMap["s"] = 0;
+                                varMap["s"] = Math.Max(varMap["s"], defaultS);
+                            }
+                        }
 
                         // 2. Lưu thuộc tính: w101_1, h101_1... và w101, h101...
                         string attrStr = draftRow.Count > 14 ? draftRow[14]?.ToString() ?? "" : "";
@@ -1604,68 +1654,162 @@ namespace ECQ_Soft
         private void CalculateAndApplyCabinetDimensions(DataGridViewRow row, string tenHang, List<IList<object>> rawData, HierarchyNode workflowNode)
         {
             var varMap = GetCalculationVariables(rawData, workflowNode);
-            string formulaHCase1 = "";
-            string formulaWCase1 = "";
-            string formulaHCase2 = "";
-            string formulaWCase2 = "";
-            string formulaDCase1 = "";
-            string formulaDCase2 = "";
-
             if (workflowNode != null && !string.IsNullOrEmpty(workflowNode.Formula))
             {
-                var cases = Regex.Split(workflowNode.Formula, @"Case\d+:")
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .ToList();
-
-                string ExtractFormula(string text, string varName)
-                {
-                    // Hỗ trợ cả H, W, D và dừng lại khi gặp biến tiếp theo hoặc cuối chuỗi
-                    var match = Regex.Match(text, $@"\b{varName}\s*=\s*(.*?)(?=\s*\b[HWD]\s*=|$)");
-                    return match.Success ? match.Groups[1].Value.Trim() : "";
-                }
-
-                if (cases.Count >= 1)
-                {
-                    formulaWCase1 = ExtractFormula(cases[0], "W");
-                    formulaHCase1 = ExtractFormula(cases[0], "H");
-                    formulaDCase1 = ExtractFormula(cases[0], "D");
-                }
-                if (cases.Count >= 2)
-                {
-                    formulaWCase2 = ExtractFormula(cases[1], "W");
-                    formulaHCase2 = ExtractFormula(cases[1], "H");
-                    formulaDCase2 = ExtractFormula(cases[1], "D");
-                }
-
-                // 3. Thực hiện tính toán thử nghiệm và hiển thị kết quả
+                // 3. Thực hiện tính toán theo các Case động trong công thức
                 try
                 {
                     double finalW = 0, finalH = 0, finalD = 0;
 
-                    if (!string.IsNullOrEmpty(formulaWCase1))
+                    // Khởi tạo local dictionary để lưu kết quả tạm & các biến gán theo Case (H1, W1...)
+                    var localVars = new Dictionary<string, double>(varMap, StringComparer.OrdinalIgnoreCase);
+                    if (!localVars.ContainsKey("W")) localVars["W"] = 0;
+                    if (!localVars.ContainsKey("H")) localVars["H"] = 0;
+                    if (!localVars.ContainsKey("D")) localVars["D"] = 0;
+
+                    string formula = workflowNode.Formula;
+                    var matches = Regex.Matches(formula, @"(?i)'?Case\s*(\d+)").Cast<Match>().ToList();
+
+                    string ExtractFormula(string text, string varName)
                     {
-                        double w1 = CalculationEngine.Evaluate(formulaWCase1, varMap);
-                        if (w1 < 900)
+                        var match = Regex.Match(text, $@"\b{varName}\s*=\s*(.*?)(?=\s*\b[HWD]\s*=|$)");
+                        return match.Success ? match.Groups[1].Value.Trim() : "";
+                    }
+
+                    if (matches.Count == 0)
+                    {
+                        // Không có Case, xử lý toàn bộ biểu thức như 1 khối duy nhất
+                        var assignedVars = Regex.Matches(formula, @"\b([HWD])\s*=")
+                            .Cast<Match>()
+                            .Select(m => m.Groups[1].Value)
+                            .Distinct()
+                            .ToList();
+
+                        foreach (string vName in assignedVars)
                         {
-                            finalW = w1;
-                            finalH = string.IsNullOrEmpty(formulaHCase1) ? 0 : CalculationEngine.Evaluate(formulaHCase1, varMap);
-                            finalD = string.IsNullOrEmpty(formulaDCase1) ? 0 : CalculationEngine.Evaluate(formulaDCase1, varMap);
-                        }
-                        else if (cases.Count >= 2)
-                        {
-                            // Case 2: W >= 900
-                            finalW = string.IsNullOrEmpty(formulaWCase2) ? w1 : CalculationEngine.Evaluate(formulaWCase2, varMap);
-                            finalH = string.IsNullOrEmpty(formulaHCase2) ? (string.IsNullOrEmpty(formulaHCase1) ? 0 : CalculationEngine.Evaluate(formulaHCase1, varMap)) : CalculationEngine.Evaluate(formulaHCase2, varMap);
-                            finalD = string.IsNullOrEmpty(formulaDCase2) ? (string.IsNullOrEmpty(formulaDCase1) ? 0 : CalculationEngine.Evaluate(formulaDCase1, varMap)) : CalculationEngine.Evaluate(formulaDCase2, varMap);
-                        }
-                        else
-                        {
-                            // Chỉ có 1 Case
-                            finalW = w1;
-                            finalH = string.IsNullOrEmpty(formulaHCase1) ? 0 : CalculationEngine.Evaluate(formulaHCase1, varMap);
-                            finalD = string.IsNullOrEmpty(formulaDCase1) ? 0 : CalculationEngine.Evaluate(formulaDCase1, varMap);
+                            string fExp = ExtractFormula(formula, vName);
+                            if (!string.IsNullOrEmpty(fExp))
+                            {
+                                localVars[vName] = CalculationEngine.Evaluate(fExp, localVars);
+                            }
                         }
                     }
+                    else
+                    {
+                        // --- MỚI THÊM: Tính toán phần công thức gốc (nằm trước chữ Case đầu tiên) ---
+                        // Để các biến W, H có giá trị thực tế trước khi đem đi so sánh trong điều kiện của Case.
+                        if (matches[0].Index > 0)
+                        {
+                            string baseFormula = formula.Substring(0, matches[0].Index);
+                            var baseVars = Regex.Matches(baseFormula, @"\b([HWD])\s*=")
+                                .Cast<Match>()
+                                .Select(mx => mx.Groups[1].Value)
+                                .Distinct()
+                                .ToList();
+
+                            foreach (string vName in baseVars)
+                            {
+                                string fExp = ExtractFormula(baseFormula, vName);
+                                if (!string.IsNullOrEmpty(fExp))
+                                {
+                                    localVars[vName] = CalculationEngine.Evaluate(fExp, localVars);
+                                }
+                            }
+                        }
+
+                        for (int i = 0; i < matches.Count; i++)
+                        {
+                            Match m = matches[i];
+                            int startIndex = m.Index + m.Length;
+                            int endIndex = (i + 1 < matches.Count) ? matches[i + 1].Index : formula.Length;
+                            string blockContent = formula.Substring(startIndex, endIndex - startIndex);
+                            string caseLabel = m.Groups[1].Value; // Lấy số Case ví dụ 1, 2...
+
+                            // A. Tách Header và Nội dung Formulas
+                            var firstAssignMatch = Regex.Match(blockContent, @"\b[HWD]\s*=");
+                            string headerText = blockContent;
+                            string formulasPart = "";
+                            if (firstAssignMatch.Success)
+                            {
+                                headerText = blockContent.Substring(0, firstAssignMatch.Index);
+                                formulasPart = blockContent.Substring(firstAssignMatch.Index);
+                            }
+
+                            // B. Kiểm tra điều kiện (...) ở Header
+                            string conditionStr = "";
+                            var parenMatch = Regex.Match(headerText, @"\(([^()]+)\)");
+                            if (parenMatch.Success) conditionStr = parenMatch.Groups[1].Value.Trim();
+
+                            bool isConditionMet = true;
+                            if (!string.IsNullOrEmpty(conditionStr))
+                            {
+                                string normalizedCond = conditionStr
+                                    .Replace("&&", " AND ")
+                                    .Replace("||", " OR ")
+                                    .Replace("==", "=");
+                                double condVal = CalculationEngine.Evaluate(normalizedCond, localVars);
+                                isConditionMet = (condVal > 0);
+                            }
+
+                            // C. Thực thi tính toán nếu thỏa mãn điều kiện theo đúng thứ tự khai báo (ví dụ W trước H)
+                            if (isConditionMet)
+                            {
+                                var assignedVars = Regex.Matches(formulasPart, @"\b([HWD])\s*=")
+                                    .Cast<Match>()
+                                    .Select(mx => mx.Groups[1].Value)
+                                    .Distinct()
+                                    .ToList();
+
+                                System.Text.StringBuilder caseDebugInfo = new System.Text.StringBuilder();
+                                caseDebugInfo.AppendLine($"[THÔNG TIN CASE {caseLabel}]");
+
+                                foreach (string vName in assignedVars)
+                                {
+                                    string fExp = ExtractFormula(formulasPart, vName);
+                                    if (!string.IsNullOrEmpty(fExp))
+                                    {
+                                        // Hiển thị công thức đã thay số
+                                        string substitutedExp = CalculationEngine.GetDebugExpression(fExp, localVars);
+
+                                        double val = CalculationEngine.Evaluate(fExp, localVars);
+                                        localVars[vName] = val;
+                                        localVars[vName + caseLabel] = val; // Cập nhật H1, W1...
+
+                                        caseDebugInfo.AppendLine($"- Tính {vName}: {fExp}");
+                                        caseDebugInfo.AppendLine($"  => Thế số: {substitutedExp}");
+                                        caseDebugInfo.AppendLine($"  => KẾT QUẢ: {val}\n");
+                                    }
+                                }
+
+                                // --- YÊU CẦU FIX CỨNG ĐIỀU KIỆN TRONG CODE ---
+                                // Tự động kiểm tra W và H sau khi tính toán xong Case hiện tại.
+                                double currentW = localVars.ContainsKey("W") ? localVars["W"] : 0;
+                                double currentH = localVars.ContainsKey("H") ? localVars["H"] : 0;
+
+                                // Nếu là Case cuối cùng thì chắc chắn phải dừng lại
+                                if (i == matches.Count - 1)
+                                {
+                                    // System.Windows.Forms.MessageBox.Show($"Tên tủ: {tenHang}\n\n{caseDebugInfo.ToString()}\n=> CHỐT Ở CASE CUỐI CÙNG: {caseLabel} (W={currentW}, H={currentH})", "Quá trình tính toán Case");
+                                    break;
+                                }
+
+                                // Nếu W > 800 hoặc H > 2000, không dừng lại mà TỰ ĐỘNG CHUYỂN SANG CASE TIẾP THEO
+                                if (currentW > 800 || currentH > 2000)
+                                {
+                                    // System.Windows.Forms.MessageBox.Show($"Tên tủ: {tenHang}\n\n{caseDebugInfo.ToString()}\n=> Kích thước W={currentW}, H={currentH} vượt quá 800/2000 -> TỰ ĐỘNG CHUYỂN CASE TIẾP THEO!", "Quá trình tính toán Case");
+                                    continue;
+                                }
+
+                                // Nếu thoả mãn kích thước (nhỏ hơn chuẩn), thì GIỮ NGUYÊN và thoát vòng lặp
+                                // System.Windows.Forms.MessageBox.Show($"Tên tủ: {tenHang}\n\n{caseDebugInfo.ToString()}\n=> Kích thước chuẩn -> CHỐT Ở CASE NÀY: {caseLabel} (W={currentW}, H={currentH})", "Quá trình tính toán Case");
+                                break;
+                            }
+                        }
+                    }
+
+                    finalH = localVars["H"];
+                    finalW = localVars["W"];
+                    finalD = localVars["D"];
 
                     // Hàm tính để làm tròn lên theo bước 50 (1599 -> 1600, 327 -> 350...)
                     int RoundUpTo(double value, int step = 50) => value <= 0 ? 0 : (int)(Math.Ceiling(value / step) * step);
@@ -1707,7 +1851,7 @@ namespace ECQ_Soft
                     {
                         int labelX = 20, controlX = 200, rowH = 44, startY = 20;
                         Font fntLabel = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                        Font fntCtrl  = new Font("Segoe UI", 9.5f);
+                        Font fntCtrl = new Font("Segoe UI", 9.5f);
 
                         // ── Header kết quả kích thước ──
                         var lblDimResult = new Label
@@ -1880,14 +2024,14 @@ namespace ECQ_Soft
 
                         if (frmCabSpec.ShowDialog(this) == DialogResult.OK)
                         {
-                            string selViTri   = cmbViTri.SelectedItem?.ToString()   ?? viTri;
+                            string selViTri = cmbViTri.SelectedItem?.ToString() ?? viTri;
                             string selLopCanh = cmbLopCanh.SelectedItem?.ToString() ?? lopCanh;
-                            string selDoDay   = cmbDoDay.SelectedItem?.ToString()   ?? doDay;
+                            string selDoDay = cmbDoDay.SelectedItem?.ToString() ?? doDay;
                             string selLoaiSon = cmbLoaiSon.SelectedItem?.ToString() ?? loaiSon;
-                            string selMauSon  = cmbMauSon.Text.Trim();
+                            string selMauSon = cmbMauSon.Text.Trim();
                             if (string.IsNullOrEmpty(selMauSon)) selMauSon = "RAL 7035 (ghi sáng)";
 
-                            string selMoLung  = cmbMoLung.SelectedItem?.ToString()  ?? moLung;
+                            string selMoLung = cmbMoLung.SelectedItem?.ToString() ?? moLung;
                             string selVatLieu = cmbVatLieu.SelectedItem?.ToString() ?? vatLieu;
 
                             // ── Build chuỗi mô tả hoàn chỉnh ──
@@ -1932,7 +2076,7 @@ namespace ECQ_Soft
                 return;
             }
 
-            int irColB1 = -1, lenColB1 = -1,lenColCongthucB1 = -1, typeColB1 = -1; // Bảng 1
+            int irColB1 = -1, lenColB1 = -1, lenColCongthucB1 = -1, typeColB1 = -1; // Bảng 1
             int irColB2 = -1, dimColB2 = -1; // Bảng 2
             int dimColB3 = -1, buyPriceColB3 = -1, sellPriceColB3 = -1; // Bảng 3
 
@@ -1970,7 +2114,7 @@ namespace ECQ_Soft
             {
                 if (row.IsNewRow) continue;
                 string tenItem = row.Cells["colTen"].Value?.ToString() ?? "";
-                
+
                 // Tìm dòng Vỏ tủ
                 if (tenItem.StartsWith("Vỏ tủ", StringComparison.OrdinalIgnoreCase) || tenItem.Contains("Kích thước H"))
                 {
@@ -2019,7 +2163,7 @@ namespace ECQ_Soft
             }
 
             // 3. Logic tra cứu động từ Sheets
-            bool isGanDung = true; // Bật chế độ tìm dòng điện gần đúng (lấy dòng lớn hơn tiếp theo nếu không khớp tuyệt đối)
+            bool isGanDung = false; // Bật chế độ tìm dòng điện gần đúng (lấy dòng lớn hơn tiếp theo nếu không khớp tuyệt đối)
 
             async Task<string> GetDongKichThuoc(double ir, string productName)
             {
@@ -2039,7 +2183,7 @@ namespace ECQ_Soft
                         if (row.Count > irColB2)
                         {
                             string rowIrStr = row[irColB2]?.ToString()?.Trim() ?? "";
-                            
+
                             // Hỗ trợ dòng chữ "MCB" hoặc "MCCB < 100" trong cột Dòng điện
                             if (productName.ToUpper().Contains("MCB") && rowIrStr.ToUpper().Contains("MCB"))
                             {
@@ -2090,7 +2234,7 @@ namespace ECQ_Soft
             double GetLengthSumFromIR(double ir, bool isTong)
             {
                 if (isTong) return cabinetWidth - 100;
-                
+
                 // Tra cứu Bảng 1
                 double foundSum = 0;
                 double minDiff = double.MaxValue;
@@ -2136,13 +2280,12 @@ namespace ECQ_Soft
                 if (foundSum == 0 && isGanDung) foundSum = bestSumForApprox;
                 return foundSum;
                 // Nếu không tìm thấy trong sheet
-                return 0;
             }
 
             string GetLengthDescription(double ir, bool isTong)
             {
                 if (isTong) return $"(W:{cabinetWidth} - 100) = {cabinetWidth - 100}mm";
-                
+
                 if (busbarSheetData != null && irColB1 != -1 && lenColB1 != -1)
                 {
                     string bestLenStr = "";
@@ -2170,7 +2313,7 @@ namespace ECQ_Soft
                     }
                     if (isGanDung && !string.IsNullOrEmpty(bestLenStr))
                     {
-                         return $"({bestLenStr.Replace(" ", "")} [Gần đúng]) = {GetLengthSumFromIR(ir, false)}mm";
+                        return $"({bestLenStr.Replace(" ", "")} [Gần đúng]) = {GetLengthSumFromIR(ir, false)}mm";
                     }
                 }
                 return "Cần tra cứu trong Sheet";
@@ -2184,7 +2327,7 @@ namespace ECQ_Soft
                 string[] pathParts = rowPath.Split('\\');
                 string lastSegment = pathParts.Last().Trim();
                 string productName = draftRow.Count > 1 ? draftRow[1]?.ToString() ?? "" : "";
-                
+
                 string attrStr = draftRow.Count > 14 ? draftRow[14]?.ToString() ?? "" : "";
                 var irMatch = System.Text.RegularExpressions.Regex.Match(attrStr, @"\bir\s*:\s*([\d.]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
@@ -2196,16 +2339,16 @@ namespace ECQ_Soft
                         bool isTong = lastSegment.IndexOf("tổng", StringComparison.OrdinalIgnoreCase) >= 0;
                         string kichThuoc = await GetDongKichThuoc(irVal, productName);
                         double lenPerItem = GetLengthSumFromIR(irVal, isTong);
-                        
+
                         double totalM;
                         string formulas;
-                        
+
                         if (isTong)
                         {
                             if (cabinetWidth <= 0)
                             {
                                 MessageBox.Show("Vui lòng thực hiện tính toán Vỏ tủ trước khi tính toán Hệ thống đồng thanh cái.\n" +
-                                                "Hệ thống cần biết Chiều rộng (W) của tủ để tính toán Busbar chính cho At tổng.", 
+                                                "Hệ thống cần biết Chiều rộng (W) của tủ để tính toán Busbar chính cho At tổng.",
                                                 "Thiếu thông số Vỏ tủ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                 return;
                             }
@@ -2221,7 +2364,8 @@ namespace ECQ_Soft
                             formulas = $"{GetLengthDescription(irVal, isTong)} * {qty} (át) / 1000 = {totalM:N3}m";
                         }
 
-                        busbarDetails.Add(new BusbarCalcDetail {
+                        busbarDetails.Add(new BusbarCalcDetail
+                        {
                             DeviceName = productName,
                             IR = irVal,
                             Dimension = kichThuoc,
@@ -2305,53 +2449,58 @@ namespace ECQ_Soft
         private async Task<string> ShowSelectionDialog(string productName, double ir, string[] options)
         {
             string selected = options[0];
-            
-            using (var frm = new Form { 
-                Text = $"LỰA CHỌN THANH CÁI - {ir}A", 
-                Size = new Size(500, 300), 
-                StartPosition = FormStartPosition.CenterParent, 
-                FormBorderStyle = FormBorderStyle.FixedDialog, 
-                MaximizeBox = false, 
+
+            using (var frm = new Form
+            {
+                Text = $"LỰA CHỌN THANH CÁI - {ir}A",
+                Size = new Size(500, 300),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
                 MinimizeBox = false,
                 BackColor = Color.White
             })
             {
-                var lblTitle = new Label { 
-                    Text = "XÁC NHẬN TIẾT DIỆN ĐỒNG", 
-                    Font = new Font("Segoe UI", 12f, FontStyle.Bold), 
+                var lblTitle = new Label
+                {
+                    Text = "XÁC NHẬN TIẾT DIỆN ĐỒNG",
+                    Font = new Font("Segoe UI", 12f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(0, 51, 153),
-                    Location = new Point(20, 20), 
-                    AutoSize = true 
+                    Location = new Point(20, 20),
+                    AutoSize = true
                 };
 
-                var lblInfo = new Label { 
-                    Text = $"Sản phẩm: {productName}\nDòng điện định mức: {ir}A\n\nVui lòng chọn quy cách thanh đồng cái phù hợp:", 
-                    Location = new Point(20, 60), 
+                var lblInfo = new Label
+                {
+                    Text = $"Sản phẩm: {productName}\nDòng điện định mức: {ir}A\n\nVui lòng chọn quy cách thanh đồng cái phù hợp:",
+                    Location = new Point(20, 60),
                     Size = new Size(440, 80),
-                    Font = new Font("Segoe UI", 10f) 
+                    Font = new Font("Segoe UI", 10f)
                 };
 
-                var cmb = new ComboBox { 
-                    Location = new Point(20, 150), 
-                    Size = new Size(440, 30), 
-                    DropDownStyle = ComboBoxStyle.DropDownList, 
-                    Font = new Font("Segoe UI", 11f, FontStyle.Bold) 
+                var cmb = new ComboBox
+                {
+                    Location = new Point(20, 150),
+                    Size = new Size(440, 30),
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = new Font("Segoe UI", 11f, FontStyle.Bold)
                 };
                 cmb.Items.AddRange(options);
                 cmb.SelectedIndex = 0;
-                
-                var btn = new Button { 
-                    Text = "XÁC NHẬN", 
-                    Location = new Point(170, 200), 
-                    Size = new Size(150, 45), 
-                    BackColor = Color.FromArgb(0, 120, 215), 
-                    ForeColor = Color.White, 
+
+                var btn = new Button
+                {
+                    Text = "XÁC NHẬN",
+                    Location = new Point(170, 200),
+                    Size = new Size(150, 45),
+                    BackColor = Color.FromArgb(0, 120, 215),
+                    ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 btn.Click += (s, e) => { selected = cmb.SelectedItem.ToString(); frm.DialogResult = DialogResult.OK; };
-                
+
                 frm.Controls.AddRange(new Control[] { lblTitle, lblInfo, cmb, btn });
                 frm.ShowDialog();
             }
@@ -2376,7 +2525,8 @@ namespace ECQ_Soft
                 foreach (var r in rows) dgv.Rows.Add(r);
 
                 var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 80, BackColor = Color.AliceBlue };
-                var lblSummary = new Label { 
+                var lblSummary = new Label
+                {
                     Text = $"TỔNG GIÁ BÁN: {FormatCurrencyVnd(totalSell)}   |   TỔNG GIÁ MUA: {FormatCurrencyVnd(totalBuy)}   |   LỢI NHUẬN: {FormatCurrencyVnd(totalSell - totalBuy)}",
                     Font = new Font("Segoe UI", 12, FontStyle.Bold),
                     ForeColor = Color.DarkBlue,
@@ -2424,7 +2574,7 @@ namespace ECQ_Soft
             if (!val.StartsWith("Vỏ tủ điện")) return;
 
             int lineCount = val.Split('\n').Length;
-            int baseFont  = dgvSelectedItems.Font?.Height ?? 15;
+            int baseFont = dgvSelectedItems.Font?.Height ?? 15;
             int newHeight = lineCount * (baseFont + 3) + 10;
             if (newHeight < 28) newHeight = 28;
             if (row.Height != newHeight) row.Height = newHeight;
@@ -2447,10 +2597,10 @@ namespace ECQ_Soft
         {
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            Color colNormal    = isSelected ? Color.White : Color.FromArgb(30, 30, 30);
+            Color colNormal = isSelected ? Color.White : Color.FromArgb(30, 30, 30);
             Color colHighlight = Color.Red; // đỏ tươi
 
-            Font fntBold   = new Font(baseFont ?? new Font("Segoe UI", 9f), FontStyle.Bold);
+            Font fntBold = new Font(baseFont ?? new Font("Segoe UI", 9f), FontStyle.Bold);
             Font fntNormal = baseFont ?? new Font("Segoe UI", 9f);
 
             // Các từ khóa cần tô đỏ
@@ -2466,9 +2616,9 @@ namespace ECQ_Soft
             };
 
             string[] lines = text.Split('\n');
-            int lineH  = fntNormal.Height + 3;
+            int lineH = fntNormal.Height + 3;
             int topPad = Math.Max(3, (bounds.Height - lines.Length * lineH) / 2);
-            int curY   = bounds.Top + topPad;
+            int curY = bounds.Top + topPad;
 
             foreach (string rawLine in lines)
             {
@@ -2788,7 +2938,7 @@ namespace ECQ_Soft
                             var richReqs = BuildRichTextUpdateRequests(shId, dataRowStart + rowOffset, 1, cellText);
                             cReqs.AddRange(richReqs);
                         }
-                        
+
                         rowOffset++;
                     }
 
@@ -2829,7 +2979,7 @@ namespace ECQ_Soft
             };
 
             // Màu đỏ cho keyword
-            var redColor  = new Google.Apis.Sheets.v4.Data.Color { Red = 0.85f, Green = 0f,    Blue = 0f    };
+            var redColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.85f, Green = 0f, Blue = 0f };
             var blackColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.12f, Green = 0.12f, Blue = 0.12f };
 
             // Thu thập tất cả vị trí match trên toàn bộ text (tính theo char index)
@@ -2885,8 +3035,10 @@ namespace ECQ_Soft
                     Range = new Google.Apis.Sheets.v4.Data.GridRange
                     {
                         SheetId = sheetId,
-                        StartRowIndex = rowIndex, EndRowIndex = rowIndex + 1,
-                        StartColumnIndex = colIndex, EndColumnIndex = colIndex + 1
+                        StartRowIndex = rowIndex,
+                        EndRowIndex = rowIndex + 1,
+                        StartColumnIndex = colIndex,
+                        EndColumnIndex = colIndex + 1
                     },
                     Rows = new List<Google.Apis.Sheets.v4.Data.RowData>
                     {
@@ -4518,7 +4670,7 @@ namespace ECQ_Soft
                 // 4. Thêm dòng vào lưới với đầy đủ thông tin Vị trí cấu hình và Thuộc tính
                 int insIdx = GetInsertIndex();
                 int rowIndex = AddSelectedItemRow(finalName, 1, 0, "0", "0", p, false, insIdx, currentNodePath, attrsStr);
-                
+
                 // 5. Cập nhật Reference và đồng bộ ngay lập tức với cache/nháp
                 row.GridRowReference = dgvSelectedItems.Rows[rowIndex];
                 SyncRowAndDraftGroups(row);

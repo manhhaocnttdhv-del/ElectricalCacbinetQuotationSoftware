@@ -50,8 +50,8 @@ namespace ECQ_Soft.Helpers
             }
 
             // 2. Thay thế các biến còn sót lại (chưa được định nghĩa) bằng 0 để tránh lỗi Syntax
-            // Chỉ thay thế các định danh (identifier) không phải là tên hàm (MAX, MIN, CEIL, FLOOR)
-            string idPattern = @"\b(?!(?:MAX|MIN|CEIL|FLOOR)\b)[a-z]+[0-9]*(_[0-9]+)?\b";
+            // Chỉ thay thế các định danh (identifier) không phải là tên hàm (MAX, MIN, CEIL, FLOOR) hoặc toán tử (AND, OR, v.v.)
+            string idPattern = @"\b(?!(?:MAX|MIN|CEIL|FLOOR|AND|OR|NOT|TRUE|FALSE|MOD)\b)[a-z]+[0-9]*(_[0-9]+)?\b";
             processed = Regex.Replace(processed, idPattern, "0", RegexOptions.IgnoreCase);
 
             // 2. Xử lý hàm MAX và MIN (thực hiện lặp để hỗ trợ lồng nhau cơ bản)
@@ -75,6 +75,31 @@ namespace ECQ_Soft.Helpers
                 // Nếu lỗi, có thể do còn biến chưa được thay thế hoặc lỗi cú pháp
                 throw new Exception($"Lỗi tính toán biểu thức '{expression}' (sau khi xử lý: '{processed}'): {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Trả về chuỗi biểu thức sau khi đã thay thế các biến (dùng cho mục đích Debug)
+        /// để người dùng thấy rõ các biến như MAX(w102) hay sl đã được bung ra như thế nào.
+        /// </summary>
+        public static string GetDebugExpression(string expression, Dictionary<string, double> variables)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) return "";
+
+            string processed = expression.Trim();
+            if (processed.StartsWith("=")) processed = processed.Substring(1);
+
+            processed = ExpandContextualQuantity(processed, variables);
+            processed = AutoCeilSlDiv2(processed, variables);
+            processed = ExpandWildcardFunctions(processed, variables);
+
+            var sortedKeys = variables.Keys.OrderByDescending(k => k.Length).ToList();
+            foreach (var key in sortedKeys)
+            {
+                string pattern = $@"\b{Regex.Escape(key)}\b";
+                processed = Regex.Replace(processed, pattern, variables[key].ToString(CultureInfo.InvariantCulture), RegexOptions.IgnoreCase);
+            }
+
+            return processed;
         }
 
         /// <summary>
