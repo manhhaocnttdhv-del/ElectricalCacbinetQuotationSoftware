@@ -890,7 +890,6 @@ namespace ECQ_Soft
                     {
                         this.IsCanceled = true;
                         this.DialogResult = DialogResult.Cancel;
-                        this.Close();
                         return;
                     }
                 }

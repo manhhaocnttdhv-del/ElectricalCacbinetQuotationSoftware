@@ -29,244 +29,64 @@ namespace ECQ_Soft
         private void InitializeComponent()
         {
             this.dgvParentProducts = new System.Windows.Forms.DataGridView();
-            this.dgvAllProducts = new System.Windows.Forms.DataGridView();
-            this.label5 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.button9 = new System.Windows.Forms.Button();
-            this.label9 = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
-            this.label6 = new System.Windows.Forms.Label();
-            this.button5 = new System.Windows.Forms.Button();
-            this.button6 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
-            this.button10 = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
-            this.gbTimkiemSanPham = new System.Windows.Forms.GroupBox();
-            this.cboCategory = new ECQ_Soft.Helper.CategoryTreeDropdown();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.button3 = new System.Windows.Forms.Button();
-            this.button7 = new System.Windows.Forms.Button();
+            this.button3 = new FontAwesome.Sharp.IconButton();
+            this.button7 = new FontAwesome.Sharp.IconButton();
             this.btnSearch = new System.Windows.Forms.Button();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.btn_baogia = new System.Windows.Forms.Button();
-            this.button11 = new System.Windows.Forms.Button();
+            this.btnOpenSearchModal = new FontAwesome.Sharp.IconButton();
+            this.btn_baogia = new FontAwesome.Sharp.IconButton();
+            this.btnAdvancedConfigBuild = new FontAwesome.Sharp.IconButton();
             this.button8 = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.lblCurrentTab = new System.Windows.Forms.Label();
+            this.btnChangeSheet = new FontAwesome.Sharp.IconButton();
+            this.button10 = new FontAwesome.Sharp.IconButton();
+            this.button4 = new FontAwesome.Sharp.IconButton();
             this.lstSavedConfigs = new ECQ_Soft.Helper.CheckedComboBox();
-            this.btnChangeSheet = new System.Windows.Forms.Button();
+            this.btnOpenSearchModalForQuote = new FontAwesome.Sharp.IconButton();
+            this.btnAdvancedConfigForQuotation = new FontAwesome.Sharp.IconButton();
+            this.button5 = new FontAwesome.Sharp.IconButton();
+            this.button6 = new FontAwesome.Sharp.IconButton();
+            this.splitMain = new System.Windows.Forms.SplitContainer();
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).BeginInit();
-            this.gbTimkiemSanPham.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
+            this.splitMain.Panel1.SuspendLayout();
+            this.splitMain.Panel2.SuspendLayout();
+            this.splitMain.SuspendLayout();
             this.SuspendLayout();
             // 
             // dgvParentProducts
             // 
             this.dgvParentProducts.AllowUserToAddRows = false;
+            this.dgvParentProducts.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvParentProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvParentProducts.Location = new System.Drawing.Point(0, 48);
+            this.dgvParentProducts.Location = new System.Drawing.Point(10, 80);
             this.dgvParentProducts.Name = "dgvParentProducts";
             this.dgvParentProducts.RowHeadersWidth = 51;
             this.dgvParentProducts.RowTemplate.Height = 36;
-            this.dgvParentProducts.Size = new System.Drawing.Size(1446, 235);
+            this.dgvParentProducts.Size = new System.Drawing.Size(1454, 230);
             this.dgvParentProducts.TabIndex = 10;
-            // 
-            // dgvAllProducts
-            // 
-            this.dgvAllProducts.AllowUserToAddRows = false;
-            this.dgvAllProducts.AllowUserToDeleteRows = false;
-            this.dgvAllProducts.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvAllProducts.Location = new System.Drawing.Point(1, 62);
-            this.dgvAllProducts.Name = "dgvAllProducts";
-            this.dgvAllProducts.ReadOnly = true;
-            this.dgvAllProducts.RowHeadersWidth = 51;
-            this.dgvAllProducts.RowTemplate.Height = 24;
-            this.dgvAllProducts.Size = new System.Drawing.Size(700, 254);
-            this.dgvAllProducts.TabIndex = 15;
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(7, 366);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(0, 13);
-            this.label5.TabIndex = 35;
-            // 
-            // textBox2
-            // 
-            this.textBox2.Location = new System.Drawing.Point(71, 32);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(156, 20);
-            this.textBox2.TabIndex = 54;
-            // 
-            // button9
-            // 
-            this.button9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.button9.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.button9.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button9.ForeColor = System.Drawing.Color.White;
-            this.button9.Location = new System.Drawing.Point(515, 33);
-            this.button9.Name = "button9";
-            this.button9.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button9.Size = new System.Drawing.Size(85, 27);
-            this.button9.TabIndex = 52;
-            this.button9.Text = "Cập nhật";
-            this.button9.UseVisualStyleBackColor = false;
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(68, 16);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(55, 13);
-            this.label9.TabIndex = 53;
-            this.label9.Text = "Sản phẩm";
-            // 
-            // button2
-            // 
-            this.button2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.button2.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button2.ForeColor = System.Drawing.Color.White;
-            this.button2.Location = new System.Drawing.Point(419, 33);
-            this.button2.Name = "button2";
-            this.button2.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button2.Size = new System.Drawing.Size(85, 27);
-            this.button2.TabIndex = 50;
-            this.button2.Text = "Tìm kiếm";
-            this.button2.UseVisualStyleBackColor = false;
-            // 
-            // button1
-            // 
-            this.button1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
-            this.button1.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
-            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button1.ForeColor = System.Drawing.Color.White;
-            this.button1.Location = new System.Drawing.Point(604, 33);
-            this.button1.Name = "button1";
-            this.button1.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button1.Size = new System.Drawing.Size(90, 27);
-            this.button1.TabIndex = 51;
-            this.button1.Text = "Thêm vào cấu hình";
-            this.button1.UseVisualStyleBackColor = false;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(908, 330);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(0, 13);
-            this.label6.TabIndex = 61;
-            // 
-            // button5
-            // 
-            this.button5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
-            this.button5.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
-            this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button5.ForeColor = System.Drawing.Color.White;
-            this.button5.Location = new System.Drawing.Point(1034, 14);
-            this.button5.Name = "button5";
-            this.button5.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button5.Size = new System.Drawing.Size(88, 28);
-            this.button5.TabIndex = 65;
-            this.button5.Text = "Lưu báo giá";
-            this.button5.UseVisualStyleBackColor = false;
-            // 
-            // button6
-            // 
-            this.button6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.button6.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.button6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button6.ForeColor = System.Drawing.Color.White;
-            this.button6.Location = new System.Drawing.Point(921, 14);
-            this.button6.Name = "button6";
-            this.button6.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button6.Size = new System.Drawing.Size(107, 28);
-            this.button6.TabIndex = 63;
-            this.button6.Text = "Tải cấu hình";
-            this.button6.UseVisualStyleBackColor = false;
-            // 
-            // button4
-            // 
-            this.button4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
-            this.button4.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
-            this.button4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button4.ForeColor = System.Drawing.Color.White;
-            this.button4.Location = new System.Drawing.Point(1128, 14);
-            this.button4.Name = "button4";
-            this.button4.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button4.Size = new System.Drawing.Size(78, 28);
-            this.button4.TabIndex = 64;
-            this.button4.Text = "Xóa tất cả";
-            this.button4.UseVisualStyleBackColor = false;
-            // 
-            // button10
-            // 
-            this.button10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(160)))), ((int)(((byte)(80)))));
-            this.button10.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(160)))), ((int)(((byte)(80)))));
-            this.button10.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button10.ForeColor = System.Drawing.Color.White;
-            this.button10.Location = new System.Drawing.Point(1212, 14);
-            this.button10.Name = "button10";
-            this.button10.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button10.Size = new System.Drawing.Size(88, 28);
-            this.button10.TabIndex = 66;
-            this.button10.Text = "Xuất file";
-            this.button10.UseVisualStyleBackColor = false;
-            this.button10.Click += new System.EventHandler(this.btnExportFile_Click);
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(230, 16);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(56, 13);
-            this.label1.TabIndex = 71;
-            this.label1.Text = "Danh mục";
-            // 
-            // gbTimkiemSanPham
-            // 
-            this.gbTimkiemSanPham.Controls.Add(this.label1);
-            this.gbTimkiemSanPham.Controls.Add(this.cboCategory);
-            this.gbTimkiemSanPham.Controls.Add(this.textBox2);
-            this.gbTimkiemSanPham.Controls.Add(this.button9);
-            this.gbTimkiemSanPham.Controls.Add(this.label9);
-            this.gbTimkiemSanPham.Controls.Add(this.button2);
-            this.gbTimkiemSanPham.Controls.Add(this.button1);
-            this.gbTimkiemSanPham.Controls.Add(this.dgvAllProducts);
-            this.gbTimkiemSanPham.Location = new System.Drawing.Point(3, 3);
-            this.gbTimkiemSanPham.Name = "gbTimkiemSanPham";
-            this.gbTimkiemSanPham.Size = new System.Drawing.Size(711, 327);
-            this.gbTimkiemSanPham.TabIndex = 72;
-            this.gbTimkiemSanPham.TabStop = false;
-            this.gbTimkiemSanPham.Text = "Bảng tìm kiếm lựa chọn sản phẩm";
-            // 
-            // cboCategory
-            // 
-            this.cboCategory.DropDownHeight = 1;
-            this.cboCategory.FormattingEnabled = true;
-            this.cboCategory.IntegralHeight = false;
-            this.cboCategory.Location = new System.Drawing.Point(233, 32);
-            this.cboCategory.Name = "cboCategory";
-            this.cboCategory.ReadOnly = false;
-            this.cboCategory.Size = new System.Drawing.Size(180, 21);
-            this.cboCategory.TabIndex = 70;
             // 
             // dataGridView1
             // 
             this.dataGridView1.AllowUserToAddRows = false;
+            this.dataGridView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Location = new System.Drawing.Point(7, 82);
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.RowHeadersWidth = 51;
             this.dataGridView1.RowTemplate.Height = 36;
-            this.dataGridView1.Size = new System.Drawing.Size(686, 234);
+            this.dataGridView1.Size = new System.Drawing.Size(1457, 232);
             this.dataGridView1.TabIndex = 33;
             // 
             // button3
@@ -275,38 +95,45 @@ namespace ECQ_Soft
             this.button3.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(100)))), ((int)(((byte)(180)))));
             this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button3.ForeColor = System.Drawing.Color.White;
-            this.button3.Location = new System.Drawing.Point(310, 53);
+            this.button3.Location = new System.Drawing.Point(310, 48);
             this.button3.Name = "button3";
-            this.button3.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button3.Size = new System.Drawing.Size(138, 27);
+            this.button3.Size = new System.Drawing.Size(160, 32);
             this.button3.TabIndex = 7;
             this.button3.Text = "Đóng gói cấu hình";
+            this.button3.IconChar = FontAwesome.Sharp.IconChar.BoxOpen;
+            this.button3.IconColor = System.Drawing.Color.White;
+            this.button3.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.button3.IconSize = 18;
+            this.button3.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.button3.UseVisualStyleBackColor = false;
             // 
             // button7
             // 
-            this.button7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
-            this.button7.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.button7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(221)))), ((int)(((byte)(75)))), ((int)(((byte)(57)))));
+            this.button7.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(221)))), ((int)(((byte)(75)))), ((int)(((byte)(57)))));
             this.button7.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button7.ForeColor = System.Drawing.Color.White;
-            this.button7.Location = new System.Drawing.Point(602, 53);
+            this.button7.Location = new System.Drawing.Point(1180, 48);
             this.button7.Name = "button7";
-            this.button7.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button7.Size = new System.Drawing.Size(90, 27);
+            this.button7.Size = new System.Drawing.Size(120, 32);
             this.button7.TabIndex = 49;
             this.button7.Text = "Xóa tất cả";
+            this.button7.IconChar = FontAwesome.Sharp.IconChar.TrashAlt;
+            this.button7.IconColor = System.Drawing.Color.White;
+            this.button7.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.button7.IconSize = 18;
+            this.button7.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.button7.UseVisualStyleBackColor = false;
             // 
             // btnSearch
             // 
             this.btnSearch.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(220)))));
-            this.btnSearch.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(220)))));
             this.btnSearch.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearch.ForeColor = System.Drawing.Color.White;
-            this.btnSearch.Location = new System.Drawing.Point(213, 52);
+            this.btnSearch.Location = new System.Drawing.Point(213, 48);
             this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.btnSearch.Size = new System.Drawing.Size(91, 27);
+            this.btnSearch.Size = new System.Drawing.Size(91, 32);
             this.btnSearch.TabIndex = 59;
             this.btnSearch.Text = "Tìm kiếm";
             this.btnSearch.UseVisualStyleBackColor = false;
@@ -314,80 +141,107 @@ namespace ECQ_Soft
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(7, 55);
+            this.comboBox1.Location = new System.Drawing.Point(7, 52);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(200, 21);
+            this.comboBox1.Size = new System.Drawing.Size(200, 24);
             this.comboBox1.TabIndex = 57;
             // 
             // label3
             // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(4, 34);
+            this.label3.AutoSize = false;
+            this.label3.Location = new System.Drawing.Point(4, 32);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(94, 13);
+            this.label3.Size = new System.Drawing.Size(150, 20);
             this.label3.TabIndex = 56;
             this.label3.Text = "Đóng gói cấu hình";
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btnOpenSearchModal);
             this.groupBox1.Controls.Add(this.btn_baogia);
-            this.groupBox1.Controls.Add(this.button11);
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.comboBox1);
             this.groupBox1.Controls.Add(this.btnSearch);
+            this.groupBox1.Controls.Add(this.btnAdvancedConfigBuild);
             this.groupBox1.Controls.Add(this.button7);
             this.groupBox1.Controls.Add(this.button3);
             this.groupBox1.Controls.Add(this.dataGridView1);
-            this.groupBox1.Location = new System.Drawing.Point(757, 3);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(709, 327);
+            this.groupBox1.Size = new System.Drawing.Size(1480, 325);
             this.groupBox1.TabIndex = 73;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "XÂY DỰNG CẤU HÌNH";
+            this.groupBox1.Text = "XÂY DỰNG CẤU HÌNH   ";
+            // 
+            // btnOpenSearchModal
+            // 
+            this.btnOpenSearchModal.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnOpenSearchModal.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(141)))), ((int)(((byte)(188)))));
+            this.btnOpenSearchModal.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnOpenSearchModal.ForeColor = System.Drawing.Color.White;
+            this.btnOpenSearchModal.Location = new System.Drawing.Point(1310, 48);
+            this.btnOpenSearchModal.Name = "btnOpenSearchModal";
+            this.btnOpenSearchModal.Size = new System.Drawing.Size(150, 32);
+            this.btnOpenSearchModal.TabIndex = 56;
+            this.btnOpenSearchModal.Text = "Thêm Sản Phẩm";
+            this.btnOpenSearchModal.IconChar = FontAwesome.Sharp.IconChar.Plus;
+            this.btnOpenSearchModal.IconColor = System.Drawing.Color.White;
+            this.btnOpenSearchModal.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btnOpenSearchModal.IconSize = 18;
+            this.btnOpenSearchModal.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.btnOpenSearchModal.UseVisualStyleBackColor = false;
             // 
             // btn_baogia
             // 
-            this.btn_baogia.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(100)))), ((int)(((byte)(180)))));
-            this.btn_baogia.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(100)))), ((int)(((byte)(180)))));
+            this.btn_baogia.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btn_baogia.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(239)))));
             this.btn_baogia.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btn_baogia.ForeColor = System.Drawing.Color.White;
-            this.btn_baogia.Location = new System.Drawing.Point(454, 53);
+            this.btn_baogia.Location = new System.Drawing.Point(1000, 48);
             this.btn_baogia.Name = "btn_baogia";
-            this.btn_baogia.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.btn_baogia.Size = new System.Drawing.Size(142, 27);
+            this.btn_baogia.Size = new System.Drawing.Size(170, 32);
             this.btn_baogia.TabIndex = 61;
             this.btn_baogia.Text = "Lưu xuống báo giá";
+            this.btn_baogia.IconChar = FontAwesome.Sharp.IconChar.ArrowCircleDown;
+            this.btn_baogia.IconColor = System.Drawing.Color.White;
+            this.btn_baogia.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btn_baogia.IconSize = 18;
+            this.btn_baogia.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.btn_baogia.UseVisualStyleBackColor = false;
             this.btn_baogia.Click += new System.EventHandler(this.btn_baogia_Click);
             // 
-            // button11
+            // btnAdvancedConfigBuild
             // 
-            this.button11.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
-            this.button11.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
-            this.button11.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button11.ForeColor = System.Drawing.Color.White;
-            this.button11.Location = new System.Drawing.Point(548, 23);
-            this.button11.Name = "button11";
-            this.button11.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.button11.Size = new System.Drawing.Size(144, 27);
-            this.button11.TabIndex = 60;
-            this.button11.Text = "Cấu hình nâng cao";
-            this.button11.UseVisualStyleBackColor = false;
-            this.button11.Click += new System.EventHandler(this.button11_Click);
+            this.btnAdvancedConfigBuild.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnAdvancedConfigBuild.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
+            this.btnAdvancedConfigBuild.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAdvancedConfigBuild.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnAdvancedConfigBuild.ForeColor = System.Drawing.Color.White;
+            this.btnAdvancedConfigBuild.Location = new System.Drawing.Point(810, 48);
+            this.btnAdvancedConfigBuild.Name = "btnAdvancedConfigBuild";
+            this.btnAdvancedConfigBuild.Size = new System.Drawing.Size(180, 32);
+            this.btnAdvancedConfigBuild.TabIndex = 83;
+            this.btnAdvancedConfigBuild.Text = "Cấu hình nâng cao";
+            this.btnAdvancedConfigBuild.IconChar = FontAwesome.Sharp.IconChar.Tools;
+            this.btnAdvancedConfigBuild.IconColor = System.Drawing.Color.White;
+            this.btnAdvancedConfigBuild.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btnAdvancedConfigBuild.IconSize = 18;
+            this.btnAdvancedConfigBuild.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.btnAdvancedConfigBuild.UseVisualStyleBackColor = false;
+            this.btnAdvancedConfigBuild.Click += new System.EventHandler(this.btnAdvancedConfigBuild_Click);
             // 
             // button8
             // 
             this.button8.BackColor = System.Drawing.Color.White;
             this.button8.Enabled = false;
-            this.button8.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(120)))), ((int)(((byte)(200)))));
             this.button8.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button8.Location = new System.Drawing.Point(721, 153);
             this.button8.Name = "button8";
-            this.button8.Padding = new System.Windows.Forms.Padding(2);
             this.button8.Size = new System.Drawing.Size(32, 32);
             this.button8.TabIndex = 74;
             this.button8.UseVisualStyleBackColor = false;
-            this.button8.Click += new System.EventHandler(this.button8_Click);
+            this.button8.Visible = false;
             // 
             // groupBox2
             // 
@@ -397,138 +251,235 @@ namespace ECQ_Soft
             this.groupBox2.Controls.Add(this.button4);
             this.groupBox2.Controls.Add(this.dgvParentProducts);
             this.groupBox2.Controls.Add(this.lstSavedConfigs);
+            this.groupBox2.Controls.Add(this.btnOpenSearchModalForQuote);
             this.groupBox2.Controls.Add(this.button6);
+            this.groupBox2.Controls.Add(this.btnAdvancedConfigForQuotation);
             this.groupBox2.Controls.Add(this.button5);
-            this.groupBox2.Location = new System.Drawing.Point(3, 336);
+            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox2.Location = new System.Drawing.Point(0, 0);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(1463, 289);
+            this.groupBox2.Size = new System.Drawing.Size(1480, 321);
             this.groupBox2.TabIndex = 75;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "BẢNG BAO GIÁ/ DỰ TOÁN";
-            this.groupBox2.Enter += new System.EventHandler(this.groupBox2_Enter);
+            this.groupBox2.Text = "BẢNG BÁO GIÁ/ DỰ TOÁN   ";
             // 
             // lblCurrentTab
             // 
-            this.lblCurrentTab.AutoSize = true;
+            this.lblCurrentTab.AutoSize = false;
             this.lblCurrentTab.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.lblCurrentTab.ForeColor = System.Drawing.Color.MediumBlue;
-            this.lblCurrentTab.Location = new System.Drawing.Point(10, 16);
+            this.lblCurrentTab.Location = new System.Drawing.Point(10, 15);
             this.lblCurrentTab.Name = "lblCurrentTab";
-            this.lblCurrentTab.Size = new System.Drawing.Size(130, 19);
+            this.lblCurrentTab.Size = new System.Drawing.Size(300, 23);
             this.lblCurrentTab.TabIndex = 80;
             this.lblCurrentTab.Text = "Tab: [Chưa chọn]";
             // 
-            // lstSavedConfigs
-            // 
-            this.lstSavedConfigs.DropDownHeight = 1;
-            this.lstSavedConfigs.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.lstSavedConfigs.FormattingEnabled = true;
-            this.lstSavedConfigs.IntegralHeight = false;
-            this.lstSavedConfigs.ItemHeight = 13;
-            this.lstSavedConfigs.Location = new System.Drawing.Point(712, 14);
-            this.lstSavedConfigs.Name = "lstSavedConfigs";
-            this.lstSavedConfigs.Placeholder = "-- Chọn cấu hình --";
-            this.lstSavedConfigs.Size = new System.Drawing.Size(203, 21);
-            this.lstSavedConfigs.TabIndex = 62;
-            // 
             // btnChangeSheet
             // 
-            this.btnChangeSheet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
-            this.btnChangeSheet.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
+            this.btnChangeSheet.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnChangeSheet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(57)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
             this.btnChangeSheet.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnChangeSheet.ForeColor = System.Drawing.Color.White;
-            this.btnChangeSheet.Location = new System.Drawing.Point(1306, 14);
+            this.btnChangeSheet.Location = new System.Drawing.Point(1190, 15);
             this.btnChangeSheet.Name = "btnChangeSheet";
-            this.btnChangeSheet.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
-            this.btnChangeSheet.Size = new System.Drawing.Size(140, 28);
+            this.btnChangeSheet.Size = new System.Drawing.Size(110, 32);
             this.btnChangeSheet.TabIndex = 66;
-            this.btnChangeSheet.Text = "Đổi Tab Google Sheet";
+            this.btnChangeSheet.Text = "Đổi Tab";
+            this.btnChangeSheet.IconChar = FontAwesome.Sharp.IconChar.Sync;
+            this.btnChangeSheet.IconColor = System.Drawing.Color.White;
+            this.btnChangeSheet.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btnChangeSheet.IconSize = 18;
+            this.btnChangeSheet.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
             this.btnChangeSheet.UseVisualStyleBackColor = false;
             this.btnChangeSheet.Click += new System.EventHandler(this.btnChangeSheet_Click);
             // 
+            // button10
+            // 
+            this.button10.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(166)))), ((int)(((byte)(90)))));
+            this.button10.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button10.ForeColor = System.Drawing.Color.White;
+            this.button10.Location = new System.Drawing.Point(1070, 15);
+            this.button10.Name = "button10";
+            this.button10.Size = new System.Drawing.Size(110, 32);
+            this.button10.TabIndex = 66;
+            this.button10.Text = "Xuất file";
+            this.button10.IconChar = FontAwesome.Sharp.IconChar.FileExcel;
+            this.button10.IconColor = System.Drawing.Color.White;
+            this.button10.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.button10.IconSize = 18;
+            this.button10.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.button10.UseVisualStyleBackColor = false;
+            this.button10.Click += new System.EventHandler(this.btnExportFile_Click);
+            // 
+            // button4
+            // 
+            this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(221)))), ((int)(((byte)(75)))), ((int)(((byte)(57)))));
+            this.button4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button4.ForeColor = System.Drawing.Color.White;
+            this.button4.Location = new System.Drawing.Point(940, 15);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(120, 32);
+            this.button4.TabIndex = 64;
+            this.button4.Text = "Xóa tất cả";
+            this.button4.IconChar = FontAwesome.Sharp.IconChar.TrashAlt;
+            this.button4.IconColor = System.Drawing.Color.White;
+            this.button4.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.button4.IconSize = 18;
+            this.button4.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.button4.UseVisualStyleBackColor = false;
+            // 
+            // lstSavedConfigs
+            // 
+            this.lstSavedConfigs.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.lstSavedConfigs.FormattingEnabled = true;
+            this.lstSavedConfigs.Location = new System.Drawing.Point(10, 45);
+            this.lstSavedConfigs.Name = "lstSavedConfigs";
+            this.lstSavedConfigs.Placeholder = "-- Chọn cấu hình --";
+            this.lstSavedConfigs.Size = new System.Drawing.Size(203, 24);
+            this.lstSavedConfigs.TabIndex = 62;
+            // 
+            // btnOpenSearchModalForQuote
+            // 
+            this.btnOpenSearchModalForQuote.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnOpenSearchModalForQuote.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(141)))), ((int)(((byte)(188)))));
+            this.btnOpenSearchModalForQuote.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnOpenSearchModalForQuote.ForeColor = System.Drawing.Color.White;
+            this.btnOpenSearchModalForQuote.Location = new System.Drawing.Point(1310, 15);
+            this.btnOpenSearchModalForQuote.Name = "btnOpenSearchModalForQuote";
+            this.btnOpenSearchModalForQuote.Size = new System.Drawing.Size(150, 32);
+            this.btnOpenSearchModalForQuote.TabIndex = 81;
+            this.btnOpenSearchModalForQuote.Text = "Thêm Sản Phẩm";
+            this.btnOpenSearchModalForQuote.IconChar = FontAwesome.Sharp.IconChar.Plus;
+            this.btnOpenSearchModalForQuote.IconColor = System.Drawing.Color.White;
+            this.btnOpenSearchModalForQuote.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btnOpenSearchModalForQuote.IconSize = 18;
+            this.btnOpenSearchModalForQuote.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.btnOpenSearchModalForQuote.UseVisualStyleBackColor = false;
+            // 
+            // btnAdvancedConfigForQuotation
+            // 
+            this.btnAdvancedConfigForQuotation.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnAdvancedConfigForQuotation.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(102)))), ((int)(((byte)(102)))), ((int)(((byte)(102)))));
+            this.btnAdvancedConfigForQuotation.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAdvancedConfigForQuotation.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnAdvancedConfigForQuotation.ForeColor = System.Drawing.Color.White;
+            this.btnAdvancedConfigForQuotation.Location = new System.Drawing.Point(605, 15);
+            this.btnAdvancedConfigForQuotation.Name = "btnAdvancedConfigForQuotation";
+            this.btnAdvancedConfigForQuotation.Size = new System.Drawing.Size(180, 32);
+            this.btnAdvancedConfigForQuotation.TabIndex = 82;
+            this.btnAdvancedConfigForQuotation.Text = "Cấu hình nâng cao";
+            this.btnAdvancedConfigForQuotation.IconChar = FontAwesome.Sharp.IconChar.Cog;
+            this.btnAdvancedConfigForQuotation.IconColor = System.Drawing.Color.White;
+            this.btnAdvancedConfigForQuotation.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.btnAdvancedConfigForQuotation.IconSize = 18;
+            this.btnAdvancedConfigForQuotation.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.btnAdvancedConfigForQuotation.UseVisualStyleBackColor = false;
+            this.btnAdvancedConfigForQuotation.Click += new System.EventHandler(this.btnAdvancedConfigForQuotation_Click);
+            // 
+            // button5
+            // 
+            this.button5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.button5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(92)))), ((int)(((byte)(168)))));
+            this.button5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button5.ForeColor = System.Drawing.Color.White;
+            this.button5.Location = new System.Drawing.Point(795, 15);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(135, 32);
+            this.button5.TabIndex = 65;
+            this.button5.Text = "Lưu báo giá";
+            this.button5.IconChar = FontAwesome.Sharp.IconChar.Save;
+            this.button5.IconColor = System.Drawing.Color.White;
+            this.button5.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.button5.IconSize = 18;
+            this.button5.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.button5.UseVisualStyleBackColor = false;
+            // 
+            // button6
+            // 
+            this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
+            this.button6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(239)))));
+            this.button6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button6.ForeColor = System.Drawing.Color.White;
+            this.button6.Location = new System.Drawing.Point(219, 41);
+            this.button6.Name = "button6";
+            this.button6.Size = new System.Drawing.Size(130, 32);
+            this.button6.TabIndex = 63;
+            this.button6.Text = "Tải cấu hình";
+            this.button6.IconChar = FontAwesome.Sharp.IconChar.FolderOpen;
+            this.button6.IconColor = System.Drawing.Color.White;
+            this.button6.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            this.button6.IconSize = 18;
+            this.button6.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.button6.UseVisualStyleBackColor = false;
+            // 
+            // splitMain
+            // 
+            this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitMain.Location = new System.Drawing.Point(0, 0);
+            this.splitMain.Name = "splitMain";
+            this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitMain.Panel1
+            // 
+            this.splitMain.Panel1.Controls.Add(this.groupBox1);
+            // 
+            // splitMain.Panel2
+            // 
+            this.splitMain.Panel2.Controls.Add(this.groupBox2);
+            this.splitMain.Size = new System.Drawing.Size(1480, 650);
+            this.splitMain.SplitterDistance = 325;
+            this.splitMain.TabIndex = 100;
+            // 
             // FrmConfig
             // 
-            this.AutoScroll = true;
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+            this.Controls.Add(this.splitMain);
             this.Controls.Add(this.button8);
-            this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.gbTimkiemSanPham);
-            this.Controls.Add(this.label6);
-            this.Controls.Add(this.label5);
-            this.Controls.Add(this.groupBox2);
             this.Name = "FrmConfig";
-            this.Size = new System.Drawing.Size(925, 337);
+            this.Size = new System.Drawing.Size(1480, 650);
+            this.Font = new System.Drawing.Font("Times New Roman", 9F);
             this.Load += new System.EventHandler(this.FrmConfig_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvParentProducts)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvAllProducts)).EndInit();
-            this.gbTimkiemSanPham.ResumeLayout(false);
-            this.gbTimkiemSanPham.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
-            this.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            this.splitMain.Panel1.ResumeLayout(false);
+            this.splitMain.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
+            this.splitMain.ResumeLayout(false);
+            this.ResumeLayout(true);
             this.PerformLayout();
 
         }
 
         #endregion
 
-        // LEFT SIDE
-        private System.Windows.Forms.Label lblSearch;
-        private System.Windows.Forms.TextBox txtSearch;
-        private System.Windows.Forms.Label lblHang;
-        private System.Windows.Forms.TextBox txtHang;
-        private System.Windows.Forms.Label lblCategory;
-        private System.Windows.Forms.TextBox txtCategory;
-        private System.Windows.Forms.DataGridView dgvProducts;
-        // private System.Windows.Forms.Button btnAddMain;
-        // private System.Windows.Forms.Button btnAddChild;
-
-        // RIGHT SIDE - TOP
-        private System.Windows.Forms.Label lblParentSelected;
-        private System.Windows.Forms.ListBox lstParent;
-        private System.Windows.Forms.Label lblChildSelected;
-        private System.Windows.Forms.ListBox lstChild;
-
-        // BOTTOM SECTION
-        private System.Windows.Forms.Panel panelBottom;
-        private System.Windows.Forms.Label lblCauHinh;
-        private System.Windows.Forms.Label lblChonSanPham;
-        private System.Windows.Forms.ComboBox cboSanPham;
-        private System.Windows.Forms.Label lblLinhVuc;
-        private System.Windows.Forms.CheckedListBox lstLinhVuc;
-        private System.Windows.Forms.Label lblPhanLoai;
-        private System.Windows.Forms.DataGridView dgvPhanLoai;
-        private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.DataGridView dgvParentProducts;
-        private System.Windows.Forms.DataGridView dgvAllProducts;
-        private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.Button button9;
-        private System.Windows.Forms.Label label9;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Button button5;
-        private Helper.CheckedComboBox lstSavedConfigs;
-        private System.Windows.Forms.Button button6;
-        private System.Windows.Forms.Button button4;
-        private System.Windows.Forms.Button button10;
-        private ECQ_Soft.Helper.CategoryTreeDropdown cboCategory;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.GroupBox gbTimkiemSanPham;
         private System.Windows.Forms.DataGridView dataGridView1;
-        private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.Button button7;
+        private FontAwesome.Sharp.IconButton button3;
+        private FontAwesome.Sharp.IconButton button7;
         private System.Windows.Forms.Button btnSearch;
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.GroupBox groupBox1;
+        private FontAwesome.Sharp.IconButton btnOpenSearchModal;
+        private FontAwesome.Sharp.IconButton btn_baogia;
+        private FontAwesome.Sharp.IconButton btnAdvancedConfigBuild;
         private System.Windows.Forms.Button button8;
-        private System.Windows.Forms.Button button11;
-        private System.Windows.Forms.Button btn_baogia;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label lblCurrentTab;
-        private System.Windows.Forms.Button btnChangeSheet;
+        private FontAwesome.Sharp.IconButton btnChangeSheet;
+        private FontAwesome.Sharp.IconButton button10;
+        private FontAwesome.Sharp.IconButton button4;
+        private ECQ_Soft.Helper.CheckedComboBox lstSavedConfigs;
+        private FontAwesome.Sharp.IconButton btnOpenSearchModalForQuote;
+        private FontAwesome.Sharp.IconButton btnAdvancedConfigForQuotation;
+        private FontAwesome.Sharp.IconButton button5;
+        private FontAwesome.Sharp.IconButton button6;
+        private System.Windows.Forms.SplitContainer splitMain;
     }
 }

@@ -47,7 +47,7 @@ namespace ECQ_Soft
             // lblTitle
             // 
             this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTitle.Font = new System.Drawing.Font("Times New Roman", 13F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(0, 0);
             this.lblTitle.Name = "lblTitle";
@@ -77,7 +77,7 @@ namespace ECQ_Soft
             // 
             this.rdoExisting.AutoSize = true;
             this.rdoExisting.Checked = true;
-            this.rdoExisting.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.rdoExisting.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.rdoExisting.Location = new System.Drawing.Point(20, 16);
             this.rdoExisting.Name = "rdoExisting";
             this.rdoExisting.Size = new System.Drawing.Size(137, 23);
@@ -90,7 +90,7 @@ namespace ECQ_Soft
             // rdoNew
             // 
             this.rdoNew.AutoSize = true;
-            this.rdoNew.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.rdoNew.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.rdoNew.Location = new System.Drawing.Point(140, 16);
             this.rdoNew.Name = "rdoNew";
             this.rdoNew.Size = new System.Drawing.Size(140, 23);
@@ -102,7 +102,7 @@ namespace ECQ_Soft
             // rdoRename
             // 
             this.rdoRename.AutoSize = true;
-            this.rdoRename.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.rdoRename.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.rdoRename.Location = new System.Drawing.Point(260, 16);
             this.rdoRename.Name = "rdoRename";
             this.rdoRename.Size = new System.Drawing.Size(100, 23);
@@ -114,7 +114,7 @@ namespace ECQ_Soft
             // lblExisting
             // 
             this.lblExisting.AutoSize = true;
-            this.lblExisting.Font = new System.Drawing.Font("Times New Roman", 9.5F);
+            this.lblExisting.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblExisting.ForeColor = System.Drawing.Color.FromArgb(60, 60, 60);
             this.lblExisting.Location = new System.Drawing.Point(20, 56);
             this.lblExisting.Name = "lblExisting";
@@ -127,7 +127,7 @@ namespace ECQ_Soft
             this.cboExisting.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
             this.cboExisting.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this.cboExisting.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cboExisting.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.cboExisting.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboExisting.Location = new System.Drawing.Point(20, 78);
             this.cboExisting.Name = "cboExisting";
             this.cboExisting.Size = new System.Drawing.Size(390, 25);
@@ -136,7 +136,7 @@ namespace ECQ_Soft
             // lblNewName
             // 
             this.lblNewName.AutoSize = true;
-            this.lblNewName.Font = new System.Drawing.Font("Times New Roman", 9.5F);
+            this.lblNewName.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblNewName.ForeColor = System.Drawing.Color.FromArgb(60, 60, 60);
             this.lblNewName.Location = new System.Drawing.Point(20, 56);
             this.lblNewName.Name = "lblNewName";
@@ -147,7 +147,7 @@ namespace ECQ_Soft
             // 
             // txtNewName
             // 
-            this.txtNewName.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.txtNewName.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtNewName.Location = new System.Drawing.Point(20, 78);
             this.txtNewName.Name = "txtNewName";
             this.txtNewName.Size = new System.Drawing.Size(390, 25);
@@ -158,7 +158,7 @@ namespace ECQ_Soft
             // 
             // lblStatus
             // 
-            this.lblStatus.Font = new System.Drawing.Font("Times New Roman", 8.5F, System.Drawing.FontStyle.Italic);
+            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
             this.lblStatus.ForeColor = System.Drawing.Color.Gray;
             this.lblStatus.Location = new System.Drawing.Point(20, 148);
             this.lblStatus.Name = "lblStatus";
@@ -182,7 +182,7 @@ namespace ECQ_Soft
             this.btnConfirm.BackColor = System.Drawing.Color.FromArgb(34, 139, 34);
             this.btnConfirm.FlatAppearance.BorderSize = 0;
             this.btnConfirm.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnConfirm.Font = new System.Drawing.Font("Times New Roman", 10F, System.Drawing.FontStyle.Bold);
+            this.btnConfirm.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnConfirm.ForeColor = System.Drawing.Color.White;
             this.btnConfirm.Location = new System.Drawing.Point(217, 12);
             this.btnConfirm.Name = "btnConfirm";
@@ -197,7 +197,7 @@ namespace ECQ_Soft
             this.btnCancel.BackColor = System.Drawing.Color.FromArgb(200, 200, 200);
             this.btnCancel.FlatAppearance.BorderSize = 0;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancel.Font = new System.Drawing.Font("Times New Roman", 10F);
+            this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnCancel.ForeColor = System.Drawing.Color.FromArgb(60, 60, 60);
             this.btnCancel.Location = new System.Drawing.Point(348, 12);
             this.btnCancel.Name = "btnCancel";

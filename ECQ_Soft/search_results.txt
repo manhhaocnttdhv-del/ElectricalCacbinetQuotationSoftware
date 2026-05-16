@@ -1,0 +1,31 @@
+﻿
+LineNumber Line                                                                                                        
+---------- ----                                                                                                        
+        93         /// <summary>Quan hệ MỞ RỘNG — tích lũy khi user click vào sp trên dgvAllProducts (không reset kh...
+       163             // Khi chọn dòng trong dataGridView1 (childProducts) → gray-out sp không quan hệ trên dgvAllP...
+       165             // Gray-out + ngăn click dòng bị disable trên dgvAllProducts                                    
+       928         /// Sau khi nạp: cập nhật bộ lọc hãng/danh mục và hiển thị lên dgvAllProducts.                      
+       985             if (cboCategory != null)                                                                        
+       986                 cboCategory.LoadTree(treeNodes);                                                            
+      1237         /// Định dạng hai grid sản phẩm (dgvAllProducts & dataGridView1):                                   
+      1592                     UpdateConfigGrid(); // Update the dgvAllProducts and dataGridView1                      
+      2775             var selectedItems = dgvAllProducts.SelectedRows                                                 
+      2857             dgvAllProducts.ClearSelection();                                                                
+      3413             dgvAllProducts.ContextMenuStrip = ctxMenu;                                                      
+      3418                 Location = new Point(button2.Location.X - 160, 29),                                         
+      3431                 Location = new Point(button2.Location.X - 80, 29),                                          
+      3441             gbTimkiemSanPham.Controls.Add(btnAdd);                                                          
+      3442             gbTimkiemSanPham.Controls.Add(btnEdit);                                                         
+      3480                     UpdateGridSelector(dgvAllProducts, allProducts);                                        
+      3481                     dgvAllProducts.Refresh();                                                               
+      3495             if (dgvAllProducts.CurrentRow == null || dgvAllProducts.CurrentRow.Index < 0)                   
+      3501             var selectedProduct = dgvAllProducts.CurrentRow.DataBoundItem as Products;                      
+      3551                     UpdateGridSelector(dgvAllProducts, allProducts);                                        
+      3552                     dgvAllProducts.Refresh();                                                               
+      3564         private async void DgvAllProducts_CellValueChanged(object sender, DataGridViewCellEventArgs e)      
+      3709             // Xóa hết → phục hồi dgvAllProducts về trạng thái bình thường                                  
+      4152             var selectedItems = dgvAllProducts.SelectedRows                                                 
+      4204                     dgvAllProducts.Refresh();                                                               
+      4215         /// User tick chọn SP nào muốn bỏ mờ (hiện rõ) trên dgvAllProducts.                                 
+
+

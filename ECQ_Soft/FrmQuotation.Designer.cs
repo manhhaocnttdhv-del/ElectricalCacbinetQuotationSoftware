@@ -1,4 +1,4 @@
-﻿namespace ECQ_Soft
+namespace ECQ_Soft
 {
     partial class FrmQuotation
     {
@@ -105,15 +105,16 @@
             this.groupBox2.Controls.Add(this.cboMaterial);
             this.groupBox2.Controls.Add(this.label4);
             this.groupBox2.Controls.Add(this.txtHeight);
-            this.groupBox2.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.groupBox2.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold);
             this.groupBox2.Location = new System.Drawing.Point(1, 9);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox2.Size = new System.Drawing.Size(1373, 233);
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.TabIndex = 2;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Thông tin tủ điện/ thang máng cáp";
+            this.groupBox2.Text = "Thông tin tủ điện / thang máng cáp";
             // 
             // gbGiaVon
             // 
@@ -189,6 +190,7 @@
             this.btnReload.Margin = new System.Windows.Forms.Padding(2);
             this.btnReload.Name = "btnReload";
             this.btnReload.Size = new System.Drawing.Size(128, 54);
+            this.btnReload.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnReload.TabIndex = 24;
             this.btnReload.Text = "Tải lại";
             this.btnReload.UseVisualStyleBackColor = true;
@@ -243,7 +245,7 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label13.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
             this.label13.Location = new System.Drawing.Point(8, 23);
             this.label13.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label13.Name = "label13";
@@ -267,6 +269,7 @@
             this.btnUpdate.Margin = new System.Windows.Forms.Padding(2);
             this.btnUpdate.Name = "btnUpdate";
             this.btnUpdate.Size = new System.Drawing.Size(128, 31);
+            this.btnUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnUpdate.TabIndex = 24;
             this.btnUpdate.Text = "Cập nhật giá";
             this.btnUpdate.UseVisualStyleBackColor = true;
@@ -288,7 +291,7 @@
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label14.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
             this.label14.Location = new System.Drawing.Point(8, 24);
             this.label14.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label14.Name = "label14";
@@ -420,6 +423,7 @@
             this.cboCabinetType.Margin = new System.Windows.Forms.Padding(2);
             this.cboCabinetType.Name = "cboCabinetType";
             this.cboCabinetType.Size = new System.Drawing.Size(942, 27);
+            this.cboCabinetType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.cboCabinetType.TabIndex = 7;
             this.cboCabinetType.SelectedIndexChanged += new System.EventHandler(this.cboCabinetType_SelectedIndexChanged);
             // 
@@ -442,6 +446,7 @@
             this.cboMaterial.Margin = new System.Windows.Forms.Padding(2);
             this.cboMaterial.Name = "cboMaterial";
             this.cboMaterial.Size = new System.Drawing.Size(942, 27);
+            this.cboMaterial.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.cboMaterial.TabIndex = 5;
             this.cboMaterial.SelectedIndexChanged += new System.EventHandler(this.cboMaterial_SelectedIndexChanged);
             // 
@@ -479,7 +484,7 @@
             // lbGiabanVPAText
             // 
             this.lbGiabanVPAText.AutoSize = true;
-            this.lbGiabanVPAText.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbGiabanVPAText.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
             this.lbGiabanVPAText.Location = new System.Drawing.Point(419, 382);
             this.lbGiabanVPAText.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbGiabanVPAText.Name = "lbGiabanVPAText";
@@ -501,7 +506,7 @@
             // lbGiabanTTText
             // 
             this.lbGiabanTTText.AutoSize = true;
-            this.lbGiabanTTText.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbGiabanTTText.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
             this.lbGiabanTTText.Location = new System.Drawing.Point(419, 349);
             this.lbGiabanTTText.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbGiabanTTText.Name = "lbGiabanTTText";
@@ -523,7 +528,7 @@
             // lbHME
             // 
             this.lbHME.AutoSize = true;
-            this.lbHME.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbHME.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
             this.lbHME.Location = new System.Drawing.Point(8, 390);
             this.lbHME.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lbHME.Name = "lbHME";
@@ -534,10 +539,11 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(1273, 382);
+            this.button1.Location = new System.Drawing.Point(1205, 382);
             this.button1.Margin = new System.Windows.Forms.Padding(2);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(225, 31);
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button1.TabIndex = 40;
             this.button1.Text = "Xóa khỏi Danh mục Đơn hàng";
             this.button1.UseVisualStyleBackColor = true;
@@ -579,10 +585,11 @@
             // btnExporttoExcel
             // 
             this.btnExporttoExcel.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnExporttoExcel.Location = new System.Drawing.Point(1261, 670);
+            this.btnExporttoExcel.Location = new System.Drawing.Point(1205, 670);
             this.btnExporttoExcel.Margin = new System.Windows.Forms.Padding(2);
             this.btnExporttoExcel.Name = "btnExporttoExcel";
             this.btnExporttoExcel.Size = new System.Drawing.Size(225, 31);
+            this.btnExporttoExcel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnExporttoExcel.TabIndex = 36;
             this.btnExporttoExcel.Text = "Xuất Đơn hàng ra Excel";
             this.btnExporttoExcel.UseVisualStyleBackColor = true;
@@ -591,7 +598,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label5.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
             this.label5.Location = new System.Drawing.Point(8, 293);
             this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.Name = "label5";
@@ -602,10 +609,11 @@
             // btnAdd
             // 
             this.btnAdd.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnAdd.Location = new System.Drawing.Point(1027, 382);
+            this.btnAdd.Location = new System.Drawing.Point(970, 382);
             this.btnAdd.Margin = new System.Windows.Forms.Padding(2);
             this.btnAdd.Name = "btnAdd";
             this.btnAdd.Size = new System.Drawing.Size(225, 31);
+            this.btnAdd.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnAdd.TabIndex = 34;
             this.btnAdd.Text = "Thêm vào Danh mục Đơn hàng";
             this.btnAdd.UseVisualStyleBackColor = true;
@@ -632,7 +640,8 @@
             this.dgvRecord.Name = "dgvRecord";
             this.dgvRecord.RowHeadersWidth = 51;
             this.dgvRecord.RowTemplate.Height = 24;
-            this.dgvRecord.Size = new System.Drawing.Size(1495, 224);
+            this.dgvRecord.Size = new System.Drawing.Size(1429, 224);
+            this.dgvRecord.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvRecord.TabIndex = 32;
             this.dgvRecord.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvRecord_CellClick);
             this.dgvRecord.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvRecord_CellEndEdit);

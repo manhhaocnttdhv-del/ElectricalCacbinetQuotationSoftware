@@ -9,7 +9,7 @@ namespace ECQ_Soft.Model
 {
     public class Products
     {
-
+        public int SheetRowIndex { get; set; } // Lưu số thứ tự dòng trên Google Sheets (bắt đầu từ 1)
         public int Id { get; set; }
         public string Name { get; set; }
         public string Model { get; set; }
@@ -23,8 +23,14 @@ namespace ECQ_Soft.Model
         public string Category { get; set; }
         public string Type { get; set; }
         public string HÃNG { get; set; }
+        public string TrangThai { get; set; }
+        public string Pole { get; set; }
+        public string Ir { get; set; }
+        public string Icu { get; set; }
         public string PriceList { get; set; }
         public bool IsSelected { get; set; }
+        [Browsable(false)]
+        public bool IsHeader { get; set; }
         /// <summary>Số lượng từ gói đóng gói khi tải về dataGridView1.</summary>
         public int SoLuong { get; set; } = 1;
         // public string TienDo { get; set; }
@@ -57,6 +63,10 @@ namespace ECQ_Soft.Model
                 case "category": return Category ?? "";
                 case "type": return Type ?? "";
                 case "hãng": case "hang": case "brand": return HÃNG ?? "";
+                case "trangthai": return TrangThai ?? "";
+                case "pole": return Pole ?? "";
+                case "ir": return Ir ?? "";
+                case "icu": return Icu ?? "";
                 case "pricelist": return PriceList ?? "";
                 default:
                     if (ExtraAttributes.TryGetValue(k, out string v))

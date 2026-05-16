@@ -30,12 +30,17 @@ namespace ECQ_Soft.Helper
         /// <summary>Fire khi người dùng chọn một node lá.</summary>
         public event EventHandler<string> SelectionChanged;
 
+        public bool AllowTyping { get; set; } = false;
+
         // ── Constructor ──────────────────────────────────────────────────────
         public CategoryTreeDropdown()
         {
             this.DropDownStyle  = ComboBoxStyle.DropDown;
             this.DropDownHeight = 1;      // tắt dropdown gốc
-            this.KeyPress      += (s, e) => e.Handled = true;
+            this.KeyPress      += (s, e) => 
+            {
+                if (!AllowTyping) e.Handled = true;
+            };
         }
 
         // ── Lazy init popup (tránh crash trong VS Designer) ──────────────────

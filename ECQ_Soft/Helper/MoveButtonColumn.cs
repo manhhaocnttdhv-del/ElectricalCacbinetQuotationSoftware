@@ -119,25 +119,22 @@ namespace ECQ_Soft.Helper
                     }
                 }
                 
-                // Cũng ẩn cho dòng đầu tiên và 3 dòng cuối (Dự phòng cho trường hợp không có DataBoundItem)
+                // Ẩn nút mũi tên cho các dòng đặc biệt (Pinned)
                 if (!isSpecialRow)
                 {
-                    if (rowIndex == 0 || rowIndex >= dgv.Rows.Count - 3)
+                    // Kiểm tra an toàn sự tồn tại của cột tên (có thể là TenHang hoặc colTen hoặc Name...)
+                    string[] nameCols = { "TenHang", "colTen", "Name" };
+                    string cellVal = "";
+                    foreach (var col in nameCols)
                     {
-                        // Kiểm tra an toàn sự tồn tại của cột tên (có thể là TenHang hoặc colTen...)
-                        string[] nameCols = { "TenHang", "colTen", "Name" };
-                        string cellVal = "";
-                        foreach (var col in nameCols)
+                        if (dgv.Columns.Contains(col))
                         {
-                            if (dgv.Columns.Contains(col))
-                            {
-                                cellVal = dgv.Rows[rowIndex].Cells[col].Value?.ToString() ?? "";
-                                break;
-                            }
+                            cellVal = dgv.Rows[rowIndex].Cells[col].Value?.ToString() ?? "";
+                            break;
                         }
-
-                        if (ConfigProductItem.IsPinned(cellVal)) isSpecialRow = true;
                     }
+
+                    if (ConfigProductItem.IsPinned(cellVal)) isSpecialRow = true;
                 }
             }
 

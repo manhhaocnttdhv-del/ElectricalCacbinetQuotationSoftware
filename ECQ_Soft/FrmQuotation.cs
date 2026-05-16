@@ -48,11 +48,17 @@ namespace ECQ_Soft
         uint DonGiaHME;
         uint DonGiaThiTruong;
         uint DonGiaVPA;
+        private List<Products> _allProductsForSearch = new List<Products>();
+        private Button btnSearchProducts;
+
         public FrmQuotation()
         {
             InitializeComponent();
             this.Load += Form1_Load;
+            //SetupSearchButton();
         }
+
+        
 
         private void InitGoogleSheetsService()
         {
@@ -1500,5 +1506,91 @@ namespace ECQ_Soft
             }
         }
 
+        private async void OpenProductSearch()
+        {
+            if (_allProductsForSearch.Count == 0)
+            {
+                // Load products from the Config spreadsheet
+                string configSpreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
+                string productRange = "Products_Table!A2:M";
+
+                try
+                {
+                    this.Cursor = Cursors.WaitCursor;
+                    InitGoogleSheetsService();
+                    var response = await _sheetsService.Spreadsheets.Values.Get(configSpreadsheetId, productRange).ExecuteAsync();
+                    var rows = response.Values;
+
+                    if (rows != null)
+                    {
+                        for (int i = 0; i < rows.Count; i++)
+                        {
+                            var row = rows[i];
+                            if (row.Count < 2) continue;
+                            _allProductsForSearch.Add(new Products
+                            {
+                                Id = (row.Count > 0 && int.TryParse(row[0]?.ToString(), out int id)) ? id : i + 1,
+                                Name = row.Count > 1 ? row[1]?.ToString() : "",
+                                Model = row.Count > 2 ? row[2]?.ToString() : "",
+                                SKU = row.Count > 3 ? row[3]?.ToString() : "",
+                                Price = row.Count > 4 ? row[4]?.ToString() : "0",
+                                PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
+                                Category = row.Count > 10 ? row[10]?.ToString() : ""
+                            });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi tải danh sách sản phẩm: " + ex.Message);
+                }
+                finally
+                {
+                    this.Cursor = Cursors.Default;
+                }
+            }
+
+            if (_allProductsForSearch.Count == 0) return;
+
+            var frm = new FrmProductSearch(_allProductsForSearch);
+            frm.OnProductsSelected += (selectedList) =>
+            {
+                foreach (var p in selectedList)
+                {
+                    uint.TryParse(p.Price?.Replace(".", ""), out uint price);
+                    uint.TryParse(p.PriceCost?.Replace(".", ""), out uint cost);
+                    float.TryParse(p.Weight, out float w);
+
+                    var existing = records.FirstOrDefault(r => r.Note == p.SKU);
+                    if (existing != null)
+                    {
+                        existing.Quantity += (uint)p.SoLuong;
+                        existing.MarketTotalPrice = (ulong)(existing.Quantity ?? 0) * (existing.MarketUnitPrice ?? 0);
+                        existing.HMETotalPrice = (ulong)(existing.Quantity ?? 0) * (existing.HMEUnitPrice ?? 0);
+                        existing.Weight = (float?)(existing.Quantity ?? 0) * (existing.WeightperUnit ?? 0);
+                    }
+                    else
+                    {
+                        Record r = new Record
+                        {
+                            Stt = records.Count + 1,
+                            Name = $"{p.Name} {(string.IsNullOrEmpty(p.Model) ? "" : "(" + p.Model + ")")}",
+                            Unit = "Cái",
+                            Quantity = (uint)p.SoLuong,
+                            MarketUnitPrice = price,
+                            MarketTotalPrice = price * (uint)p.SoLuong,
+                            HMEUnitPrice = cost,
+                            HMETotalPrice = cost * (uint)p.SoLuong,
+                            WeightperUnit = w,
+                            Weight = w * (uint)p.SoLuong,
+                            Note = p.SKU
+                        };
+                        records.Add(r);
+                    }
+                }
+                LoadRecord();
+            };
+            frm.Show(this);
+        }
     }
 }

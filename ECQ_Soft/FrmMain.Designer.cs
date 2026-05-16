@@ -66,7 +66,7 @@ namespace ECQ_Soft
             this.lbUserName.Name = "lbUserName";
             this.lbUserName.Size = new System.Drawing.Size(1586, 58);
             this.lbUserName.TabIndex = 1;
-            this.lbUserName.Text = "Xin chào, Nguyễn Đình Huy";
+            this.lbUserName.Text = "Xin chào, Admin";
             this.lbUserName.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // button2
@@ -75,10 +75,10 @@ namespace ECQ_Soft
             this.button2.FlatAppearance.BorderSize = 0;
             this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button2.Font = new System.Drawing.Font("Times New Roman", 12F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button2.Location = new System.Drawing.Point(1798, 0);
+            this.button2.Location = new System.Drawing.Point(1784, 0);
             this.button2.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(124, 58);
+            this.button2.Size = new System.Drawing.Size(140, 58);
             this.button2.TabIndex = 2;
             this.button2.Text = "Đăng xuất";
             this.button2.UseVisualStyleBackColor = true;
@@ -90,10 +90,10 @@ namespace ECQ_Soft
             this.btnRefresh.FlatAppearance.BorderSize = 0;
             this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRefresh.Font = new System.Drawing.Font("Times New Roman", 12F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRefresh.Location = new System.Drawing.Point(1648, 0);
+            this.btnRefresh.Location = new System.Drawing.Point(1604, 0);
             this.btnRefresh.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.btnRefresh.Name = "btnRefresh";
-            this.btnRefresh.Size = new System.Drawing.Size(150, 58);
+            this.btnRefresh.Size = new System.Drawing.Size(180, 58);
             this.btnRefresh.TabIndex = 3;
             this.btnRefresh.Text = "Tải lại dữ liệu";
             this.btnRefresh.UseVisualStyleBackColor = true;

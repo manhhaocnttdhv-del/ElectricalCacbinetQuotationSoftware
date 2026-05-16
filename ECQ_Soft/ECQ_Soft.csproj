@@ -65,6 +65,9 @@
     </ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FontAwesome.Sharp, Version=6.6.0.0, Culture=neutral, PublicKeyToken=d16d1e4e568ec10f, processorArchitecture=MSIL">
+      <HintPath>..\packages\FontAwesome.Sharp.6.6.0\lib\net472\FontAwesome.Sharp.dll</HintPath>
+    </Reference>
     <Reference Include="Google.Apis, Version=1.71.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Apis.1.71.0\lib\net462\Google.Apis.dll</HintPath>
     </Reference>
@@ -84,9 +87,12 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -96,9 +102,13 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FrmExportInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmProductEdit.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FrmExportInfo.Designer.cs">
@@ -140,6 +150,12 @@
     <Compile Include="FrmRelation.Designer.cs">
       <DependentUpon>FrmRelation.cs</DependentUpon>
     </Compile>
+    <Compile Include="FrmProductSearch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmProductSearch.Designer.cs">
+      <DependentUpon>FrmProductSearch.cs</DependentUpon>
+    </Compile>
     <Compile Include="FrmSheetSelector.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -152,6 +168,8 @@
     <Compile Include="FrmAdvancedConfig.Designer.cs">
       <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
     </Compile>
+
+    <Compile Include="GridHelper.cs" />
     <Compile Include="FrmSavePackage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -166,6 +184,7 @@
     <Compile Include="Model\Products.cs" />
     <Compile Include="Model\RelationItem.cs" />
     <Compile Include="Services\GoogleSheetsService.cs" />
+    <Compile Include="Helper\GdiHelper.cs" />
     <Compile Include="Helper\CategoryParser.cs" />
     <Compile Include="Helper\CategoryTreeDropdown.cs">
       <SubType>Component</SubType>
