@@ -115,7 +115,8 @@ namespace ECQ_Soft
         private Dictionary<(ConfigProductItem item, int c), Color> _cellBgColors = new Dictionary<(ConfigProductItem, int), Color>(); // màu nền
         private Dictionary<(ConfigProductItem item, int c), Color> _cellFgColors = new Dictionary<(ConfigProductItem, int), Color>(); // màu chữ
         private Dictionary<(ConfigProductItem item, int c), Font> _cellFonts = new Dictionary<(ConfigProductItem, int), Font>(); // font chữ (đậm, nghiêng, kích thước)
-        private HashSet<string> _collapsedGroups = new HashSet<string>(); // Lưu trạng thái thu gọn của các nhóm (Header)
+        private HashSet<ConfigProductItem> _hiddenItems = new HashSet<ConfigProductItem>();
+        private Dictionary<ConfigProductItem, List<ConfigProductItem>> _customGroups = new Dictionary<ConfigProductItem, List<ConfigProductItem>>();
 
         /// <summary>Lưu vị trí ô được right-click (để hiển thị context menu đúng ô).</summary>
         private int _rightClickedRow = -1;
@@ -158,9 +159,6 @@ namespace ECQ_Soft
             // Vẽ rich text (highlight đỏ) cho dòng Vỏ tủ điện trong dataGridView1
             dataGridView1.CellPainting += DataGridView1_CabinetCellPainting;
             dgvParentProducts.CellPainting += DgvParentProducts_CabinetCellPainting;
-            dgvParentProducts.RowPostPaint += DgvParentProducts_RowPostPaint;
-            dgvParentProducts.CellMouseClick += DgvParentProducts_CellMouseClick;
-
             SetupHeaderCheckBox(dataGridView1, chkSelectAllChildProducts, "IsSelected");
 
             dataGridView1.DataSource = childProducts;
@@ -346,6 +344,7 @@ namespace ECQ_Soft
                                 var sheetKey = (item.SheetRowIndex, sheetColIdx);
                                 _sheetBgColors.Remove(sheetKey);
                                 _sheetFgColors.Remove(sheetKey);
+                                _sheetFonts.Remove(sheetKey);
                             }
                         }
                     }
@@ -393,6 +392,84 @@ namespace ECQ_Soft
             ctxCell.Items.Add(new ToolStripSeparator());
             ctxCell.Items.Add(miClearColor);
 
+            var miGroup = new ToolStripMenuItem("◫ Gộp thành Nhóm (Dòng đầu làm gốc)");
+            miGroup.Click += (s, e) =>
+            {
+                var selectedRowIndices = dgvParentProducts.SelectedCells.Cast<DataGridViewCell>().Select(c => c.RowIndex).Distinct().ToList();
+                if (selectedRowIndices.Count < 2) return;
+                
+                var selectedItems = new List<ConfigProductItem>();
+                foreach(int r in selectedRowIndices)
+                {
+                    selectedItems.Add(_displayList[r]);
+                }
+                
+                selectedItems = selectedItems.OrderBy(x => configProducts.IndexOf(x)).ToList();
+                
+                var parent = selectedItems.First();
+                var children = selectedItems.Skip(1).ToList();
+                
+                if (!_customGroups.ContainsKey(parent))
+                {
+                    _customGroups[parent] = new List<ConfigProductItem>();
+                }
+                
+                foreach (var c in children)
+                {
+                    if (!_customGroups[parent].Contains(c))
+                    {
+                        _customGroups[parent].Add(c);
+                    }
+                    _hiddenItems.Add(c); // Ẩn các dòng con mới gộp
+                }
+                
+                dgvParentProducts.ClearSelection();
+                UpdateConfigGrid();
+            };
+
+            var miToggleGroup = new ToolStripMenuItem("⊟ Thu gọn / Mở rộng Nhóm");
+            miToggleGroup.Click += (s, e) =>
+            {
+                if (_rightClickedRow < 0 || _displayList == null || _rightClickedRow >= _displayList.Count) return;
+                var item = _displayList[_rightClickedRow];
+                if (_customGroups.ContainsKey(item))
+                {
+                    var children = _customGroups[item];
+                    // Kiểm tra xem nhóm đang thu hay mở
+                    bool isCollapsed = children.Any(c => _hiddenItems.Contains(c));
+                    if (isCollapsed)
+                    {
+                        foreach(var c in children) _hiddenItems.Remove(c);
+                        miToggleGroup.Text = "⊟ Thu gọn Nhóm";
+                    }
+                    else
+                    {
+                        foreach(var c in children) _hiddenItems.Add(c);
+                        miToggleGroup.Text = "⊞ Mở rộng Nhóm";
+                    }
+                    UpdateConfigGrid();
+                }
+            };
+
+            var miUngroup = new ToolStripMenuItem("❌ Hủy Nhóm này");
+            miUngroup.Click += (s, e) =>
+            {
+                if (_rightClickedRow < 0 || _displayList == null || _rightClickedRow >= _displayList.Count) return;
+                var item = _displayList[_rightClickedRow];
+                if (_customGroups.ContainsKey(item))
+                {
+                    var children = _customGroups[item];
+                    foreach(var c in children) _hiddenItems.Remove(c); // Hiện lại con
+                    _customGroups.Remove(item); // Xóa nhóm
+                    UpdateConfigGrid();
+                }
+            };
+
+            ctxCell.Items.Add(new ToolStripSeparator());
+            ctxCell.Items.Add(miGroup);
+            ctxCell.Items.Add(miToggleGroup);
+            ctxCell.Items.Add(miUngroup);
+
             // ── Xóa dòng ──
             var miDeleteRow = new ToolStripMenuItem("🗑  Xóa dòng này");
             miDeleteRow.ForeColor = Color.Red;
@@ -438,8 +515,27 @@ namespace ECQ_Soft
                     // Ẩn "Xóa dòng" nếu là dòng Summary (TỔNG CỘNG, VAT, THÀNH TIỀN)
                     bool isSummaryRow = false;
                     if (_displayList != null && e.RowIndex < _displayList.Count)
-                        isSummaryRow = _displayList[e.RowIndex].IsSummary;
+                    {
+                        var item = _displayList[e.RowIndex];
+                        isSummaryRow = item.IsSummary;
+                        bool isParent = _customGroups.ContainsKey(item);
+                        miToggleGroup.Visible = isParent;
+                        miUngroup.Visible = isParent;
+                        
+                        if (isParent)
+                        {
+                            bool isCollapsed = _customGroups[item].Any(c => _hiddenItems.Contains(c));
+                            miToggleGroup.Text = isCollapsed ? "⊞ Mở rộng Nhóm" : "⊟ Thu gọn Nhóm";
+                        }
+                    }
+                    else
+                    {
+                        miToggleGroup.Visible = false;
+                        miUngroup.Visible = false;
+                    }
 
+                    var selectedRowIndices = dgvParentProducts.SelectedCells.Cast<DataGridViewCell>().Select(c => c.RowIndex).Distinct().ToList();
+                    miGroup.Visible = selectedRowIndices.Count > 1;
                     miDeleteRow.Visible = !isSummaryRow;
                 }
             };
@@ -447,57 +543,7 @@ namespace ECQ_Soft
 
         // ══════════════════════════════════════════════════════════════════
 
-        private void DgvParentProducts_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
-        {
-            if (e.RowIndex < 0 || e.RowIndex >= _displayList.Count) return;
-            var item = _displayList[e.RowIndex];
-            
-            if (item.IsHeader)
-            {
-                bool isCollapsed = _collapsedGroups.Contains(item.TenHang);
-                string symbol = isCollapsed ? "+" : "-";
-
-                Rectangle headerBounds = new Rectangle(e.RowBounds.Left, e.RowBounds.Top, dgvParentProducts.RowHeadersWidth, e.RowBounds.Height);
-                
-                int boxSize = 14;
-                int x = headerBounds.Left + (headerBounds.Width - boxSize) / 2;
-                int y = headerBounds.Top + (headerBounds.Height - boxSize) / 2;
-                Rectangle boxRect = new Rectangle(x, y, boxSize, boxSize);
-
-                e.Graphics.FillRectangle(Brushes.White, boxRect);
-                e.Graphics.DrawRectangle(Pens.Black, boxRect);
-
-                StringFormat sf = new StringFormat
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                };
-                
-                using (Font f = new Font("Consolas", 10, FontStyle.Bold))
-                {
-                    e.Graphics.DrawString(symbol, f, Brushes.Black, boxRect, sf);
-                }
-            }
-        }
-
-        private void DgvParentProducts_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
-        {
-            if (e.ColumnIndex == -1 && e.RowIndex >= 0 && e.RowIndex < _displayList.Count)
-            {
-                var item = _displayList[e.RowIndex];
-
-                if (item.IsHeader)
-                {
-                    if (_collapsedGroups.Contains(item.TenHang))
-                        _collapsedGroups.Remove(item.TenHang);
-                    else
-                        _collapsedGroups.Add(item.TenHang);
-
-                    dgvParentProducts.DataSource = null; // Bắt buộc DataGridView reset lại hiển thị thay vì chỉ gán lại List
-                    UpdateConfigGrid();
-                }
-            }
-        }
+        // Bỏ DgvParentProducts_RowPostPaint vì đã gộp vào CabinetCellPainting
 
         // EVENT HANDLERS – DataGridView
         // ══════════════════════════════════════════════════════════════════
@@ -1250,6 +1296,7 @@ namespace ECQ_Soft
         // Key = (sheetRowIndex 0-based, sheetColIndex 0-based); Value = màu tương ứng
         private Dictionary<(int r, int c), Color> _sheetBgColors = new Dictionary<(int, int), Color>(); // màu nền
         private Dictionary<(int r, int c), Color> _sheetFgColors = new Dictionary<(int, int), Color>(); // màu chữ
+        private Dictionary<(int r, int c), Font> _sheetFonts = new Dictionary<(int, int), Font>(); // font chữ
 
         /// <summary>
         /// Lấy toàn bộ dữ liệu cấu hình đã lưu (bao gồm allSavedConfigs)
@@ -1324,6 +1371,7 @@ namespace ECQ_Soft
 
                 _sheetBgColors.Clear();
                 _sheetFgColors.Clear();
+                _sheetFonts.Clear();
 
                 var sheet = spreadsheet.Sheets?.FirstOrDefault();
                 if (sheet?.Data == null || sheet.Data.Count == 0) return;
@@ -1363,6 +1411,24 @@ namespace ECQ_Soft
                             // Bỏ qua đen (mặc định)
                             if (!(red <= 5 && green <= 5 && blue <= 5))
                                 _sheetFgColors[(r, c)] = Color.FromArgb(red, green, blue);
+                        }
+
+                        // Định dạng Font chữ
+                        var tf = cell.UserEnteredFormat.TextFormat;
+                        if (tf != null)
+                        {
+                            FontStyle style = FontStyle.Regular;
+                            if (tf.Bold == true) style |= FontStyle.Bold;
+                            if (tf.Italic == true) style |= FontStyle.Italic;
+                            if (tf.Strikethrough == true) style |= FontStyle.Strikeout;
+                            if (tf.Underline == true) style |= FontStyle.Underline;
+                            
+                            float size = tf.FontSize ?? 11f;
+                            
+                            if (style != FontStyle.Regular || size != 11f)
+                            {
+                                _sheetFonts[(r, c)] = new Font("Times New Roman", size, style);
+                            }
                         }
                     }
                 }
@@ -2444,6 +2510,7 @@ namespace ECQ_Soft
                             var sheetKey = (item.SheetRowIndex, sheetColIdx);
                             if (_sheetBgColors.TryGetValue(sheetKey, out Color sBg)) { bg = sBg; hasBg = true; }
                             if (_sheetFgColors.TryGetValue(sheetKey, out Color sFg)) { fg = sFg; hasFg = true; }
+                            if (_sheetFonts.TryGetValue(sheetKey, out Font sFont)) { cFont = sFont; hasFont = true; }
                         }
 
                         // 2. Ghi đè bằng màu được chọn trong session hiện tại (nếu có)
@@ -3260,21 +3327,11 @@ namespace ECQ_Soft
             // Tạo bản sao cho DataSource để không ảnh hưởng configProducts gốc
             var baseList = configProducts.Where(p => !p.IsSummary).ToList();
             _displayList = new List<ConfigProductItem>();
-            bool isCurrentGroupCollapsed = false;
-
             foreach (var p in baseList)
             {
-                if (p.IsHeader)
+                if (!_hiddenItems.Contains(p))
                 {
-                    isCurrentGroupCollapsed = _collapsedGroups.Contains(p.TenHang);
                     _displayList.Add(p);
-                }
-                else
-                {
-                    if (!isCurrentGroupCollapsed)
-                    {
-                        _displayList.Add(p);
-                    }
                 }
             }
 
@@ -3712,6 +3769,8 @@ namespace ECQ_Soft
                         e.CellStyle.BackColor = sBg;
                     if (_sheetFgColors.TryGetValue(sheetKey, out Color sFg))
                         e.CellStyle.ForeColor = sFg;
+                    if (_sheetFonts.TryGetValue(sheetKey, out Font sFont))
+                        e.CellStyle.Font = sFont;
                 }
             }
 
@@ -4028,6 +4087,9 @@ namespace ECQ_Soft
                 Excel.Workbook workbook = excelApp.Workbooks.Add(Type.Missing);
                 Excel.Worksheet ws = workbook.ActiveSheet;
                 ws.Name = "Danh Sach Cau Hinh";
+                
+                // Cấu hình Outline để nhóm các dòng con dưới dòng Header
+                ws.Outline.SummaryRow = Excel.XlSummaryRow.xlSummaryAbove;
 
                 // Thu thập các cột hiện thị
                 var visibleCols = new List<DataGridViewColumn>();
@@ -4063,9 +4125,16 @@ namespace ECQ_Soft
                 var moneyCols = new[] { "DonGiaVND", "ThanhTienVND", "GiaNhap", "ThanhTien", "LoiNhuan", "BangGia" };
                 var hiddenSumCols = new[] { "STT", "MaHang", "XuatXu", "DonVi", "SoLuong", "GhiChu" };
 
-                for (int r = 0; r < _displayList.Count; r++)
+                for (int r = 0; r < items.Count; r++)
                 {
-                    var item = _displayList[r];
+                    var item = items[r];
+
+                    // Áp dụng outline grouping cho các dòng con
+                    bool isChild = _customGroups.Values.Any(list => list.Contains(item));
+                    if (isChild)
+                    {
+                        ((Excel.Range)ws.Rows[r + 2]).OutlineLevel = 2;
+                    }
 
                     // --- Quy tắc màu dòng (giống UpdateConfigGrid + CellFormatting) ---
                     Color rowBg;
@@ -4128,49 +4197,11 @@ namespace ECQ_Soft
                                 xCell.Value2 = val.ToString();
                         }
 
-                        // ── Màu nền: per-cell picker > sheet color > màu dòng mặc định ──
-                        // _sheetBgColors: màu load từ Google Sheet (nguồn chính của per-cell color)
-                        // _cellBgColors:  màu set qua color picker trong session hiện tại (ghi đè)
-                        string[] sheetColOrd = { "STT","TenHang","MaHang","XuatXu","DonVi","SoLuong",
-                                                  "DonGiaVND","ThanhTienVND","GhiChu","GiaNhap","ThanhTien","LoiNhuan","BangGia" };
-                        int sheetC = Array.IndexOf(sheetColOrd, colNm);
-                        var sheetKeyBg = (item.SheetRowIndex, sheetC);
-
                         Color cellBg = rowBg;
                         Color cellFg = rowFg;
                         
-                        // Màu mặc định cho dòng Header và Summary của các cột giá
-                        if (item.IsHeader || item.IsSummary)
-                        {
-                            if (colNm == "GiaNhap" || colNm == "ThanhTien")
-                            {
-                                cellBg = Color.Cyan;
-                                cellFg = Color.Black;
-                            }
-                            else if (colNm == "LoiNhuan")
-                            {
-                                cellBg = Color.Yellow;
-                                cellFg = Color.Red;
-                            }
-                            else if (colNm == "BangGia")
-                            {
-                                cellBg = Color.CornflowerBlue;
-                                cellFg = Color.Black;
-                            }
-                        }
-                        
-                        if (sheetC >= 0 && item.SheetRowIndex >= 0 && _sheetBgColors.TryGetValue(sheetKeyBg, out Color sheetBg))
-                            cellBg = sheetBg;                                   // màu từ Google Sheet
-                        if (_cellBgColors.TryGetValue((item, dgvColIdx), out Color customBg))
-                            cellBg = customBg;                                  // picker ghi đè
                         xCell.Interior.Color = ColorTranslator.ToOle(cellBg);
-
-                        // ── Màu chữ: sheet color > picker ghi đè ──
-                        var sheetKeyFg = (item.SheetRowIndex, sheetC);
-                        if (sheetC >= 0 && item.SheetRowIndex >= 0 && _sheetFgColors.TryGetValue(sheetKeyFg, out Color sheetFg))
-                            cellFg = sheetFg;
-                        if (_cellFgColors.TryGetValue((item, dgvColIdx), out Color customFg))
-                            cellFg = customFg;
+                        xCell.Font.Color = ColorTranslator.ToOle(cellFg);
                         xCell.Font.Color = ColorTranslator.ToOle(cellFg);
                         xCell.Font.Bold = rowBold;
 
@@ -4228,7 +4259,7 @@ namespace ECQ_Soft
                 }
 
                 // ── 3. Viền bảng + chiều cao hàng ──
-                Excel.Range used = ws.Range[ws.Cells[1, 1], ws.Cells[_displayList.Count + 1, visibleCols.Count]];
+                Excel.Range used = ws.Range[ws.Cells[1, 1], ws.Cells[items.Count + 1, visibleCols.Count]];
                 used.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
                 used.Borders.Weight = Excel.XlBorderWeight.xlThin;
                 // used.WrapText = false; // Bỏ đi để không đè lên xCell.WrapText = true ở trên
@@ -4236,10 +4267,10 @@ namespace ECQ_Soft
 
                 // Header cột cao 30pt, dữ liệu 15pt (giống DGV)
                 ws.Rows[1].RowHeight = 30;
-                for (int r2 = 2; r2 <= _displayList.Count + 1; r2++)
+                for (int r2 = 2; r2 <= items.Count + 1; r2++)
                 {
                     Excel.Range rowRange = (Excel.Range)ws.Rows[r2];
-                    var item = _displayList[r2 - 2]; // r2 bắt đầu từ 2 tương ứng với index 0
+                    var item = items[r2 - 2]; // r2 bắt đầu từ 2 tương ứng với index 0
                     if (item.TenHang != null && item.TenHang.StartsWith("Vỏ tủ điện"))
                     {
                         int lineCount = item.TenHang.Split('\n').Length;
@@ -4452,9 +4483,22 @@ namespace ECQ_Soft
             if (e.ColumnIndex != dgvParentProducts.Columns["TenHang"].Index) return;
 
             string text = e.Value?.ToString() ?? "";
-            if (!text.StartsWith("Vỏ tủ điện")) return; // Chỉ xử lý dòng vỏ tủ
-
             bool isSelected = e.State.HasFlag(DataGridViewElementStates.Selected);
+            var item = _displayList[e.RowIndex];
+
+            if (item.IsHeader)
+            {
+                e.PaintBackground(e.CellBounds, isSelected);
+                e.Paint(e.CellBounds, DataGridViewPaintParts.Border);
+
+                Rectangle textRect = new Rectangle(e.CellBounds.Left + 5, e.CellBounds.Top, e.CellBounds.Width - 10, e.CellBounds.Height);
+                TextRenderer.DrawText(e.Graphics, text, e.CellStyle.Font, textRect, e.CellStyle.ForeColor, TextFormatFlags.VerticalCenter);
+
+                e.Handled = true;
+                return;
+            }
+
+            if (!text.StartsWith("Vỏ tủ điện")) return; // Chỉ xử lý dòng vỏ tủ
 
             // Vẽ nền + border mặc định
             e.PaintBackground(e.CellBounds, isSelected);
