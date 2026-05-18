@@ -10,7 +10,8 @@ namespace ECQ_Soft
     public partial class FrmProductSearch : Form
     {
         private List<Products> _allProducts;
-        public event Action<List<Products>> OnProductsSelected;
+        public event Action<List<Products>, string> OnProductsSelected;
+        public Func<List<string>> GetLatestHeaders;
 
         public event Action OnAdvancedConfigRequested;
         public event Action<string, string> OnHeaderAdded;
@@ -19,10 +20,41 @@ namespace ECQ_Soft
         private Dictionary<string, int> _addedQty = new Dictionary<string, int>();
         private bool _isFormatting = false;
 
-        public FrmProductSearch(List<Products> products, bool isForQuote = false)
+        public FrmProductSearch(List<Products> products, bool isForQuote = false, List<string> existingHeaders = null)
         {
             InitializeComponent();
             _allProducts = products;
+
+            if (existingHeaders != null)
+            {
+                foreach (var h in existingHeaders)
+                {
+                    if (!string.IsNullOrEmpty(h)) cboTargetHeader.Items.Add(h);
+                }
+                if (cboTargetHeader.Items.Count > 0)
+                {
+                    cboTargetHeader.SelectedIndex = 0; // Chọn cái đầu tiên làm mặc định
+                }
+            }
+            
+            cboTargetHeader.DropDown += (s, e) =>
+            {
+                if (GetLatestHeaders != null)
+                {
+                    var headers = GetLatestHeaders();
+                    string current = cboTargetHeader.SelectedItem?.ToString();
+                    cboTargetHeader.Items.Clear();
+                    foreach (var h in headers)
+                    {
+                        if (!string.IsNullOrEmpty(h) && !cboTargetHeader.Items.Contains(h)) 
+                            cboTargetHeader.Items.Add(h);
+                    }
+                    if (!string.IsNullOrEmpty(current) && cboTargetHeader.Items.Contains(current))
+                        cboTargetHeader.SelectedItem = current;
+                    else if (cboTargetHeader.Items.Count > 0)
+                        cboTargetHeader.SelectedIndex = 0;
+                }
+            };
 
             // ── Đặt thuộc tính Form TRƯỚC khi Show() để tránh recreate handle ──
             this.FormBorderStyle = FormBorderStyle.Sizable;
@@ -36,6 +68,8 @@ namespace ECQ_Soft
                 txtHeaderSTT.Visible = false;
                 cboHeaderName.Visible = false;
                 btnAddHeaderToQuote.Visible = false;
+                lblTargetHeader.Visible = false;
+                cboTargetHeader.Visible = false;
             }
             else
             {
@@ -125,6 +159,37 @@ namespace ECQ_Soft
 
             btnCancel.Click += (s, e) => this.Close();
 
+            if (btnAddNewProduct != null)
+            {
+                btnAddNewProduct.Click += (s, e) =>
+                {
+                    var frmEdit = new FrmProductEdit();
+                    frmEdit.ShowDialog();
+                };
+            }
+
+            if (btnEditSelectedProduct != null)
+            {
+                btnEditSelectedProduct.Click += (s, e) =>
+                {
+                    var selected = dgvProducts.SelectedRows
+                        .Cast<DataGridViewRow>()
+                        .Select(r => r.DataBoundItem as Products)
+                        .Where(p => p != null)
+                        .FirstOrDefault();
+
+                    if (selected != null)
+                    {
+                        var frmEdit = new FrmProductEdit(selected);
+                        frmEdit.ShowDialog();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Vui lòng chọn một sản phẩm để chỉnh sửa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                };
+            }
+
 
 
             if (btnAddHeaderToQuote != null)
@@ -138,6 +203,13 @@ namespace ECQ_Soft
                     }
                     OnHeaderAdded?.Invoke(stt, name);
                     MessageBox.Show("Đã thêm tiêu đề vào bảng!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    if (!cboTargetHeader.Items.Contains(name))
+                    {
+                        cboTargetHeader.Items.Add(name);
+                    }
+                    cboTargetHeader.SelectedItem = name;
+
                     txtHeaderSTT.Text = "";
                     cboHeaderName.Text = "";
                 };
@@ -188,7 +260,9 @@ namespace ECQ_Soft
             // Gửi sản phẩm với số lượng = 1 (tăng dần ở FrmConfig/FrmQuotation)
             var clone = CloneProduct(product);
             clone.SoLuong = 1;
-            OnProductsSelected?.Invoke(new List<Products> { clone });
+            
+            string targetHeader = cboTargetHeader.SelectedItem?.ToString();
+            OnProductsSelected?.Invoke(new List<Products> { clone }, targetHeader);
         }
 
         private Products CloneProduct(Products p)

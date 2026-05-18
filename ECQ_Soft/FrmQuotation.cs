@@ -1553,7 +1553,7 @@ namespace ECQ_Soft
             if (_allProductsForSearch.Count == 0) return;
 
             var frm = new FrmProductSearch(_allProductsForSearch);
-            frm.OnProductsSelected += (selectedList) =>
+            frm.OnProductsSelected += (selectedList, targetHeader) =>
             {
                 foreach (var p in selectedList)
                 {

@@ -3020,11 +3020,13 @@ namespace ECQ_Soft
             }
 
             // ═══ Luồng cũ: chỉ mở FrmProductSearch cho khu vực CẤU HÌNH ═══
-            var frm = new FrmProductSearch(allProducts, isForQuote: false);
+            var existingHeaders = configProducts.Where(p => p.IsHeader).Select(p => p.TenHang).Distinct().ToList();
+            var frm = new FrmProductSearch(allProducts, isForQuote: false, existingHeaders: existingHeaders);
+            frm.GetLatestHeaders = () => configProducts.Where(p => p.IsHeader).Select(p => p.TenHang).Distinct().ToList();
             
             btnOpenSearchModal.Enabled = false;
 
-            frm.OnProductsSelected += (selectedList) =>
+            frm.OnProductsSelected += (selectedList, targetHeader) =>
             {
                 foreach (var p in selectedList)
                 {
@@ -3077,12 +3079,14 @@ namespace ECQ_Soft
             // ════════════════════════════════════════════════════════════
             // POPUP 2: Tìm kiếm sản phẩm (cửa sổ riêng)
             // ════════════════════════════════════════════════════════════
-            var frmSearch = new FrmProductSearch(allProducts, isForQuote: true);
+            var existingHeaders = configProducts.Where(p => p.IsHeader).Select(p => p.TenHang).Distinct().ToList();
+            var frmSearch = new FrmProductSearch(allProducts, isForQuote: true, existingHeaders: existingHeaders);
+            frmSearch.GetLatestHeaders = () => configProducts.Where(p => p.IsHeader).Select(p => p.TenHang).Distinct().ToList();
             frmSearch.StartPosition = FormStartPosition.CenterScreen;
 
-            frmSearch.OnProductsSelected += (selectedList) =>
+            frmSearch.OnProductsSelected += (selectedList, targetHeader) =>
             {
-                AddSelectedProductsToConfig(selectedList);
+                AddSelectedProductsToConfig(selectedList, targetHeader);
             };
 
             frmSearch.OnHeaderAdded += (stt, name) =>
@@ -3174,7 +3178,7 @@ namespace ECQ_Soft
             frmSearch.BringToFront();
         }
 
-        private void AddSelectedProductsToConfig(List<Products> selectedItems)
+        private void AddSelectedProductsToConfig(List<Products> selectedItems, string targetHeader = null)
         {
             if (selectedItems.Count == 0) return;
 
@@ -3193,6 +3197,10 @@ namespace ECQ_Soft
                     IsHeader = true,
                     XuatXu = "VNECCO"
                 });
+                if (string.IsNullOrEmpty(targetHeader))
+                {
+                    targetHeader = headerName;
+                }
             }
 
             foreach (var product in selectedItems)
@@ -3227,16 +3235,38 @@ namespace ECQ_Soft
                         IsHeader = false
                     };
 
-                    // TÌM VỊ TRÍ CHÈN: Trước các dòng Phụ kiện/Đồng/Nhân công
+                    // TÌM VỊ TRÍ CHÈN
                     int insertIdx = configProducts.Count;
-                    for (int i = 0; i < configProducts.Count; i++)
+                    if (!string.IsNullOrEmpty(targetHeader))
                     {
-                        if (configProducts[i].IsHeader) continue;
-                        string name = configProducts[i].TenHang ?? "";
-                        if (name.Contains("đồng thanh cái") || name.Contains("Phụ kiện") || name.Contains("Nhân công"))
+                        // Tìm Header đó
+                        int headerIdx = configProducts.FindIndex(p => p.IsHeader && p.TenHang == targetHeader);
+                        if (headerIdx >= 0)
                         {
-                            insertIdx = i;
-                            break;
+                            insertIdx = headerIdx + 1;
+                            while(insertIdx < configProducts.Count && !configProducts[insertIdx].IsHeader)
+                            {
+                                string name = configProducts[insertIdx].TenHang ?? "";
+                                if (name.Contains("đồng thanh cái") || name.Contains("Phụ kiện") || name.Contains("Nhân công"))
+                                {
+                                    break;
+                                }
+                                insertIdx++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Logic mặc định (Trước các dòng Phụ kiện/Đồng/Nhân công của khối cuối)
+                        for (int i = 0; i < configProducts.Count; i++)
+                        {
+                            if (configProducts[i].IsHeader) continue;
+                            string name = configProducts[i].TenHang ?? "";
+                            if (name.Contains("đồng thanh cái") || name.Contains("Phụ kiện") || name.Contains("Nhân công"))
+                            {
+                                insertIdx = i;
+                                break;
+                            }
                         }
                     }
                     configProducts.Insert(insertIdx, newItem);

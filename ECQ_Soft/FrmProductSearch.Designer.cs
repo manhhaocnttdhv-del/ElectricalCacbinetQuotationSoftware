@@ -30,6 +30,10 @@ namespace ECQ_Soft
             this.txtHeaderSTT = new System.Windows.Forms.TextBox();
             this.cboHeaderName = new System.Windows.Forms.ComboBox();
             this.btnAddHeaderToQuote = new System.Windows.Forms.Button();
+            this.lblTargetHeader = new System.Windows.Forms.Label();
+            this.cboTargetHeader = new System.Windows.Forms.ComboBox();
+            this.btnAddNewProduct = new System.Windows.Forms.Button();
+            this.btnEditSelectedProduct = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.tlpSearch.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProducts)).BeginInit();
@@ -46,17 +50,21 @@ namespace ECQ_Soft
             this.groupBox1.Text     = "Bảng tìm kiếm lựa chọn sản phẩm";
 
             // tlpSearch
-            this.tlpSearch.ColumnCount = 4;
+            this.tlpSearch.ColumnCount = 6;
             this.tlpSearch.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpSearch.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tlpSearch.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 160F));
+            this.tlpSearch.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 160F));
             this.tlpSearch.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tlpSearch.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 50F));
             this.tlpSearch.Controls.Add(this.lblSearch, 0, 0);
             this.tlpSearch.Controls.Add(this.lblCategory, 1, 0);
             this.tlpSearch.Controls.Add(this.txtSearch, 0, 1);
             this.tlpSearch.Controls.Add(this.cboCategory, 1, 1);
-            this.tlpSearch.Controls.Add(this.btnAddTo, 2, 1);
-            this.tlpSearch.Controls.Add(this.btnRefresh, 3, 1);
+            this.tlpSearch.Controls.Add(this.btnAddNewProduct, 2, 1);
+            this.tlpSearch.Controls.Add(this.btnEditSelectedProduct, 3, 1);
+            this.tlpSearch.Controls.Add(this.btnAddTo, 4, 1);
+            this.tlpSearch.Controls.Add(this.btnRefresh, 5, 1);
             this.tlpSearch.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpSearch.Location = new System.Drawing.Point(3, 18);
             this.tlpSearch.Name = "tlpSearch";
@@ -129,6 +137,8 @@ namespace ECQ_Soft
             this.pnlFooter.Controls.Add(this.txtHeaderSTT);
             this.pnlFooter.Controls.Add(this.cboHeaderName);
             this.pnlFooter.Controls.Add(this.btnAddHeaderToQuote);
+            this.pnlFooter.Controls.Add(this.lblTargetHeader);
+            this.pnlFooter.Controls.Add(this.cboTargetHeader);
             this.pnlFooter.Anchor   = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.pnlFooter.Location = new System.Drawing.Point(5, 90);
             this.pnlFooter.Name     = "pnlFooter";
@@ -145,10 +155,32 @@ namespace ECQ_Soft
 
 
 
+            // btnAddNewProduct
+            this.btnAddNewProduct.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnAddNewProduct.Margin = new System.Windows.Forms.Padding(3, 0, 5, 3);
+            this.btnAddNewProduct.Name = "btnAddNewProduct";
+            this.btnAddNewProduct.Text = "✚ Thêm Sản Phẩm";
+            this.btnAddNewProduct.BackColor = System.Drawing.Color.FromArgb(40, 167, 69);
+            this.btnAddNewProduct.ForeColor = System.Drawing.Color.White;
+            this.btnAddNewProduct.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAddNewProduct.FlatAppearance.BorderSize = 0;
+            this.btnAddNewProduct.Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+            // btnEditSelectedProduct
+            this.btnEditSelectedProduct.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnEditSelectedProduct.Margin = new System.Windows.Forms.Padding(3, 0, 5, 3);
+            this.btnEditSelectedProduct.Name = "btnEditSelectedProduct";
+            this.btnEditSelectedProduct.Text = "✎ Sửa Sản Phẩm";
+            this.btnEditSelectedProduct.BackColor = System.Drawing.Color.FromArgb(255, 193, 7);
+            this.btnEditSelectedProduct.ForeColor = System.Drawing.Color.Black;
+            this.btnEditSelectedProduct.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditSelectedProduct.FlatAppearance.BorderSize = 0;
+            this.btnEditSelectedProduct.Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
             // lblAddHeader
             this.lblAddHeader.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblAddHeader.AutoSize = true;
-            this.lblAddHeader.Location = new System.Drawing.Point(190, 17);
+            this.lblAddHeader.Location = new System.Drawing.Point(10, 17);
             this.lblAddHeader.Name = "lblAddHeader";
             this.lblAddHeader.Text = "Tạo mục (Màu Xanh):";
             this.lblAddHeader.Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
@@ -156,22 +188,22 @@ namespace ECQ_Soft
 
             // txtHeaderSTT
             this.txtHeaderSTT.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.txtHeaderSTT.Location = new System.Drawing.Point(340, 13);
+            this.txtHeaderSTT.Location = new System.Drawing.Point(190, 13);
             this.txtHeaderSTT.Name = "txtHeaderSTT";
             this.txtHeaderSTT.Size = new System.Drawing.Size(50, 27);
 
             // cboHeaderName
             this.cboHeaderName.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.cboHeaderName.FormattingEnabled = true;
-            this.cboHeaderName.Location = new System.Drawing.Point(400, 13);
+            this.cboHeaderName.Location = new System.Drawing.Point(250, 13);
             this.cboHeaderName.Name = "cboHeaderName";
             this.cboHeaderName.Size = new System.Drawing.Size(250, 28);
 
             // btnAddHeaderToQuote
             this.btnAddHeaderToQuote.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.btnAddHeaderToQuote.Location = new System.Drawing.Point(660, 10);
+            this.btnAddHeaderToQuote.Location = new System.Drawing.Point(510, 10);
             this.btnAddHeaderToQuote.Name = "btnAddHeaderToQuote";
-            this.btnAddHeaderToQuote.Size = new System.Drawing.Size(140, 32);
+            this.btnAddHeaderToQuote.Size = new System.Drawing.Size(150, 32);
             this.btnAddHeaderToQuote.Text = "✚ Thêm Tiêu Đề";
             this.btnAddHeaderToQuote.BackColor = System.Drawing.Color.FromArgb(0, 192, 192);
             this.btnAddHeaderToQuote.ForeColor = System.Drawing.Color.White;
@@ -179,7 +211,21 @@ namespace ECQ_Soft
             this.btnAddHeaderToQuote.FlatAppearance.BorderSize = 0;
             this.btnAddHeaderToQuote.Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
+            // lblTargetHeader
+            this.lblTargetHeader.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.lblTargetHeader.AutoSize = true;
+            this.lblTargetHeader.Location = new System.Drawing.Point(680, 17);
+            this.lblTargetHeader.Name = "lblTargetHeader";
+            this.lblTargetHeader.Text = "Thêm vào cấu hình:";
+            this.lblTargetHeader.Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
 
+            // cboTargetHeader
+            this.cboTargetHeader.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.cboTargetHeader.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboTargetHeader.FormattingEnabled = true;
+            this.cboTargetHeader.Location = new System.Drawing.Point(860, 13);
+            this.cboTargetHeader.Name = "cboTargetHeader";
+            this.cboTargetHeader.Size = new System.Drawing.Size(280, 28);
             // FrmProductSearch
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
@@ -211,9 +257,13 @@ namespace ECQ_Soft
         private System.Windows.Forms.Panel             pnlFooter;
         private System.Windows.Forms.Button            btnCancel;
 
+        private System.Windows.Forms.Button            btnAddNewProduct;
+        private System.Windows.Forms.Button            btnEditSelectedProduct;
         private System.Windows.Forms.Label             lblAddHeader;
         private System.Windows.Forms.TextBox           txtHeaderSTT;
         private System.Windows.Forms.ComboBox          cboHeaderName;
         private System.Windows.Forms.Button            btnAddHeaderToQuote;
+        private System.Windows.Forms.Label             lblTargetHeader;
+        private System.Windows.Forms.ComboBox          cboTargetHeader;
     }
 }
