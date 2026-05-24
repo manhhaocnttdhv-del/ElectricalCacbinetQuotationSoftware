@@ -18,6 +18,9 @@ namespace ECQ_Soft
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblTitle = new System.Windows.Forms.Label();
+            this.lblDraftName = new System.Windows.Forms.Label();
+            this.txtDraftName = new System.Windows.Forms.TextBox();
+            this.btnUpdateDraft = new System.Windows.Forms.Button();
             this.pnlStepsContainer = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlControls = new System.Windows.Forms.Panel();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -50,6 +53,41 @@ namespace ECQ_Soft
             this.lblTitle.Size = new System.Drawing.Size(170, 25);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Cấu hình nâng cao";
+            // 
+            // lblDraftName
+            // 
+            this.lblDraftName.AutoSize = true;
+            this.lblDraftName.Font = new System.Drawing.Font("Segoe UI Semibold", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblDraftName.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
+            this.lblDraftName.Location = new System.Drawing.Point(230, 16);
+            this.lblDraftName.Name = "lblDraftName";
+            this.lblDraftName.Size = new System.Drawing.Size(94, 19);
+            this.lblDraftName.TabIndex = 14;
+            this.lblDraftName.Text = "Tên cấu hình:";
+            // 
+            // txtDraftName
+            // 
+            this.txtDraftName.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtDraftName.Location = new System.Drawing.Point(350, 13);
+            this.txtDraftName.Name = "txtDraftName";
+            this.txtDraftName.Size = new System.Drawing.Size(400, 25);
+            this.txtDraftName.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtDraftName.TabIndex = 15;
+            // 
+            // btnUpdateDraft
+            // 
+            this.btnUpdateDraft.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(140)))), ((int)(((byte)(0)))));
+            this.btnUpdateDraft.FlatAppearance.BorderSize = 0;
+            this.btnUpdateDraft.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUpdateDraft.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnUpdateDraft.ForeColor = System.Drawing.Color.White;
+            this.btnUpdateDraft.Location = new System.Drawing.Point(760, 12);
+            this.btnUpdateDraft.Name = "btnUpdateDraft";
+            this.btnUpdateDraft.Size = new System.Drawing.Size(110, 27);
+            this.btnUpdateDraft.TabIndex = 16;
+            this.btnUpdateDraft.Text = "Cập nhật";
+            this.btnUpdateDraft.UseVisualStyleBackColor = false;
+            this.btnUpdateDraft.Click += new System.EventHandler(this.BtnUpdateDraft_Click);
             // 
             // pnlStepsContainer
             // 
@@ -125,7 +163,7 @@ namespace ECQ_Soft
             // 
             // btnAddToGrid
             // 
-            this.btnAddToGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnAddToGrid.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnAddToGrid.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(34)))), ((int)(((byte)(139)))), ((int)(((byte)(34)))));
             this.btnAddToGrid.Enabled = false;
             this.btnAddToGrid.FlatAppearance.BorderSize = 0;
@@ -144,9 +182,7 @@ namespace ECQ_Soft
             // 
             this.dgvSelectedItems.AllowUserToAddRows = false;
             this.dgvSelectedItems.AllowUserToDeleteRows = false;
-            this.dgvSelectedItems.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dgvSelectedItems.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.dgvSelectedItems.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvSelectedItems.BackgroundColor = System.Drawing.Color.White;
             this.dgvSelectedItems.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -272,6 +308,9 @@ namespace ECQ_Soft
             this.Controls.Add(this.dgvSelectedItems);
             this.Controls.Add(this.pnlStepsContainer);
             this.Controls.Add(this.pnlControls);
+            this.Controls.Add(this.btnUpdateDraft);
+            this.Controls.Add(this.txtDraftName);
+            this.Controls.Add(this.lblDraftName);
             this.Controls.Add(this.lblTitle);
             this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.MinimizeBox = false;
@@ -289,6 +328,9 @@ namespace ECQ_Soft
         #endregion
 
         private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblDraftName;
+        private System.Windows.Forms.TextBox txtDraftName;
+        private System.Windows.Forms.Button btnUpdateDraft;
         private System.Windows.Forms.Label lblDivider;
         private System.Windows.Forms.Label lblGridTitle;
         private System.Windows.Forms.FlowLayoutPanel pnlStepsContainer;

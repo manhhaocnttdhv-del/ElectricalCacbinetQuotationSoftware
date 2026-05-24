@@ -28,6 +28,8 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -68,14 +70,17 @@
     <Reference Include="FontAwesome.Sharp, Version=6.6.0.0, Culture=neutral, PublicKeyToken=d16d1e4e568ec10f, processorArchitecture=MSIL">
       <HintPath>..\packages\FontAwesome.Sharp.6.6.0\lib\net472\FontAwesome.Sharp.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis, Version=1.71.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.1.71.0\lib\net462\Google.Apis.dll</HintPath>
+    <Reference Include="Google.Apis, Version=1.74.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.1.74.0\lib\net462\Google.Apis.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Auth, Version=1.70.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.Auth.1.70.0\lib\net462\Google.Apis.Auth.dll</HintPath>
+    <Reference Include="Google.Apis.Auth, Version=1.74.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Auth.1.74.0\lib\net462\Google.Apis.Auth.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Core, Version=1.71.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Apis.Core.1.71.0\lib\net462\Google.Apis.Core.dll</HintPath>
+    <Reference Include="Google.Apis.Core, Version=1.74.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Core.1.74.0\lib\net462\Google.Apis.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Google.Apis.Drive.v3, Version=1.74.0.4135, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Apis.Drive.v3.1.74.0.4135\lib\net462\Google.Apis.Drive.v3.dll</HintPath>
     </Reference>
     <Reference Include="Google.Apis.Sheets.v4, Version=1.70.0.3819, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Apis.Sheets.v4.1.70.0.3819\lib\net462\Google.Apis.Sheets.v4.dll</HintPath>
@@ -84,8 +89,17 @@
       <HintPath>..\packages\Microsoft.Office.Interop.Excel.15.0.4795.1001\lib\net20\Microsoft.Office.Interop.Excel.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Core, Version=1.0.3967.48, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms, Version=1.0.3967.48, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Wpf, Version=1.0.3967.48, Culture=neutral, PublicKeyToken=2a8ab48044d2601e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -105,75 +119,86 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FrmExportInfo.cs">
+    <Compile Include="Forms\FrmExportInfo.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmProductEdit.cs">
+    <Compile Include="Forms\FrmProductEdit.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmExportInfo.Designer.cs">
+    <Compile Include="Forms\FrmExportInfo.Designer.cs">
       <DependentUpon>FrmExportInfo.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmMain.cs">
+    <Compile Include="Forms\FrmMain.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmMain.Designer.cs">
+    <Compile Include="Forms\FrmMain.Designer.cs">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmLogin.cs">
+    <Compile Include="Forms\FrmLogin.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmLogin.Designer.cs">
+    <Compile Include="Forms\FrmLogin.Designer.cs">
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmQuotation.cs">
+    <Compile Include="Forms\FrmQuotation.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="FrmQuotation.Designer.cs">
+    <Compile Include="Forms\FrmQuotation.Designer.cs">
       <DependentUpon>FrmQuotation.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmConfig.cs">
+    <Compile Include="Forms\FrmConfig.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="FrmConfig.Designer.cs">
+    <Compile Include="Forms\FrmConfig.Designer.cs">
       <DependentUpon>FrmConfig.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmSplashScreen.cs">
+    <Compile Include="Forms\FrmSplashScreen.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmSplashScreen.Designer.cs">
+    <Compile Include="Forms\FrmSplashScreen.Designer.cs">
       <DependentUpon>FrmSplashScreen.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmRelation.cs">
+    <Compile Include="Forms\FrmRelation.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="FrmRelation.Designer.cs">
+    <Compile Include="Forms\FrmRelation.Designer.cs">
       <DependentUpon>FrmRelation.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmProductSearch.cs">
+    <Compile Include="Forms\FrmProductSearch.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmProductSearch.Designer.cs">
+    <Compile Include="Forms\FrmProductSearch.Designer.cs">
       <DependentUpon>FrmProductSearch.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmSheetSelector.cs">
+    <Compile Include="Forms\FrmSheetSelector.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmSheetSelector.Designer.cs">
+    <Compile Include="Forms\FrmSheetSelector.Designer.cs">
       <DependentUpon>FrmSheetSelector.cs</DependentUpon>
     </Compile>
-    <Compile Include="FrmAdvancedConfig.cs">
+    <Compile Include="Forms\FrmAdvancedConfig.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmAdvancedConfig.Designer.cs">
+    <!-- TẠM THỜI VÔ HIỆU HÓA TÍNH NĂNG TÍNH TOÁN BẰNG AI -->
+    <!-- Để bật lại: đổi thẻ None thành Compile bên dưới -->
+    <None Include="Forms\FrmAdvancedConfig.AI.cs">
+      <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </None>
+    <Compile Include="Forms\FrmAdvancedConfig.Designer.cs">
       <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
     </Compile>
-
-    <Compile Include="GridHelper.cs" />
-    <Compile Include="FrmSavePackage.cs">
+    <Compile Include="Forms\FrmBusbarSheetEditor.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmSavePackage.Designer.cs">
+    <Compile Include="Forms\FrmBusbarWebView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GridHelper.cs" />
+    <Compile Include="Forms\FrmSavePackage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmSavePackage.Designer.cs">
       <DependentUpon>FrmSavePackage.cs</DependentUpon>
     </Compile>
     <Compile Include="Model\Category.cs" />
@@ -184,6 +209,7 @@
     <Compile Include="Model\Products.cs" />
     <Compile Include="Model\RelationItem.cs" />
     <Compile Include="Services\GoogleSheetsService.cs" />
+    <Compile Include="Services\GoogleDriveUploader.cs" />
     <Compile Include="Helper\GdiHelper.cs" />
     <Compile Include="Helper\CategoryParser.cs" />
     <Compile Include="Helper\CategoryTreeDropdown.cs">
@@ -226,25 +252,25 @@
     <None Include="Resources\showEye.jpg" />
     <None Include="Resources\hideEye.jpg" />
     <None Include="Resources\userimage.jpg" />
-    <EmbeddedResource Include="FrmAdvancedConfig.resx">
+    <EmbeddedResource Include="Forms\FrmAdvancedConfig.resx">
       <DependentUpon>FrmAdvancedConfig.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmConfig.resx">
+    <EmbeddedResource Include="Forms\FrmConfig.resx">
       <DependentUpon>FrmConfig.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmRelation.resx">
+    <EmbeddedResource Include="Forms\FrmRelation.resx">
       <DependentUpon>FrmRelation.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmMain.resx">
+    <EmbeddedResource Include="Forms\FrmMain.resx">
       <DependentUpon>FrmMain.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmLogin.resx">
+    <EmbeddedResource Include="Forms\FrmLogin.resx">
       <DependentUpon>FrmLogin.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmQuotation.resx">
+    <EmbeddedResource Include="Forms\FrmQuotation.resx">
       <DependentUpon>FrmQuotation.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmSplashScreen.resx">
+    <EmbeddedResource Include="Forms\FrmSplashScreen.resx">
       <DependentUpon>FrmSplashScreen.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -275,6 +301,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="gemini_key.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
@@ -289,4 +318,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.3967.48\build\Microsoft.Web.WebView2.targets'))" />
+  </Target>
 </Project>

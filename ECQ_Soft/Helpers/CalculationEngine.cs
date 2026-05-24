@@ -50,8 +50,8 @@ namespace ECQ_Soft.Helpers
             }
 
             // 2. Thay thế các biến còn sót lại (chưa được định nghĩa) bằng 0 để tránh lỗi Syntax
-            // Chỉ thay thế các định danh (identifier) không phải là tên hàm (MAX, MIN, CEIL, FLOOR) hoặc toán tử (AND, OR, v.v.)
-            string idPattern = @"\b(?!(?:MAX|MIN|CEIL|FLOOR|AND|OR|NOT|TRUE|FALSE|MOD)\b)[a-z]+[0-9]*(_[0-9]+)?\b";
+            // Chỉ thay thế các định danh (identifier) không phải là tên hàm (MAX, MIN, SUM, CEIL, FLOOR) hoặc toán tử (AND, OR, v.v.)
+            string idPattern = @"\b(?!(?:MAX|MIN|SUM|CEIL|FLOOR|AND|OR|NOT|TRUE|FALSE|MOD)\b)[a-z]+[0-9]*(_[0-9]+)?\b";
             processed = Regex.Replace(processed, idPattern, "0", RegexOptions.IgnoreCase);
 
             // 2. Xử lý hàm MAX và MIN (thực hiện lặp để hỗ trợ lồng nhau cơ bản)
@@ -103,31 +103,42 @@ namespace ECQ_Soft.Helpers
         }
 
         /// <summary>
-        /// Mở rộng các hàm MAX/MIN có tham số dạng prefix (không có _suffix) thành danh sách instance đầy đủ.
+        /// Mở rộng các hàm MAX/MIN/SUM có tham số dạng prefix (không có _suffix) thành danh sách instance đầy đủ.
         /// Ví dụ: MAX(w102) → MAX(500, 800) nếu varMap chứa w102_1=500, w102_2=800.
         /// Nếu không tìm thấy instance nào, giữ nguyên (sẽ dùng giá trị cộng dồn).
         /// </summary>
         private static string ExpandWildcardFunctions(string expression, Dictionary<string, double> variables)
         {
-            // Regex mới: bắt MAX hoặc MIN và toàn bộ nội dung bên trong ngoặc
-            var pattern = new Regex(@"\b(MAX|MIN)\(([^)]+)\)", RegexOptions.IgnoreCase);
+            if (string.IsNullOrWhiteSpace(expression)) return expression;
 
-            return pattern.Replace(expression, match =>
+            int index = 0;
+            while (true)
             {
-                string funcName = match.Groups[1].Value.ToUpper();
-                string inner = match.Groups[2].Value.Trim();
+                var match = Regex.Match(expression.Substring(index), @"\b(MAX|MIN|SUM)\(", RegexOptions.IgnoreCase);
+                if (!match.Success) break;
 
-                // Tách các tham số bằng dấu phẩy (ví dụ: MAX(h102, h103))
-                var args = inner.Split(',').Select(s => s.Trim()).ToList();
+                int funcStart = index + match.Index;
+                string funcName = match.Groups[1].Value.ToUpper();
+                int openParenIndex = funcStart + match.Length - 1;
+
+                int closeParenIndex = FindClosingParenthesis(expression, openParenIndex);
+                if (closeParenIndex == -1)
+                {
+                    index = openParenIndex + 1;
+                    continue;
+                }
+
+                string inner = expression.Substring(openParenIndex + 1, closeParenIndex - openParenIndex - 1);
+                inner = ExpandWildcardFunctions(inner, variables);
+
+                var args = SplitArguments(inner);
                 var expandedArgs = new List<string>();
 
                 foreach (var arg in args)
                 {
-                    // Kiểm tra nếu tham số là một tên biến đơn (ví dụ "h102", không chứa toán tử)
                     if (Regex.IsMatch(arg, @"^[a-z][a-z0-9]*$", RegexOptions.IgnoreCase))
                     {
                         string varName = arg.ToLower();
-                        // Tìm tất cả instance keys: varName_1, varName_2... trong variables
                         var instanceKeys = variables.Keys
                             .Where(k => Regex.IsMatch(k, $@"^{Regex.Escape(varName)}_\d+$", RegexOptions.IgnoreCase))
                             .OrderBy(k => k)
@@ -135,18 +146,51 @@ namespace ECQ_Soft.Helpers
 
                         if (instanceKeys.Count > 0)
                         {
-                            // Nếu có instance, bung chúng ra thành danh sách giá trị tham số riêng biệt
                             expandedArgs.AddRange(instanceKeys.Select(k => variables[k].ToString(CultureInfo.InvariantCulture)));
                             continue;
                         }
                     }
-
-                    // Nếu là biểu thức hoặc không có instance, giữ nguyên để xử lý sau bằng vòng lặp thay thế biến chính
                     expandedArgs.Add(arg);
                 }
 
-                return $"{funcName}({string.Join(", ", expandedArgs)})";
-            });
+                string replacement = $"{funcName}({string.Join(", ", expandedArgs)})";
+                expression = expression.Substring(0, funcStart) + replacement + expression.Substring(closeParenIndex + 1);
+                index = funcStart + replacement.Length;
+            }
+
+            return expression;
+        }
+
+        private static int FindClosingParenthesis(string str, int openParenIndex)
+        {
+            int parenCount = 1;
+            for (int i = openParenIndex + 1; i < str.Length; i++)
+            {
+                if (str[i] == '(') parenCount++;
+                else if (str[i] == ')') parenCount--;
+
+                if (parenCount == 0) return i;
+            }
+            return -1;
+        }
+
+        private static List<string> SplitArguments(string inner)
+        {
+            var args = new List<string>();
+            int parenLevel = 0;
+            int start = 0;
+            for (int i = 0; i < inner.Length; i++)
+            {
+                if (inner[i] == '(') parenLevel++;
+                else if (inner[i] == ')') parenLevel--;
+                else if (inner[i] == ',' && parenLevel == 0)
+                {
+                    args.Add(inner.Substring(start, i - start).Trim());
+                    start = i + 1;
+                }
+            }
+            args.Add(inner.Substring(start).Trim());
+            return args;
         }
 
         /// <summary>
@@ -220,6 +264,8 @@ namespace ECQ_Soft.Helpers
             expression = ProcessFunction(expression, "MAX", values => values.Max());
             // Xử lý MIN(a, b, c) hoặc MIN(a; b; c)
             expression = ProcessFunction(expression, "MIN", values => values.Min());
+            // Xử lý SUM(a, b, c) hoặc SUM(a; b; c)
+            expression = ProcessFunction(expression, "SUM", values => values.Sum());
             // Xử lý CEIL(expr) - làm tròn lên
             expression = ProcessFunction(expression, "CEIL", values => Math.Ceiling(values.First()));
             // Xử lý FLOOR(expr) - làm tròn xuống

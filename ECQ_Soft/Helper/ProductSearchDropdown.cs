@@ -1,4 +1,4 @@
-using ECQ_Soft.Model;
+﻿using ECQ_Soft.Model;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,6 +15,7 @@ namespace ECQ_Soft.Helper
     public class ProductSearchDropdown : ComboBox
     {
         private List<Products> _allProducts = new List<Products>();
+        private List<ProductIndex> _productIndex = new List<ProductIndex>();
         internal DataGridView _grid;
         private ToolStripControlHost _host;
         private ToolStripDropDown _dropDown;
@@ -158,6 +159,7 @@ namespace ECQ_Soft.Helper
         public void LoadData(List<Products> products)
         {
             _allProducts = products ?? new List<Products>();
+            BuildSearchIndex();
         }
 
         protected override void OnDropDown(EventArgs e)
@@ -201,17 +203,60 @@ namespace ECQ_Soft.Helper
             SearchAndShowPopup();
         }
 
+        private struct ProductIndex
+        {
+            public Products Product;
+            public string Searchable;
+            public string Pole;
+            public string Ir;
+            public string Icu;
+        }
+
+        private void BuildSearchIndex()
+        {
+            _productIndex.Clear();
+            if (_allProducts == null || _allProducts.Count == 0) return;
+
+            _productIndex.Capacity = Math.Max(_productIndex.Capacity, _allProducts.Count);
+            foreach (var p in _allProducts)
+            {
+                if (p == null) continue;
+
+                string pole = p.GetAttribute("pole") ?? "";
+                string ir = p.GetAttribute("ir") ?? "";
+                string icu = p.GetAttribute("icu") ?? "";
+
+                string searchable = string.Concat(
+                    p.Name ?? "", " ",
+                    p.SKU ?? "", " ",
+                    p.Model ?? "", " ",
+                    pole, " ",
+                    ir, " ",
+                    icu
+                );
+
+                _productIndex.Add(new ProductIndex
+                {
+                    Product = p,
+                    Searchable = searchable,
+                    Pole = pole,
+                    Ir = ir,
+                    Icu = icu
+                });
+            }
+        }
+
         private void SearchAndShowPopup()
         {
             if (_allProducts == null || _allProducts.Count == 0) return;
 
-            string keyword = this.Text.Trim().ToLower();
-            List<Products> results;
+            string keyword = this.Text.Trim();
+            List<ProductIndex> results;
 
             if (string.IsNullOrEmpty(keyword))
             {
                 // Mặc định gợi ý sản phẩm gốc
-                results = _allProducts.Take(500).ToList();
+                results = _productIndex.Take(500).ToList();
                 SelectedProduct = null;
             }
             else
@@ -219,13 +264,14 @@ namespace ECQ_Soft.Helper
                 // Tách từ khóa và tìm kiếm đa trường (Name, SKU, Model) cực nhạy
                 var tokens = keyword.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                results = _allProducts.Where(p =>
+                results = _productIndex.Where(pi =>
                 {
-                    string pole = p.GetAttribute("pole");
-                    string ir   = p.GetAttribute("ir");
-                    string icu  = p.GetAttribute("icu");
-                    string searchable = $"{(p.Name ?? "")} {(p.SKU ?? "")} {(p.Model ?? "")} {pole} {ir} {icu}".ToLower();
-                    return tokens.All(t => searchable.Contains(t));
+                    string searchable = pi.Searchable ?? "";
+                    for (int i = 0; i < tokens.Length; i++)
+                    {
+                        if (searchable.IndexOf(tokens[i], StringComparison.CurrentCultureIgnoreCase) < 0) return false;
+                    }
+                    return true;
                 }).Take(500).ToList();
             }
 
@@ -233,15 +279,18 @@ namespace ECQ_Soft.Helper
             try
             {
                 _grid.Rows.Clear();
-                foreach (var p in results)
+                foreach (var pi in results)
                 {
-                    string pole = p.GetAttribute("pole");
+                    var p = pi.Product;
+                    if (p == null) continue;
+
+                    string pole = pi.Pole;
                     if (string.IsNullOrWhiteSpace(pole)) pole = "0";
 
-                    string ir = p.GetAttribute("ir");
+                    string ir = pi.Ir;
                     if (string.IsNullOrWhiteSpace(ir)) ir = "0";
 
-                    string icu = p.GetAttribute("icu");
+                    string icu = pi.Icu;
                     if (string.IsNullOrWhiteSpace(icu)) icu = "0";
 
                     string specs = $"{pole} | {ir} | {icu}";

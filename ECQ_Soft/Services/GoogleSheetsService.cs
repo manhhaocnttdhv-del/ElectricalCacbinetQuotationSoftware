@@ -1,4 +1,4 @@
-using ECQ_Soft.Model;
+﻿using ECQ_Soft.Model;
 using ECQ_Soft.Properties;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
@@ -20,12 +20,34 @@ namespace ECQ_Soft.Services
         private SheetsService _sheetsService;
         private readonly string _spreadsheetId;
         private readonly string _sheetName;
+        private const string UnableToParseRangeText = "Unable to parse range";
 
         public GoogleSheetsService(string spreadsheetId, string sheetName)
         {
             _spreadsheetId = spreadsheetId;
             _sheetName     = sheetName;
             Init();
+        }
+
+        private static bool IsUnableToParseRange(Google.GoogleApiException ex)
+        {
+            return ex != null && ex.Message != null && ex.Message.Contains(UnableToParseRangeText);
+        }
+
+        private void ShowSheetNotFound(Google.GoogleApiException ex)
+        {
+            MessageBox.Show($"Không tìm thấy sheet '{_sheetName}'.\n\n{ex.Message}",
+                "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private static string RemoveNumberSeparators(string s)
+        {
+            return string.IsNullOrEmpty(s) ? "" : s.Replace(".", "").Replace(",", "");
+        }
+
+        private static string RemoveDots(string s)
+        {
+            return string.IsNullOrEmpty(s) ? "" : s.Replace(".", "");
         }
 
         // ── Khởi tạo ────────────────────────────────────────────────────────
@@ -140,10 +162,10 @@ namespace ECQ_Soft.Services
                     string type     = row[0].ToString();
                     string thickStr = row[1].ToString().Split(' ')[0];
                     string qStr     = row[2].ToString().Trim();
-                    string priceStr = row[3].ToString().Trim().Replace(".", "");
-                    string pcStr    = row[4].ToString().Trim().Replace(".", "");
-                    string hdgStr   = row[5].ToString().Trim().Replace(".", "");
-                    string otherStr = row[6].ToString().Trim().Replace(".", "");
+                    string priceStr = RemoveDots(row[3].ToString().Trim());
+                    string pcStr    = RemoveDots(row[4].ToString().Trim());
+                    string hdgStr   = RemoveDots(row[5].ToString().Trim());
+                    string otherStr = RemoveDots(row[6].ToString().Trim());
 
                     if (float.TryParse(qStr,     out float q)
                         && int.TryParse(priceStr, out int price)
@@ -172,7 +194,7 @@ namespace ECQ_Soft.Services
                     }
                 }
             }
-            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
+            catch (Google.GoogleApiException ex) when (IsUnableToParseRange(ex))
             {
                 MessageBox.Show($"Không tìm thấy sheet '{_sheetName}'.\n\n{ex.Message}",
                     "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -215,7 +237,7 @@ namespace ECQ_Soft.Services
                     });
                 }
             }
-            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
+            catch (Google.GoogleApiException ex) when (IsUnableToParseRange(ex))
             {
                 MessageBox.Show($"Không tìm thấy sheet '{_sheetName}'.\n\n{ex.Message}",
                     "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -251,8 +273,8 @@ namespace ECQ_Soft.Services
                     string matStr  = row[0].ToString().Trim();
                     string cabStr  = row[1].ToString().Trim();
                     string coatStr = row[2].ToString().Trim();
-                    string mktStr  = row[3].ToString().Trim().Replace(".", "");
-                    string vpaStr  = row[4].ToString().Trim().Replace(".", "");
+                    string mktStr  = RemoveDots(row[3].ToString().Trim());
+                    string vpaStr  = RemoveDots(row[4].ToString().Trim());
 
                     if (int.TryParse(matStr,  out int materialId)
                         && int.TryParse(cabStr,  out int cabinetId)

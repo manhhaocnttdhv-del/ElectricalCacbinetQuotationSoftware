@@ -157,6 +157,28 @@ namespace ECQ_Soft
             // Nút Thêm vào
             btnAddTo.Click += (s, e) => AddSelectedProducts();
 
+            // Menu chuột phải để thêm nhiều sản phẩm
+            var ctxSearch = new ContextMenuStrip();
+            var miAddMulti = new ToolStripMenuItem("Thêm các sản phẩm đã chọn");
+            miAddMulti.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            miAddMulti.Click += (s, e) => AddSelectedProducts();
+            ctxSearch.Items.Add(miAddMulti);
+
+            dgvProducts.ContextMenuStrip = ctxSearch;
+
+            // Xử lý chuột phải thông minh: Nếu click ra ngoài vùng chọn thì chọn lại dòng đó
+            dgvProducts.CellMouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+                {
+                    if (!dgvProducts.Rows[e.RowIndex].Selected)
+                    {
+                        dgvProducts.ClearSelection();
+                        dgvProducts.Rows[e.RowIndex].Selected = true;
+                    }
+                }
+            };
+
             btnCancel.Click += (s, e) => this.Close();
 
             if (btnAddNewProduct != null)
@@ -235,7 +257,8 @@ namespace ECQ_Soft
 
             if (selected.Count > 0)
             {
-                foreach (var p in selected) AddProduct(p);
+                // Gọi hàm batch
+                AddProducts(selected);
             }
             else
             {
@@ -246,23 +269,35 @@ namespace ECQ_Soft
 
         private void AddProduct(Products product)
         {
-            string key = product.SKU ?? product.Name ?? "";
+            AddProducts(new List<Products> { product });
+        }
 
-            // Cộng dồn số lượng trong tracking
-            if (_addedQty.ContainsKey(key))
-                _addedQty[key]++;
-            else
-                _addedQty[key] = 1;
+        private void AddProducts(List<Products> products)
+        {
+            if (products == null || products.Count == 0) return;
+
+            var clones = new List<Products>();
+            foreach (var product in products)
+            {
+                string key = product.SKU ?? product.Name ?? "";
+
+                // Cộng dồn số lượng trong tracking
+                if (_addedQty.ContainsKey(key))
+                    _addedQty[key]++;
+                else
+                    _addedQty[key] = 1;
+
+                // Gửi sản phẩm với số lượng = 1 (tăng dần ở FrmConfig/FrmQuotation)
+                var clone = CloneProduct(product);
+                clone.SoLuong = 1;
+                clones.Add(clone);
+            }
 
             // Cập nhật cột SL trong grid
             dgvProducts.Invalidate();
-
-            // Gửi sản phẩm với số lượng = 1 (tăng dần ở FrmConfig/FrmQuotation)
-            var clone = CloneProduct(product);
-            clone.SoLuong = 1;
             
             string targetHeader = cboTargetHeader.SelectedItem?.ToString();
-            OnProductsSelected?.Invoke(new List<Products> { clone }, targetHeader);
+            OnProductsSelected?.Invoke(clones, targetHeader);
         }
 
         private Products CloneProduct(Products p)

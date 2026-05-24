@@ -81,8 +81,27 @@ namespace ECQ_Soft
         private void rdoExisting_CheckedChanged(object sender, EventArgs e) => UpdateUIMode();
         private void rdoRename_CheckedChanged(object sender, EventArgs e) => UpdateUIMode();
 
+        private void UpdateRadioButtonColors()
+        {
+            foreach (var rdo in new[] { rdoExisting, rdoNew, rdoRename })
+            {
+                if (rdo.Checked)
+                {
+                    rdo.ForeColor = System.Drawing.Color.White;
+                    rdo.BackColor = System.Drawing.Color.FromArgb(34, 139, 34);
+                }
+                else
+                {
+                    rdo.ForeColor = System.Drawing.Color.FromArgb(60, 60, 60);
+                    rdo.BackColor = System.Drawing.Color.FromArgb(230, 230, 230);
+                }
+            }
+        }
+
         private void UpdateUIMode()
         {
+            UpdateRadioButtonColors();
+
             if (rdoNew.Checked)
             {
                 lblExisting.Visible = false;
@@ -90,35 +109,35 @@ namespace ECQ_Soft
 
                 lblNewName.Visible = true;
                 lblNewName.Text = "Tên tab mới:";
-                lblNewName.Top = 56;
+                lblNewName.Top = 60;
                 
                 txtNewName.Visible = true;
-                txtNewName.Top = 78;
+                txtNewName.Top = 82;
             }
             else if (rdoRename.Checked)
             {
                 lblExisting.Visible = true;
                 lblExisting.Text = "Chọn tab cần đổi tên:";
-                lblExisting.Top = 46;
+                lblExisting.Top = 56;
                 
                 cboExisting.Visible = true;
-                cboExisting.Top = 66;
+                cboExisting.Top = 76;
 
                 lblNewName.Visible = true;
                 lblNewName.Text = "Tên mới:";
-                lblNewName.Top = 100;
+                lblNewName.Top = 110;
 
                 txtNewName.Visible = true;
-                txtNewName.Top = 120;
+                txtNewName.Top = 130;
             }
             else // rdoExisting.Checked
             {
                 lblExisting.Visible = true;
                 lblExisting.Text = "Chọn tab hiện có:";
-                lblExisting.Top = 56;
+                lblExisting.Top = 60;
                 
                 cboExisting.Visible = true;
-                cboExisting.Top = 78;
+                cboExisting.Top = 82;
 
                 lblNewName.Visible = false;
                 txtNewName.Visible = false;

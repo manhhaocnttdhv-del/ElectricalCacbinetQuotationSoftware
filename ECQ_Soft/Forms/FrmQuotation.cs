@@ -347,10 +347,16 @@ namespace ECQ_Soft
             list.Add(new Record { Name = "THUẾ VAT 8%", MarketTotalPrice = VAT, HMETotalPrice = VatHME, VPATotalPrice = VatVPA });
             list.Add(new Record { Name = "TỔNG CỘNG (Đã bao gồm VAT)", MarketTotalPrice = Total, HMETotalPrice = TotalHME, VPATotalPrice = TotalVPA });
 
+            dgvRecord.SetDoubleBuffered(true);
             dgvRecord.DataSource = list;
             dgvRecord.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
             dgvRecord.Columns["WeightperUnit"].Visible = false;
+
+            foreach (DataGridViewColumn col in dgvRecord.Columns)
+            {
+                col.SortMode = DataGridViewColumnSortMode.NotSortable;
+            }
 
             dgvRecord.Columns["Stt"].FillWeight = 20;
             dgvRecord.Columns["Name"].FillWeight = 120;
@@ -394,7 +400,8 @@ namespace ECQ_Soft
             dgvRecord.Columns["Note"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
 
             // Hàng tự động tăng chiều cao theo nội dung
-            dgvRecord.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+            dgvRecord.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
+            dgvRecord.AutoResizeRows(DataGridViewAutoSizeRowsMode.AllCells);
 
             // Font cho cell (nội dung)
             dgvRecord.DefaultCellStyle.Font = new Font("Times New Roman", 12, FontStyle.Regular);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -42,47 +42,106 @@ namespace ECQ_Soft.Model
         [Browsable(false)]
         public Dictionary<string, string> ExtraAttributes { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// Lấy giá trị thuộc tính theo tên biến (hỗ trợ cả cột chuẩn lẫn ExtraAttributes).
-        /// </summary>
+        private List<KeyValuePair<string, string>> _normalizedExtraAttributes;
+        private int _normalizedExtraAttributesCount = -1;
+
+        private static string NormalizeExtraKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return "";
+            return key.Replace("\n", " ").Replace("\r", " ").Trim().ToLower();
+        }
+
+        private void EnsureNormalizedExtraAttributes()
+        {
+            if (ExtraAttributes == null)
+            {
+                _normalizedExtraAttributes = null;
+                _normalizedExtraAttributesCount = -1;
+                return;
+            }
+
+            if (_normalizedExtraAttributes != null && _normalizedExtraAttributesCount == ExtraAttributes.Count) return;
+
+            _normalizedExtraAttributes = new List<KeyValuePair<string, string>>(ExtraAttributes.Count);
+            foreach (var kvp in ExtraAttributes)
+            {
+                _normalizedExtraAttributes.Add(new KeyValuePair<string, string>(NormalizeExtraKey(kvp.Key), kvp.Value));
+            }
+            _normalizedExtraAttributesCount = ExtraAttributes.Count;
+        }
+
+        private string GetExtraAttributeWithFallback(string k)
+        {
+            if (ExtraAttributes.TryGetValue(k, out string v))
+                return v ?? "";
+
+            EnsureNormalizedExtraAttributes();
+            string normalizedK = NormalizeExtraKey(k);
+
+            if (_normalizedExtraAttributes == null) return "";
+            for (int i = 0; i < _normalizedExtraAttributes.Count; i++)
+            {
+                var kvp = _normalizedExtraAttributes[i];
+                string normKey = kvp.Key ?? "";
+                if (normKey.StartsWith(normalizedK + " ", StringComparison.OrdinalIgnoreCase) ||
+                    normKey.StartsWith(normalizedK + "(", StringComparison.OrdinalIgnoreCase) ||
+                    normKey.Equals(normalizedK, StringComparison.OrdinalIgnoreCase))
+                {
+                    return kvp.Value ?? "";
+                }
+            }
+            return "";
+        }
+
         public string GetAttribute(string key)
         {
             if (string.IsNullOrEmpty(key)) return "";
-            string k = key.Trim().ToLower();
+
+            string k = key.Replace("\n", " ").Replace("\r", " ").Trim();
+            if (k.Length == 0) return "";
+            k = k.ToLower();
+            
+            // 1. Kiểm tra trực tiếp các cụm từ/chứa từ khóa quan trọng để ánh xạ về thuộc tính chuẩn
+            if (k.Contains("height") || k.Contains("cao") || k == "h")
+                return !string.IsNullOrEmpty(Height) ? Height : GetExtraAttributeWithFallback("height");
+                
+            if (k.Contains("width") || k.Contains("rộng") || k.Contains("rong") || k == "w")
+                return !string.IsNullOrEmpty(Width) ? Width : GetExtraAttributeWithFallback("width");
+                
+            if (k.Contains("length") || k.Contains("dài") || k.Contains("dai") || k.Contains("sâu") || k.Contains("sau") || k == "l" || k == "d")
+                return !string.IsNullOrEmpty(Length) ? Length : GetExtraAttributeWithFallback("length");
+                
+            if (k.Contains("weight") || k.Contains("khối lượng") || k.Contains("khoi luong") || k.Contains("nặng") || k.Contains("nang") || k == "kl" || k == "kg")
+                return !string.IsNullOrEmpty(Weight) ? Weight : GetExtraAttributeWithFallback("weight");
+                
+            if (k == "price" || k == "p" || k == "gv" || k.Contains("giá bán") || k.Contains("gia ban"))
+                return !string.IsNullOrEmpty(Price) ? Price : GetExtraAttributeWithFallback("price");
+                
+            if (k == "pricecost" || k == "cost" || k == "goc" || k.Contains("giá vốn") || k.Contains("gia von"))
+                return !string.IsNullOrEmpty(PriceCost) ? PriceCost : GetExtraAttributeWithFallback("pricecost");
+                
+            if (k == "pole" || k.Contains("số cực") || k.Contains("so cuc"))
+                return !string.IsNullOrEmpty(Pole) ? Pole : GetExtraAttributeWithFallback("pole");
+                
+            if (k == "ir" || k.Contains("i rate"))
+                return !string.IsNullOrEmpty(Ir) ? Ir : GetExtraAttributeWithFallback("ir");
+                
+            if (k == "icu")
+                return !string.IsNullOrEmpty(Icu) ? Icu : GetExtraAttributeWithFallback("icu");
+
+            // 2. Tra cứu switch case cho các trường còn lại
             switch (k)
             {
-                case "height": case "h": return Height ?? "";
-                case "width":  case "w": return Width  ?? "";
-                case "length": case "l": return Length ?? "";
-                case "weight": case "kl": case "kg": return Weight ?? "";
-                case "price":  case "p": case "gv": return Price ?? "";
-                case "pricecost": case "cost": case "goc": return PriceCost ?? "";
                 case "name": return Name ?? "";
                 case "model": return Model ?? "";
                 case "sku": return SKU ?? "";
                 case "category": return Category ?? "";
                 case "type": return Type ?? "";
-                case "hãng": case "hang": case "brand": return HÃNG ?? "";
-                case "trangthai": return TrangThai ?? "";
-                case "pole": return Pole ?? "";
-                case "ir": return Ir ?? "";
-                case "icu": return Icu ?? "";
-                case "pricelist": return PriceList ?? "";
+                case "hãng": case "hang": case "brand": return !string.IsNullOrEmpty(HÃNG) ? HÃNG : GetExtraAttributeWithFallback("hãng");
+                case "trangthai": return !string.IsNullOrEmpty(TrangThai) ? TrangThai : GetExtraAttributeWithFallback("trangthai");
+                case "pricelist": return !string.IsNullOrEmpty(PriceList) ? PriceList : GetExtraAttributeWithFallback("pricelist");
                 default:
-                    if (ExtraAttributes.TryGetValue(k, out string v))
-                        return v ?? "";
-                    
-                    // Thử tìm khớp tương đối (ví dụ: Config truyền 'ir' hoặc 'pole', nhưng trong Excel là 'Ir (I Rate)' hoặc 'Pole (số Cực)')
-                    foreach (var kvp in ExtraAttributes)
-                    {
-                        if (kvp.Key.StartsWith(k + " ", StringComparison.OrdinalIgnoreCase) || 
-                            kvp.Key.StartsWith(k + "(", StringComparison.OrdinalIgnoreCase) ||
-                            kvp.Key.Equals(k, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return kvp.Value ?? "";
-                        }
-                    }
-                    return "";
+                    return GetExtraAttributeWithFallback(k);
             }
         }
     }

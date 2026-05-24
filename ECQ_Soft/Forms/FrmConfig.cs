@@ -1,4 +1,4 @@
-using ECQ_Soft.Model;
+﻿using ECQ_Soft.Model;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
@@ -40,6 +40,27 @@ namespace ECQ_Soft
 
         /// <summary>Trả về đường dẫn file cache JSON cho một key dữ liệu cụ thể.</summary>
         private string GetCachePath(string key) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"cache_{key}_{configSheetName ?? "global"}.json");
+
+        private static readonly System.Text.RegularExpressions.Regex[] CabinetHighlightRegexes =
+        {
+            new System.Text.RegularExpressions.Regex("trong nhà", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex("ngoài trời", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex(@"\d+\s*lớp cánh", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex(@"H\d+xW\d+xD\d+mm", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex(@"\d+(?:\.\d+)?mm", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex("sơn sần", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex("sơn bóng", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex(@"RAL\s*\d+[^\s,\n]*", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+            new System.Text.RegularExpressions.Regex(@"có tô màu\s+\S+", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled),
+        };
+
+        private static decimal ParseCurrencyToDecimal(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return 0m;
+            string clean = s.Replace(".", "").Replace(",", "").Replace("₫", "").Trim();
+            decimal.TryParse(clean, out decimal res);
+            return res;
+        }
 
         /// <summary>Trả về SheetsService để FrmMain/modal dùng chung.</summary>
         public SheetsService GetSheetsService()
@@ -656,6 +677,44 @@ namespace ECQ_Soft
             
             btnOpenSearchModal.Click += (s, ev) => OpenProductSearch(toConfigurationArea: true);
             btnOpenSearchModalForQuote.Click += (s, ev) => OpenProductSearch(toConfigurationArea: false);
+
+            var ctxConfig = new ContextMenuStrip();
+            var miDeleteConfig = new ToolStripMenuItem("Xóa dòng đã chọn");
+            miDeleteConfig.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            miDeleteConfig.Click += (s, ev) => 
+            {
+                var selectedRows = dataGridView1.SelectedRows.Cast<DataGridViewRow>().ToList();
+                if (selectedRows.Count == 0) return;
+                
+                var confirm = MessageBox.Show("Bạn có chắc muốn xóa các dòng đã chọn?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (confirm == DialogResult.Yes)
+                {
+                    foreach (var row in selectedRows)
+                    {
+                        if (row.DataBoundItem is Products p)
+                        {
+                            childProducts.Remove(p);
+                        }
+                    }
+                    AdjustDataGridView1RowHeights();
+                    dataGridView1.Refresh();
+                    UpdateConfigGrid();
+                }
+            };
+            ctxConfig.Items.Add(miDeleteConfig);
+            dataGridView1.ContextMenuStrip = ctxConfig;
+            
+            dataGridView1.CellMouseDown += (s, ev) =>
+            {
+                if (ev.Button == MouseButtons.Right && ev.RowIndex >= 0)
+                {
+                    if (!dataGridView1.Rows[ev.RowIndex].Selected)
+                    {
+                        dataGridView1.ClearSelection();
+                        dataGridView1.Rows[ev.RowIndex].Selected = true;
+                    }
+                }
+            };
 
             SetupProductManagementUI();
             button4.Click += BtnRemoveParent_Click;
@@ -1318,13 +1377,6 @@ namespace ECQ_Soft
                         string tenHang = row[1]?.ToString()?.Trim() ?? "";
                         if (tenHang.StartsWith("TỔNG CỘNG") || tenHang.StartsWith("THUẾ VAT") || tenHang.StartsWith("THÀNH TIỀN")) continue;
 
-                        Func<string, decimal> parseCurrency = (s) => {
-                            if (string.IsNullOrEmpty(s)) return 0;
-                            string clean = s.Replace(".", "").Replace(",", "").Replace("₫", "").Trim();
-                            decimal.TryParse(clean, out decimal res);
-                            return res;
-                        };
-
                         newSavedItems.Add(new ConfigProductItem
                         {
                             STT = ((row.Count > 0 && int.TryParse(row[0]?.ToString(), out int stt)) ? stt : i + 1).ToString(),
@@ -1333,13 +1385,13 @@ namespace ECQ_Soft
                             XuatXu = row.Count > 3 ? row[3]?.ToString() : "",
                             DonVi = row.Count > 4 ? row[4]?.ToString() : "",
                             SoLuong = (row.Count > 5 && int.TryParse(row[5]?.ToString(), out int sl)) ? sl : 0,
-                            DonGiaVND = parseCurrency(row.Count > 6 ? row[6]?.ToString() : "0"),
-                            ThanhTienVND = parseCurrency(row.Count > 7 ? row[7]?.ToString() : "0"),
+                            DonGiaVND = ParseCurrencyToDecimal(row.Count > 6 ? row[6]?.ToString() : "0"),
+                            ThanhTienVND = ParseCurrencyToDecimal(row.Count > 7 ? row[7]?.ToString() : "0"),
                             GhiChu = row.Count > 8 ? row[8]?.ToString() : "",
-                            GiaNhap = parseCurrency(row.Count > 9 ? row[9]?.ToString() : "0"),
-                            ThanhTien = parseCurrency(row.Count > 10 ? row[10]?.ToString() : "0"),
-                            LoiNhuan = parseCurrency(row.Count > 11 ? row[11]?.ToString() : "0"),
-                            BangGia = parseCurrency(row.Count > 12 ? row[12]?.ToString() : "0"),
+                            GiaNhap = ParseCurrencyToDecimal(row.Count > 9 ? row[9]?.ToString() : "0"),
+                            ThanhTien = ParseCurrencyToDecimal(row.Count > 10 ? row[10]?.ToString() : "0"),
+                            LoiNhuan = ParseCurrencyToDecimal(row.Count > 11 ? row[11]?.ToString() : "0"),
+                            BangGia = ParseCurrencyToDecimal(row.Count > 12 ? row[12]?.ToString() : "0"),
                             IsHeader = (row.Count > 4 && row[4]?.ToString()?.Trim() == "TỦ") 
                                        && !(row.Count > 5 && !string.IsNullOrWhiteSpace(row[5]?.ToString())) 
                                        && string.IsNullOrEmpty(row.Count > 2 ? row[2]?.ToString()?.Trim() : ""),
@@ -1881,8 +1933,8 @@ namespace ECQ_Soft
                 // Chuyển childProducts sang ConfigProductItem để hiển thị trong modal preview
                 var childItemsForModal = childProducts.Select(p =>
                 {
-                    decimal price = 0; decimal.TryParse(p.Price?.Replace(".", "").Replace(",", ""), out price);
-                    decimal priceCost = 0; decimal.TryParse(p.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+                    decimal price = ParseCurrencyToDecimal(p.Price);
+                    decimal priceCost = ParseCurrencyToDecimal(p.PriceCost);
                     if (priceCost <= 0) priceCost = price;
                     int sl = p.SoLuong > 0 ? p.SoLuong : 1;
                     return new ConfigProductItem
@@ -2002,13 +2054,6 @@ namespace ECQ_Soft
                         }
                     }
 
-                    Func<string, decimal> parseCurrency = (s) => {
-                        if (string.IsNullOrEmpty(s)) return 0;
-                        string clean = s.Replace(".", "").Replace(",", "").Replace("₫", "").Trim();
-                        decimal.TryParse(clean, out decimal res);
-                        return res;
-                    };
-
                     var item = new ConfigProductItem
                     {
                         STT = row.Count > 0 ? row[0]?.ToString() : "",
@@ -2017,13 +2062,13 @@ namespace ECQ_Soft
                         XuatXu = row.Count > 3 ? row[3]?.ToString() : "",
                         DonVi = row.Count > 4 ? row[4]?.ToString() : "",
                         SoLuong = (row.Count > 5 && int.TryParse(row[5]?.ToString(), out int sl)) ? sl : 0,
-                        DonGiaVND = parseCurrency(row.Count > 6 ? row[6]?.ToString() : "0"),
-                        ThanhTienVND = parseCurrency(row.Count > 7 ? row[7]?.ToString() : "0"),
+                        DonGiaVND = ParseCurrencyToDecimal(row.Count > 6 ? row[6]?.ToString() : "0"),
+                        ThanhTienVND = ParseCurrencyToDecimal(row.Count > 7 ? row[7]?.ToString() : "0"),
                         GhiChu = row.Count > 8 ? row[8]?.ToString() : "",
-                        GiaNhap = parseCurrency(row.Count > 9 ? row[9]?.ToString() : "0"),
-                        ThanhTien = parseCurrency(row.Count > 10 ? row[10]?.ToString() : "0"),
-                        LoiNhuan = parseCurrency(row.Count > 11 ? row[11]?.ToString() : "0"),
-                            BangGia = parseCurrency(row.Count > 12 ? row[12]?.ToString() : "0"),
+                        GiaNhap = ParseCurrencyToDecimal(row.Count > 9 ? row[9]?.ToString() : "0"),
+                        ThanhTien = ParseCurrencyToDecimal(row.Count > 10 ? row[10]?.ToString() : "0"),
+                        LoiNhuan = ParseCurrencyToDecimal(row.Count > 11 ? row[11]?.ToString() : "0"),
+                        BangGia = ParseCurrencyToDecimal(row.Count > 12 ? row[12]?.ToString() : "0"),
                         IsHeader = isHeader
                     };
 
@@ -3041,7 +3086,7 @@ namespace ECQ_Soft
             };
 
             frm.FormClosed += (s, ev) => { btnOpenSearchModal.Enabled = true; };
-            frm.ShowDialog(this);
+            frm.Show(this);
         }
 
         /// <summary>
@@ -3215,10 +3260,8 @@ namespace ECQ_Soft
                 }
                 else
                 {
-                    decimal price = 0;
-                    decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
-                    decimal priceCost = 0;
-                    decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+                    decimal price = ParseCurrencyToDecimal(product.Price);
+                    decimal priceCost = ParseCurrencyToDecimal(product.PriceCost);
 
                     var newItem = new ConfigProductItem
                     {
@@ -3461,6 +3504,7 @@ namespace ECQ_Soft
 
             try
             {
+                dgv.SetDoubleBuffered(true);
                 // Thêm cột ▲▼ trước tiên
                 EnsureMoveColumns(dgv);
 
@@ -3614,6 +3658,7 @@ namespace ECQ_Soft
 
                 foreach (DataGridViewColumn col in dgv.Columns)
                 {
+                    col.SortMode = DataGridViewColumnSortMode.NotSortable;
                     // ColMove là custom cell — không set ReadOnly để nhận CellMouseClick
                     if (col.Name == "ColMove") { col.ReadOnly = false; continue; }
                     if (col.Name != "SoLuong" && col.Name != "GhiChu" && col.Name != "TenHang" && col.Name != "DonGiaVND" && col.Name != "GiaNhap")
@@ -4011,8 +4056,8 @@ namespace ECQ_Soft
 
                     if (!isDuplicate)
                     {
-                        decimal price = 0; decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
-                        decimal priceCost = 0; decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+                        decimal price = ParseCurrencyToDecimal(product.Price);
+                        decimal priceCost = ParseCurrencyToDecimal(product.PriceCost);
                         configProducts.Add(CreateConfigItem(product, price, priceCost));
                     }
                 }
@@ -4053,8 +4098,8 @@ namespace ECQ_Soft
                         }
                     }
 
-                    decimal price = 0; decimal.TryParse(product.Price?.Replace(".", "").Replace(",", ""), out price);
-                    decimal priceCost = 0; decimal.TryParse(product.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+                    decimal price = ParseCurrencyToDecimal(product.Price);
+                    decimal priceCost = ParseCurrencyToDecimal(product.PriceCost);
 
                     if (existingItem != null)
                     {
@@ -4414,74 +4459,67 @@ namespace ECQ_Soft
             Color colNormal    = isSelected ? Color.White : Color.FromArgb(30, 30, 30);
             Color colHighlight = Color.Red;
 
-            Font fntBold   = new Font(baseFont ?? new Font("Segoe UI", 9f), FontStyle.Bold);
             Font fntNormal = baseFont ?? new Font("Segoe UI", 9f);
-
-            // Các pattern cần tô đỏ (giống FrmAdvancedConfig)
-            var patterns = new[]
-            {
-                "trong nhà", "ngoài trời",
-                @"\d+\s*lớp cánh",
-                @"H\d+xW\d+xD\d+mm",
-                @"\d+(?:\.\d+)?mm",
-                "sơn sần", "sơn bóng",
-                @"RAL\s*\d+[^\s,\n]*",
-                @"có tô màu\s+\S+",
-            };
+            Font fntBold = new Font(fntNormal, FontStyle.Bold);
 
             string[] lines = text.Split('\n');
             int lineH  = fntNormal.Height + 3;
             int topPad = Math.Max(3, (bounds.Height - lines.Length * lineH) / 2);
             int curY   = bounds.Top + topPad;
 
-            foreach (string rawLine in lines)
+            try
             {
-                string line = rawLine.TrimEnd('\r');
-                int curX = bounds.Left + 4;
-
-                // Thu thập tất cả vị trí keyword
-                var allMatches = new List<(int start, int len)>();
-                foreach (var pat in patterns)
+                foreach (string rawLine in lines)
                 {
-                    var rx = new System.Text.RegularExpressions.Regex(
-                        pat, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                    foreach (System.Text.RegularExpressions.Match m in rx.Matches(line))
-                        allMatches.Add((m.Index, m.Length));
-                }
-                allMatches.Sort((a, b) => a.start != b.start ? a.start.CompareTo(b.start) : b.len.CompareTo(a.len));
+                    string line = rawLine.TrimEnd('\r');
+                    int curX = bounds.Left + 4;
 
-                // Loại overlap
-                var clean = new List<(int start, int len)>();
-                int covered = 0;
-                foreach (var m in allMatches)
-                    if (m.start >= covered) { clean.Add(m); covered = m.start + m.len; }
-
-                // Vẽ từng đoạn
-                int p = 0;
-                foreach (var m in clean)
-                {
-                    if (m.start > p)
+                    // Thu thập tất cả vị trí keyword (dùng regex cache để tránh tái tạo nhiều lần)
+                    var allMatches = new List<(int start, int len)>();
+                    foreach (var rx in CabinetHighlightRegexes)
                     {
-                        string normal = line.Substring(p, m.start - p);
-                        using (var br = new SolidBrush(colNormal))
-                            g.DrawString(normal, fntNormal, br, curX, curY);
-                        curX += (int)g.MeasureString(normal, fntNormal).Width - 2;
+                        foreach (System.Text.RegularExpressions.Match m in rx.Matches(line))
+                            allMatches.Add((m.Index, m.Length));
                     }
-                    string hi = line.Substring(m.start, m.len);
-                    using (var br = new SolidBrush(colHighlight))
-                        g.DrawString(hi, fntBold, br, curX, curY);
-                    curX += (int)g.MeasureString(hi, fntBold).Width - 2;
-                    p = m.start + m.len;
+                    allMatches.Sort((a, b) => a.start != b.start ? a.start.CompareTo(b.start) : b.len.CompareTo(a.len));
+
+                    // Loại overlap
+                    var clean = new List<(int start, int len)>();
+                    int covered = 0;
+                    foreach (var m in allMatches)
+                        if (m.start >= covered) { clean.Add(m); covered = m.start + m.len; }
+
+                    // Vẽ từng đoạn
+                    int p = 0;
+                    foreach (var m in clean)
+                    {
+                        if (m.start > p)
+                        {
+                            string normal = line.Substring(p, m.start - p);
+                            using (var br = new SolidBrush(colNormal))
+                                g.DrawString(normal, fntNormal, br, curX, curY);
+                            curX += (int)g.MeasureString(normal, fntNormal).Width - 2;
+                        }
+                        string hi = line.Substring(m.start, m.len);
+                        using (var br = new SolidBrush(colHighlight))
+                            g.DrawString(hi, fntBold, br, curX, curY);
+                        curX += (int)g.MeasureString(hi, fntBold).Width - 2;
+                        p = m.start + m.len;
+                    }
+                    if (p < line.Length)
+                    {
+                        string tail = line.Substring(p);
+                        using (var br = new SolidBrush(colNormal))
+                            g.DrawString(tail, fntNormal, br, curX, curY);
+                    }
+                    curY += lineH;
                 }
-                if (p < line.Length)
-                {
-                    string tail = line.Substring(p);
-                    using (var br = new SolidBrush(colNormal))
-                        g.DrawString(tail, fntNormal, br, curX, curY);
-                }
-                curY += lineH;
             }
-            fntBold.Dispose();
+            finally
+            {
+                fntBold.Dispose();
+                if (!ReferenceEquals(fntNormal, baseFont)) fntNormal.Dispose();
+            }
         }
 
         /// <summary>
@@ -4611,8 +4649,8 @@ namespace ECQ_Soft
                 if (matched != null)
                 {
                     if (price == 0)
-                        decimal.TryParse(matched.Price?.Replace(".", "").Replace(",", ""), out price);
-                    decimal.TryParse(matched.PriceCost?.Replace(".", "").Replace(",", ""), out priceCost);
+                        price = ParseCurrencyToDecimal(matched.Price);
+                    priceCost = ParseCurrencyToDecimal(matched.PriceCost);
                 }
 
                 configProducts.Add(new ConfigProductItem

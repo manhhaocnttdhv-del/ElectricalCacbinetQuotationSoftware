@@ -53,14 +53,24 @@ namespace ECQ_Soft
             this.lblTitle.Name = "lblTitle";
             this.lblTitle.Size = new System.Drawing.Size(440, 56);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "🗂️  Chọn Tab Google Sheet";
+            this.lblTitle.Text = "Chọn Tab Google Sheet";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // panelRadioGroup
+            // 
+            this.panelRadioGroup = new System.Windows.Forms.Panel();
+            this.panelRadioGroup.Location = new System.Drawing.Point(20, 12);
+            this.panelRadioGroup.Size = new System.Drawing.Size(396, 36);
+            this.panelRadioGroup.BackColor = System.Drawing.Color.FromArgb(230, 230, 230);
+            this.panelRadioGroup.Padding = new System.Windows.Forms.Padding(2);
+            this.panelRadioGroup.Name = "panelRadioGroup";
+            this.panelRadioGroup.Controls.Add(this.rdoRename);
+            this.panelRadioGroup.Controls.Add(this.rdoNew);
+            this.panelRadioGroup.Controls.Add(this.rdoExisting);
             // 
             // panelContent
             // 
-            this.panelContent.Controls.Add(this.rdoExisting);
-            this.panelContent.Controls.Add(this.rdoNew);
-            this.panelContent.Controls.Add(this.rdoRename);
+            this.panelContent.Controls.Add(this.panelRadioGroup);
             this.panelContent.Controls.Add(this.lblExisting);
             this.panelContent.Controls.Add(this.cboExisting);
             this.panelContent.Controls.Add(this.lblNewName);
@@ -75,40 +85,55 @@ namespace ECQ_Soft
             // 
             // rdoExisting
             // 
-            this.rdoExisting.AutoSize = true;
+            this.rdoExisting.Appearance = System.Windows.Forms.Appearance.Button;
             this.rdoExisting.Checked = true;
-            this.rdoExisting.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.rdoExisting.Location = new System.Drawing.Point(20, 16);
+            this.rdoExisting.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.rdoExisting.FlatAppearance.BorderSize = 0;
+            this.rdoExisting.FlatAppearance.CheckedBackColor = System.Drawing.Color.FromArgb(34, 139, 34);
+            this.rdoExisting.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(180, 220, 180);
+            this.rdoExisting.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.rdoExisting.Location = new System.Drawing.Point(2, 2);
             this.rdoExisting.Name = "rdoExisting";
-            this.rdoExisting.Size = new System.Drawing.Size(137, 23);
+            this.rdoExisting.Size = new System.Drawing.Size(130, 32);
             this.rdoExisting.TabIndex = 0;
             this.rdoExisting.TabStop = true;
             this.rdoExisting.Text = "Dùng tab cũ";
-            this.rdoExisting.UseVisualStyleBackColor = true;
+            this.rdoExisting.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.rdoExisting.UseVisualStyleBackColor = false;
             this.rdoExisting.CheckedChanged += new System.EventHandler(this.rdoExisting_CheckedChanged);
             // 
             // rdoNew
             // 
-            this.rdoNew.AutoSize = true;
-            this.rdoNew.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.rdoNew.Location = new System.Drawing.Point(140, 16);
+            this.rdoNew.Appearance = System.Windows.Forms.Appearance.Button;
+            this.rdoNew.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.rdoNew.FlatAppearance.BorderSize = 0;
+            this.rdoNew.FlatAppearance.CheckedBackColor = System.Drawing.Color.FromArgb(34, 139, 34);
+            this.rdoNew.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(180, 220, 180);
+            this.rdoNew.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.rdoNew.Location = new System.Drawing.Point(132, 2);
             this.rdoNew.Name = "rdoNew";
-            this.rdoNew.Size = new System.Drawing.Size(140, 23);
+            this.rdoNew.Size = new System.Drawing.Size(130, 32);
             this.rdoNew.TabIndex = 1;
             this.rdoNew.Text = "Tạo tab mới";
-            this.rdoNew.UseVisualStyleBackColor = true;
+            this.rdoNew.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.rdoNew.UseVisualStyleBackColor = false;
             this.rdoNew.CheckedChanged += new System.EventHandler(this.rdoNew_CheckedChanged);
             // 
             // rdoRename
             // 
-            this.rdoRename.AutoSize = true;
-            this.rdoRename.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.rdoRename.Location = new System.Drawing.Point(260, 16);
+            this.rdoRename.Appearance = System.Windows.Forms.Appearance.Button;
+            this.rdoRename.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.rdoRename.FlatAppearance.BorderSize = 0;
+            this.rdoRename.FlatAppearance.CheckedBackColor = System.Drawing.Color.FromArgb(34, 139, 34);
+            this.rdoRename.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(180, 220, 180);
+            this.rdoRename.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.rdoRename.Location = new System.Drawing.Point(262, 2);
             this.rdoRename.Name = "rdoRename";
-            this.rdoRename.Size = new System.Drawing.Size(100, 23);
+            this.rdoRename.Size = new System.Drawing.Size(132, 32);
             this.rdoRename.TabIndex = 7;
             this.rdoRename.Text = "Đổi tên tab";
-            this.rdoRename.UseVisualStyleBackColor = true;
+            this.rdoRename.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.rdoRename.UseVisualStyleBackColor = false;
             this.rdoRename.CheckedChanged += new System.EventHandler(this.rdoRename_CheckedChanged);
             // 
             // lblExisting
@@ -235,6 +260,7 @@ namespace ECQ_Soft
         private System.Windows.Forms.Panel panelTop;
         private System.Windows.Forms.Label lblTitle;
         private System.Windows.Forms.Panel panelContent;
+        private System.Windows.Forms.Panel panelRadioGroup;
         private System.Windows.Forms.RadioButton rdoExisting;
         private System.Windows.Forms.RadioButton rdoNew;
         private System.Windows.Forms.RadioButton rdoRename;

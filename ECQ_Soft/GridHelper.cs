@@ -1,4 +1,4 @@
-using ECQ_Soft.Model;
+﻿using ECQ_Soft.Model;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,6 +9,19 @@ namespace ECQ_Soft
 {
     public static class GridHelper
     {
+        private static readonly char[] LineSeparators = new[] { '\n', '\r' };
+
+        public static void SetDoubleBuffered(this DataGridView dgv, bool setting)
+        {
+            Type dgvType = dgv.GetType();
+            System.Reflection.PropertyInfo pi = dgvType.GetProperty("DoubleBuffered",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (pi != null)
+            {
+                pi.SetValue(dgv, setting, null);
+            }
+        }
+
         public static void EnsureMoveColumns(DataGridView dgv)
         {
             if (dgv == null || dgv.Columns.Contains("ColMove")) return;
@@ -63,30 +76,39 @@ namespace ECQ_Soft
         {
             if (isHeader)
             {
-                g.FillRectangle(new SolidBrush(Color.FromArgb(146, 208, 80)), bounds); // Green header
-                TextRenderer.DrawText(g, text, new Font(font, FontStyle.Bold), bounds, Color.Black, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+                using (var headerBrush = new SolidBrush(Color.FromArgb(146, 208, 80))) // Green header
+                using (var headerFont = new Font(font, FontStyle.Bold))
+                {
+                    g.FillRectangle(headerBrush, bounds);
+                    TextRenderer.DrawText(g, text, headerFont, bounds, Color.Black, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+                }
                 return;
             }
 
             // Regular item with specs
-            string[] lines = text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = text.Split(LineSeparators, StringSplitOptions.RemoveEmptyEntries);
             if (lines.Length == 0) return;
 
             // Draw main name
-            Font mainFont = new Font(font, FontStyle.Bold);
-            Size mainSize = TextRenderer.MeasureText(lines[0], mainFont);
-            Rectangle mainRect = new Rectangle(bounds.Left + 5, bounds.Top + 5, bounds.Width - 10, mainSize.Height);
-            TextRenderer.DrawText(g, lines[0], mainFont, mainRect, Color.Black, TextFormatFlags.Top | TextFormatFlags.Left);
-
-            // Draw sub lines (specs) in red
-            int currentY = mainRect.Bottom + 2;
-            Font subFont = new Font(font.FontFamily, font.Size - 1, FontStyle.Regular);
-            for (int i = 1; i < lines.Length; i++)
+            using (var mainFont = new Font(font, FontStyle.Bold))
             {
-                string line = lines[i].Trim();
-                Rectangle subRect = new Rectangle(bounds.Left + 15, currentY, bounds.Width - 20, 15);
-                TextRenderer.DrawText(g, line, subFont, subRect, Color.Red, TextFormatFlags.Top | TextFormatFlags.Left);
-                currentY += 14;
+                Size mainSize = TextRenderer.MeasureText(lines[0], mainFont);
+                Rectangle mainRect = new Rectangle(bounds.Left + 5, bounds.Top + 5, bounds.Width - 10, mainSize.Height);
+                TextRenderer.DrawText(g, lines[0], mainFont, mainRect, Color.Black, TextFormatFlags.Top | TextFormatFlags.Left);
+
+                // Draw sub lines (specs) in red
+                int subFontSize = Math.Max(1, (int)Math.Round(font.Size - 1));
+                using (var subFont = new Font(font.FontFamily, subFontSize, FontStyle.Regular))
+                {
+                    int currentY = mainRect.Bottom + 2;
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        string line = lines[i].Trim();
+                        Rectangle subRect = new Rectangle(bounds.Left + 15, currentY, bounds.Width - 20, 15);
+                        TextRenderer.DrawText(g, line, subFont, subRect, Color.Red, TextFormatFlags.Top | TextFormatFlags.Left);
+                        currentY += 14;
+                    }
+                }
             }
         }
     }
