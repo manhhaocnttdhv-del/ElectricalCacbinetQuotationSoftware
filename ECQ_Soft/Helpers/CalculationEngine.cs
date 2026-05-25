@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ECQ_Soft.Helpers
@@ -22,6 +23,9 @@ namespace ECQ_Soft.Helpers
             // Loại bỏ dấu '=' ở đầu nếu có
             string processed = expression.Trim();
             if (processed.StartsWith("=")) processed = processed.Substring(1);
+
+            // Bung SUM(w102*sl) -> (w102_1*sl102_1 + w102_2*sl102_2) trước khi xử lý các biến khác
+            processed = ExpandSumFunctions(processed, variables);
 
             // 0a. Context-aware sl: w102 * sl → w102 * sl102  (PHẢI CHẠY TRƯỚC khi bung MAX)
             //     Khi một biến có dạng {prefix}{id} nhân với 'sl' (không có id suffix),
@@ -87,6 +91,9 @@ namespace ECQ_Soft.Helpers
 
             string processed = expression.Trim();
             if (processed.StartsWith("=")) processed = processed.Substring(1);
+
+            // Bung SUM(w102*sl) -> (w102_1*sl102_1 + w102_2*sl102_2)
+            processed = ExpandSumFunctions(processed, variables);
 
             processed = ExpandContextualQuantity(processed, variables);
             processed = AutoCeilSlDiv2(processed, variables);
@@ -276,41 +283,196 @@ namespace ECQ_Soft.Helpers
 
         private static string ProcessFunction(string expression, string functionName, Func<IEnumerable<double>, double> aggregateFunc)
         {
-            // Tìm hàm với ngoặc đơn gần nhất (để xử lý từ trong ra ngoài nếu lồng nhau)
-            string pattern = $@"{functionName}\(([^()]+)\)";
-            var matches = Regex.Matches(expression, pattern, RegexOptions.IgnoreCase);
-
-            foreach (Match match in matches)
+            int index = 0;
+            while (true)
             {
-                string inner = match.Groups[1].Value;
-                // Tách các tham số bằng dấu phẩy hoặc dấu chấm phẩy
-                string[] parts = inner.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-                
-                List<double> values = new List<double>();
-                foreach (var part in parts)
+                var match = Regex.Match(expression.Substring(index), $@"\b{functionName}\(", RegexOptions.IgnoreCase);
+                if (!match.Success) break;
+
+                int funcStart = index + match.Index;
+                int openParenIndex = funcStart + match.Length - 1;
+
+                int closeParenIndex = FindClosingParenthesis(expression, openParenIndex);
+                if (closeParenIndex == -1)
                 {
+                    index = openParenIndex + 1;
+                    continue;
+                }
+
+                string inner = expression.Substring(openParenIndex + 1, closeParenIndex - openParenIndex - 1);
+                
+                // Đệ quy xử lý các hàm con bên trong inner trước
+                inner = ProcessFunctions(inner);
+
+                // Tách các đối số của hàm
+                var args = SplitArguments(inner);
+                var values = new List<double>();
+                foreach (var arg in args)
+                {
+                    if (string.IsNullOrWhiteSpace(arg)) continue;
                     try
                     {
-                        // Tính toán từng tham số (vì tham số có thể là biểu thức con)
                         DataTable dt = new DataTable();
-                        var val = dt.Compute(part, "");
+                        var val = dt.Compute(arg, "");
                         values.Add(Convert.ToDouble(val));
                     }
                     catch
                     {
-                        // Nếu không tính được, giữ nguyên hoặc báo lỗi. 
-                        // Ở đây ta tạm thời bỏ qua để tránh crash nếu tham số không hợp lệ
+                        // Nếu không tính được trực tiếp (chưa thay hết biến), giữ nguyên
                     }
                 }
 
                 if (values.Count > 0)
                 {
                     double result = aggregateFunc(values);
-                    expression = expression.Replace(match.Value, result.ToString(CultureInfo.InvariantCulture));
+                    string replacement = result.ToString(CultureInfo.InvariantCulture);
+                    expression = expression.Substring(0, funcStart) + replacement + expression.Substring(closeParenIndex + 1);
+                    index = funcStart + replacement.Length;
+                }
+                else
+                {
+                    index = closeParenIndex + 1;
                 }
             }
 
             return expression;
+        }
+
+        /// <summary>
+        /// Mở rộng hàm SUM(w102*sl) hoặc SUM(w102*sl + w103*sl) thành tổng các instance riêng biệt.
+        /// Ví dụ: SUM(w102*sl) → (w102_1*sl102_1 + w102_2*sl102_2)
+        /// </summary>
+        private static string ExpandSumFunctions(string expression, Dictionary<string, double> variables)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) return expression;
+
+            int index = 0;
+            while (true)
+            {
+                var match = Regex.Match(expression.Substring(index), @"\bSUM\(", RegexOptions.IgnoreCase);
+                if (!match.Success) break;
+
+                int funcStart = index + match.Index;
+                int openParenIndex = funcStart + match.Length - 1;
+
+                int closeParenIndex = FindClosingParenthesis(expression, openParenIndex);
+                if (closeParenIndex == -1)
+                {
+                    index = openParenIndex + 1;
+                    continue;
+                }
+
+                string inner = expression.Substring(openParenIndex + 1, closeParenIndex - openParenIndex - 1);
+                
+                // Phân tích các số hạng cộng trừ trong SUM
+                List<char> operators;
+                var terms = SplitTerms(inner, out operators);
+                var expandedTerms = new List<string>();
+
+                for (int t = 0; t < terms.Count; t++)
+                {
+                    string term = terms[t];
+                    // Tìm ID trong số hạng này (ví dụ w102 => ID là 102)
+                    var idMatches = Regex.Matches(term, @"\b([a-zA-Z]+)(\d+)\b");
+                    string foundId = null;
+                    foreach (Match idM in idMatches)
+                    {
+                        string id = idM.Groups[2].Value;
+                        // Kiểm tra xem ID này có instance trong variables không
+                        bool hasInstances = variables.Keys.Any(k => k.Contains(id) && Regex.IsMatch(k, @"_\d+$"));
+                        if (hasInstances)
+                        {
+                            foundId = id;
+                            break;
+                        }
+                    }
+
+                    if (foundId != null)
+                    {
+                        // Tìm maxIndex của ID này
+                        int maxIndex = 0;
+                        foreach (var key in variables.Keys)
+                        {
+                            if (key.Contains(foundId))
+                            {
+                                var mKey = Regex.Match(key, @"_(\d+)$");
+                                if (mKey.Success)
+                                {
+                                    if (int.TryParse(mKey.Groups[1].Value, out int idx) && idx > maxIndex)
+                                    {
+                                        maxIndex = idx;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (maxIndex > 0)
+                        {
+                            var instanceTerms = new List<string>();
+                            for (int i = 1; i <= maxIndex; i++)
+                            {
+                                string instanceTerm = term;
+                                // Thay thế các biến có chứa ID bằng suffix _i
+                                // Ví dụ: w102 => w102_1
+                                instanceTerm = Regex.Replace(instanceTerm, $@"\b([a-zA-Z]+)({foundId})\b", $"$1$2_{i}", RegexOptions.IgnoreCase);
+                                
+                                // Thay thế sl (nếu đứng độc lập) hoặc sl{id} thành sl{id}_{i}
+                                instanceTerm = Regex.Replace(instanceTerm, $@"\bsl\b", $"sl{foundId}_{i}", RegexOptions.IgnoreCase);
+                                instanceTerm = Regex.Replace(instanceTerm, $@"\bsl{foundId}\b", $"sl{foundId}_{i}", RegexOptions.IgnoreCase);
+                                
+                                instanceTerms.Add(instanceTerm);
+                            }
+                            expandedTerms.Add("(" + string.Join(" + ", instanceTerms) + ")");
+                        }
+                        else
+                        {
+                            expandedTerms.Add(term);
+                        }
+                    }
+                    else
+                    {
+                        expandedTerms.Add(term);
+                    }
+                }
+
+                // Tái cấu trúc lại chuỗi kết quả
+                var sb = new StringBuilder();
+                for (int t = 0; t < expandedTerms.Count; t++)
+                {
+                    sb.Append(expandedTerms[t]);
+                    if (t < operators.Count)
+                    {
+                        sb.Append(" " + operators[t] + " ");
+                    }
+                }
+
+                string replacement = sb.ToString();
+                expression = expression.Substring(0, funcStart) + replacement + expression.Substring(closeParenIndex + 1);
+                index = funcStart + replacement.Length;
+            }
+
+            return expression;
+        }
+
+        private static List<string> SplitTerms(string expression, out List<char> operators)
+        {
+            var terms = new List<string>();
+            operators = new List<char>();
+            int parenLevel = 0;
+            int start = 0;
+            for (int i = 0; i < expression.Length; i++)
+            {
+                if (expression[i] == '(') parenLevel++;
+                else if (expression[i] == ')') parenLevel--;
+                else if ((expression[i] == '+' || expression[i] == '-') && parenLevel == 0)
+                {
+                    terms.Add(expression.Substring(start, i - start).Trim());
+                    operators.Add(expression[i]);
+                    start = i + 1;
+                }
+            }
+            terms.Add(expression.Substring(start).Trim());
+            return terms;
         }
     }
 }

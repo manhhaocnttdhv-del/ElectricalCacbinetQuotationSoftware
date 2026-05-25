@@ -173,10 +173,16 @@ namespace ECQ_Soft
             }
         }
 
-        private void FrmLogin_Load_1(object sender, EventArgs e)
+        private async void FrmLogin_Load_1(object sender, EventArgs e)
         {
-            InitGoogleSheetsService();
-            GetUserInfo();
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang kết nối tới máy chủ Google Sheets..."))
+            {
+                await Task.Run(() =>
+                {
+                    InitGoogleSheetsService();
+                    GetUserInfo();
+                });
+            }
         }
 
         private void ckShowHidePassword_CheckedChanged(object sender, EventArgs e)

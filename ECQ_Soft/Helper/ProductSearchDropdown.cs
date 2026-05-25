@@ -1,4 +1,4 @@
-﻿using ECQ_Soft.Model;
+using ECQ_Soft.Model;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -138,11 +138,20 @@ namespace ECQ_Soft.Helper
             // Bật DoubleBuffered để mượt hơn, giảm flickering khi lọc dữ liệu
             typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                 .SetValue(_grid, true, null);
-
+           
             _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colName", HeaderText = "Tên sản phẩm", FillWeight = 35 });
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colModel", HeaderText = "Model", FillWeight = 18 });
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colModel", HeaderText = "Model", FillWeight = 15 });
             _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSKU", HeaderText = "SKU", FillWeight = 15 });
-            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSpecs", HeaderText = "Pole | Ir | Icu", FillWeight = 32 });
+
+            var colPriceCost = new DataGridViewTextBoxColumn { Name = "colPriceCost", HeaderText = "Giá nhập", FillWeight = 11 };
+            colPriceCost.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            _grid.Columns.Add(colPriceCost);
+
+            var colPrice = new DataGridViewTextBoxColumn { Name = "colPrice", HeaderText = "Giá bán", FillWeight = 11 };
+            colPrice.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            _grid.Columns.Add(colPrice);
+
+            _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSpecs", HeaderText = "Pole | Ir | Icu", FillWeight = 13 });
 
             _grid.CellDoubleClick += Grid_CellDoubleClick;
             _grid.KeyDown += Grid_KeyDown;
@@ -294,8 +303,10 @@ namespace ECQ_Soft.Helper
                     if (string.IsNullOrWhiteSpace(icu)) icu = "0";
 
                     string specs = $"{pole} | {ir} | {icu}";
+                    string formattedPriceCost = FormatPrice(p.PriceCost);
+                    string formattedPrice = FormatPrice(p.Price);
 
-                    int idx = _grid.Rows.Add(p.Name, p.Model, p.SKU, specs);
+                    int idx = _grid.Rows.Add(p.Name, p.Model, p.SKU, formattedPriceCost, formattedPrice, specs);
                     _grid.Rows[idx].Tag = p;
                 }
             }
@@ -306,7 +317,7 @@ namespace ECQ_Soft.Helper
 
             if (results.Count > 0)
             {
-                int popupWidth = Math.Max(this.Width, 850); 
+                int popupWidth = Math.Max(this.Width, 1050); 
                 int rowCount = Math.Min(results.Count, 12); 
                 int popupHeight = _grid.ColumnHeadersHeight + (rowCount * _grid.RowTemplate.Height) + 4;
 
@@ -448,6 +459,17 @@ namespace ECQ_Soft.Helper
                 }
             }
             base.OnKeyDown(e);
+        }
+
+        private static string FormatPrice(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "0";
+            string clean = s.Replace(".", "").Replace(",", "").Replace("₫", "").Trim();
+            if (decimal.TryParse(clean, out decimal val))
+            {
+                return val.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"));
+            }
+            return s;
         }
     }
 

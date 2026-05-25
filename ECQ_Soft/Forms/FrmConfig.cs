@@ -1,4 +1,4 @@
-﻿using ECQ_Soft.Model;
+using ECQ_Soft.Model;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
@@ -1108,18 +1108,21 @@ namespace ECQ_Soft
 
             try
             {
-                // 2. NẠP SONG SONG TỪ GOOGLE SHEETS (GIẢM DELAY)
-                var configNamesTask = FetchConfigNamesAsync();
-                var productsTask = FetchAllProductsAsync();
-                var relationsTask = FetchProductRelationsAsync();
-                var savedConfigsFullTask = FetchSavedConfigsFullDataAsync();
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu từ Google Sheets..."))
+                {
+                    // 2. NẠP SONG SONG TỪ GOOGLE SHEETS (GIẢM DELAY)
+                    var configNamesTask = FetchConfigNamesAsync();
+                    var productsTask = FetchAllProductsAsync();
+                    var relationsTask = FetchProductRelationsAsync();
+                    var savedConfigsFullTask = FetchSavedConfigsFullDataAsync();
 
-                await Task.WhenAll(configNamesTask, productsTask, relationsTask, savedConfigsFullTask);
+                    await Task.WhenAll(configNamesTask, productsTask, relationsTask, savedConfigsFullTask);
 
-                // Sau khi nạp xong mạng, dữ liệu sẽ được cập nhật và lưu vào cache trong từng hàm con
-                UpdateHeaderSum();
-                UpdateConfigGrid();
-                // dataGridView1.DataSource is already bound to childProducts in constructor
+                    // Sau khi nạp xong mạng, dữ liệu sẽ được cập nhật và lưu vào cache trong từng hàm con
+                    UpdateHeaderSum();
+                    UpdateConfigGrid();
+                    // dataGridView1.DataSource is already bound to childProducts in constructor
+                }
             }
             catch (Exception ex)
             {
@@ -1290,57 +1293,60 @@ namespace ECQ_Soft
         /// </summary>
         private async Task LoadDonggoiSheetsToComboAsync()
         {
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải cấu hình đóng gói từ Google Sheets..."))
             {
-                if (_sheetsService == null) InitGoogleSheetsService();
-
-                var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
-                var donggoiSheetNames = spreadsheet.Sheets
-                    .Select(s => s.Properties.Title)
-                    .Where(t => t.StartsWith("Donggoi_"))
-                    .OrderBy(t => t)
-                    .ToList();
-
-                var displayItems = new List<string> { "-- Chọn cấu hình đóng gói --" };
-
-                foreach (var sName in donggoiSheetNames)
+                try
                 {
-                    try
+                    if (_sheetsService == null) InitGoogleSheetsService();
+
+                    var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
+                    var donggoiSheetNames = spreadsheet.Sheets
+                        .Select(s => s.Properties.Title)
+                        .Where(t => t.StartsWith("Donggoi_"))
+                        .OrderBy(t => t)
+                        .ToList();
+
+                    var displayItems = new List<string> { "-- Chọn cấu hình đóng gói --" };
+
+                    foreach (var sName in donggoiSheetNames)
                     {
-                        var resp = await _sheetsService.Spreadsheets.Values
-                            .Get(spreadsheetId, $"{sName}!A2:B100").ExecuteAsync();
-                        var rows = resp.Values;
-                        var groupNames = new List<string>();
-                        if (rows != null)
+                        try
                         {
-                            foreach (var row in rows)
+                            var resp = await _sheetsService.Spreadsheets.Values
+                                .Get(spreadsheetId, $"{sName}!A2:B100").ExecuteAsync();
+                            var rows = resp.Values;
+                            var groupNames = new List<string>();
+                            if (rows != null)
                             {
-                                string col0 = row.Count > 0 ? row[0]?.ToString() ?? "" : "";
-                                string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
-                                if (!string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1))
-                                    groupNames.Add(col0);
+                                foreach (var row in rows)
+                                {
+                                    string col0 = row.Count > 0 ? row[0]?.ToString() ?? "" : "";
+                                    string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
+                                    if (!string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1))
+                                        groupNames.Add(col0);
+                                }
+                            }
+
+                            if (groupNames.Count > 0)
+                            {
+                                foreach (var gn in groupNames)
+                                    displayItems.Add($"{sName} - {gn}");
+                            }
+                            else
+                            {
+                                displayItems.Add(sName);
                             }
                         }
-
-                        if (groupNames.Count > 0)
-                        {
-                            foreach (var gn in groupNames)
-                                displayItems.Add($"{sName} - {gn}");
-                        }
-                        else
-                        {
-                            displayItems.Add(sName);
-                        }
+                        catch { displayItems.Add(sName); }
                     }
-                    catch { displayItems.Add(sName); }
-                }
 
-                if (InvokeRequired)
-                    Invoke(new Action(() => RefreshComboBox1(displayItems)));
-                else
-                    RefreshComboBox1(displayItems);
+                    if (InvokeRequired)
+                        Invoke(new Action(() => RefreshComboBox1(displayItems)));
+                    else
+                        RefreshComboBox1(displayItems);
+                }
+                catch { /* Không crash nếu chưa connect được Sheets */ }
             }
-            catch { /* Không crash nếu chưa connect được Sheets */ }
         }
 
         private void RefreshComboBox1(List<string> items)
@@ -1748,122 +1754,119 @@ namespace ECQ_Soft
             string selectedPkg = comboBox1.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(selectedPkg) || selectedPkg == "-- Chọn cấu hình đóng gói --") return;
 
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu đóng gói..."))
             {
-                this.Cursor = Cursors.WaitCursor;
-
-                // Tách Tên sheet và Tên cấu hình (ví dụ: "Donggoi_1 - tủ điện" -> sName="Donggoi_1", pkgName="tủ điện")
-                string sName = selectedPkg;
-                string pkgName = "";
-                int splitIdx = selectedPkg.IndexOf(" - ");
-                if (splitIdx > 0)
+                try
                 {
-                    sName = selectedPkg.Substring(0, splitIdx);
-                    pkgName = selectedPkg.Substring(splitIdx + 3);
-                }
-
-                if (_sheetsService == null) InitGoogleSheetsService();
-
-                // Đọc dữ liệu từ Sheet
-                var resp = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sName}!A2:I2000").ExecuteAsync();
-                var rows = resp.Values ?? new List<IList<object>>();
-
-                var foundProducts = new List<Products>();
-                bool inTargetGroup = false;
-
-                foreach (var row in rows)
-                {
-                    if (row.Count == 0) continue;
-                    string col0 = row[0]?.ToString() ?? "";
-                    string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
-
-                    bool isGroupHeader = !string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1);
-
-                    if (isGroupHeader)
+                    // Tách Tên sheet và Tên cấu hình (ví dụ: "Donggoi_1 - tủ điện" -> sName="Donggoi_1", pkgName="tủ điện")
+                    string sName = selectedPkg;
+                    string pkgName = "";
+                    int splitIdx = selectedPkg.IndexOf(" - ");
+                    if (splitIdx > 0)
                     {
-                        // Nếu đúng nhóm cần tìm -> bật flag, nếu sang nhóm khác -> tắt flag (thoát)
-                        if (string.Equals(col0.Trim(), pkgName.Trim(), StringComparison.OrdinalIgnoreCase))
+                        sName = selectedPkg.Substring(0, splitIdx);
+                        pkgName = selectedPkg.Substring(splitIdx + 3);
+                    }
+
+                    if (_sheetsService == null) InitGoogleSheetsService();
+
+                    // Đọc dữ liệu từ Sheet
+                    var resp = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sName}!A2:I2000").ExecuteAsync();
+                    var rows = resp.Values ?? new List<IList<object>>();
+
+                    var foundProducts = new List<Products>();
+                    bool inTargetGroup = false;
+
+                    foreach (var row in rows)
+                    {
+                        if (row.Count == 0) continue;
+                        string col0 = row[0]?.ToString() ?? "";
+                        string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
+
+                        bool isGroupHeader = !string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1);
+
+                        if (isGroupHeader)
                         {
-                            inTargetGroup = true;
-                            continue;
+                            // Nếu đúng nhóm cần tìm -> bật flag, nếu sang nhóm khác -> tắt flag (thoát)
+                            if (string.Equals(col0.Trim(), pkgName.Trim(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                inTargetGroup = true;
+                                continue;
+                            }
+                            else if (inTargetGroup)
+                            {
+                                break; // Đã đọc xong nhóm target
+                            }
                         }
                         else if (inTargetGroup)
                         {
-                            break; // Đã đọc xong nhóm target
+                            // Là dòng sản phẩm của nhóm cần tìm
+                            int id = 0; int.TryParse(col0, out id);
+                            string ten = col1;
+                            string model = row.Count > 2 ? row[2]?.ToString() ?? "" : "";
+                            string sku = row.Count > 3 ? row[3]?.ToString() ?? "" : "";
+                            string price = row.Count > 4 ? row[4]?.ToString() ?? "0" : "0";
+                            string cost = row.Count > 5 ? row[5]?.ToString() ?? "0" : "0";
+                            string cat = row.Count > 6 ? row[6]?.ToString() ?? "" : "";
+                            string hang = row.Count > 7 ? row[7]?.ToString() ?? "" : "";
+                            int soLuong = 1; int.TryParse(row.Count > 8 ? row[8]?.ToString() : "1", out soLuong);
+                            if (soLuong <= 0) soLuong = 1;
+
+                            // Cố gắng map ID gốc nếu có trong allProducts, nếu không thì tạo mới
+                            // CLONE để không mutate allProducts gốc
+                            Products existing = null;
+                            if (!string.IsNullOrWhiteSpace(sku) || id > 0)
+                            {
+                                existing = allProducts.FirstOrDefault(p =>
+                                    (!string.IsNullOrWhiteSpace(sku) && p.SKU == sku) ||
+                                    (id > 0 && p.Id == id));
+                            }
+
+                            if (existing != null)
+                            {
+                                // Clone để tránh sửa object gốc trong allProducts
+                                foundProducts.Add(new Products
+                                {
+                                    Id = existing.Id, Name = existing.Name, Model = existing.Model,
+                                    SKU = existing.SKU, Price = existing.Price, PriceCost = existing.PriceCost,
+                                    Category = existing.Category, HÃNG = existing.HÃNG,
+                                    Type = existing.Type, PriceList = existing.PriceList,
+                                    SoLuong = soLuong, IsSelected = false
+                                });
+                            }
+                            else
+                            {
+                                foundProducts.Add(new Products
+                                {
+                                    Id = id, Name = ten, Model = model, SKU = sku,
+                                    Price = price, PriceCost = cost, Category = cat, HÃNG = hang,
+                                    SoLuong = soLuong, IsSelected = false
+                                });
+                            }
                         }
                     }
-                    else if (inTargetGroup)
+
+                    if (foundProducts.Count > 0)
                     {
-                        // Là dòng sản phẩm của nhóm cần tìm
-                        int id = 0; int.TryParse(col0, out id);
-                        string ten = col1;
-                        string model = row.Count > 2 ? row[2]?.ToString() ?? "" : "";
-                        string sku = row.Count > 3 ? row[3]?.ToString() ?? "" : "";
-                        string price = row.Count > 4 ? row[4]?.ToString() ?? "0" : "0";
-                        string cost = row.Count > 5 ? row[5]?.ToString() ?? "0" : "0";
-                        string cat = row.Count > 6 ? row[6]?.ToString() ?? "" : "";
-                        string hang = row.Count > 7 ? row[7]?.ToString() ?? "" : "";
-                        int soLuong = 1; int.TryParse(row.Count > 8 ? row[8]?.ToString() : "1", out soLuong);
-                        if (soLuong <= 0) soLuong = 1;
+                        lastSearchedSheet = sName;
+                        lastSearchedPkg = pkgName;
 
-                        // Cố gắng map ID gốc nếu có trong allProducts, nếu không thì tạo mới
-                        // CLONE để không mutate allProducts gốc
-                        Products existing = null;
-                        if (!string.IsNullOrWhiteSpace(sku) || id > 0)
-                        {
-                            existing = allProducts.FirstOrDefault(p =>
-                                (!string.IsNullOrWhiteSpace(sku) && p.SKU == sku) ||
-                                (id > 0 && p.Id == id));
-                        }
+                        childProducts.Clear();
+                        foreach (var p in foundProducts) childProducts.Add(p);
 
-                        if (existing != null)
-                        {
-                            // Clone để tránh sửa object gốc trong allProducts
-                            foundProducts.Add(new Products
-                            {
-                                Id = existing.Id, Name = existing.Name, Model = existing.Model,
-                                SKU = existing.SKU, Price = existing.Price, PriceCost = existing.PriceCost,
-                                Category = existing.Category, HÃNG = existing.HÃNG,
-                                Type = existing.Type, PriceList = existing.PriceList,
-                                SoLuong = soLuong, IsSelected = false
-                            });
-                        }
-                        else
-                        {
-                            foundProducts.Add(new Products
-                            {
-                                Id = id, Name = ten, Model = model, SKU = sku,
-                                Price = price, PriceCost = cost, Category = cat, HÃNG = hang,
-                                SoLuong = soLuong, IsSelected = false
-                            });
-                        }
+                        UpdateConfigGrid(); // Update the dataGridView1
+                        AdjustDataGridView1RowHeights(); // Điều chỉnh chiều cao dòng multiline
+                        MessageBox.Show($"Đã nạp {foundProducts.Count} sản phẩm từ gói \"{pkgName}\"!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Không tìm thấy sản phẩm nào trong gói này.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
-
-                if (foundProducts.Count > 0)
+                catch (Exception ex)
                 {
-                    lastSearchedSheet = sName;
-                    lastSearchedPkg = pkgName;
-
-                    childProducts.Clear();
-                    foreach (var p in foundProducts) childProducts.Add(p);
-
-                    UpdateConfigGrid(); // Update the dataGridView1
-                    AdjustDataGridView1RowHeights(); // Điều chỉnh chiều cao dòng multiline
-                    MessageBox.Show($"Đã nạp {foundProducts.Count} sản phẩm từ gói \"{pkgName}\"!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Lỗi khi tải dữ liệu gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                else
-                {
-                    MessageBox.Show("Không tìm thấy sản phẩm nào trong gói này.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi khi tải dữ liệu gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                this.Cursor = Cursors.Default;
             }
         }
 
@@ -1879,111 +1882,117 @@ namespace ECQ_Soft
                 if (confirm != DialogResult.Yes) return;
             }
 
-            try
+            var sheetDisplayMap = new Dictionary<string, string>();
+            List<string> donggoiSheetNames = null;
+
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang đọc danh sách gói đóng gói từ Google Sheets..."))
             {
-                this.Cursor = Cursors.WaitCursor;
-                if (_sheetsService == null) InitGoogleSheetsService();
-
-                // Lấy danh sách Sheet hiện tại bắt đầu bằng Donggoi_
-                var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
-                var donggoiSheetNames = spreadsheet.Sheets
-                    .Select(s => s.Properties.Title)
-                    .Where(t => t.StartsWith("Donggoi_"))
-                    .ToList();
-
-                // Với mỗi Donggoi_ sheet, đọc các dòng header nhóm (cột A có giá trị, cột B rỗng)
-                // để hiển thị format: "Donggoi_1 - nhóm A", "Donggoi_1 - nhóm B"
-                var sheetDisplayMap = new Dictionary<string, string>(); // key=displayLabel, value=sheetName
-                sheetDisplayMap["-- Tạo sheet mới --"] = "";
-
-                foreach (var sName in donggoiSheetNames)
+                try
                 {
-                    try
+                    if (_sheetsService == null) InitGoogleSheetsService();
+
+                    // Lấy danh sách Sheet hiện tại bắt đầu bằng Donggoi_
+                    var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
+                    donggoiSheetNames = spreadsheet.Sheets
+                        .Select(s => s.Properties.Title)
+                        .Where(t => t.StartsWith("Donggoi_"))
+                        .ToList();
+
+                    sheetDisplayMap["-- Tạo sheet mới --"] = "";
+
+                    foreach (var sName in donggoiSheetNames)
                     {
-                        var resp = await _sheetsService.Spreadsheets.Values
-                            .Get(spreadsheetId, $"{sName}!A2:B100").ExecuteAsync();
-                        var rows = resp.Values;
-                        var groupNames = new List<string>();
-                        if (rows != null)
+                        try
                         {
-                            foreach (var row in rows)
+                            var resp = await _sheetsService.Spreadsheets.Values
+                                .Get(spreadsheetId, $"{sName}!A2:B100").ExecuteAsync();
+                            var rows = resp.Values;
+                            var groupNames = new List<string>();
+                            if (rows != null)
                             {
-                                string col0 = row.Count > 0 ? row[0]?.ToString() ?? "" : "";
-                                string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
-                                if (!string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1))
-                                    groupNames.Add(col0);
+                                foreach (var row in rows)
+                                {
+                                    string col0 = row.Count > 0 ? row[0]?.ToString() ?? "" : "";
+                                    string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
+                                    if (!string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1))
+                                        groupNames.Add(col0);
+                                }
+                            }
+
+                            if (groupNames.Any())
+                            {
+                                foreach (var gn in groupNames)
+                                    sheetDisplayMap[$"{sName} - {gn}"] = sName;
+                            }
+                            else
+                            {
+                                sheetDisplayMap[sName] = sName;
                             }
                         }
-
-                        if (groupNames.Any())
-                        {
-                            foreach (var gn in groupNames)
-                                sheetDisplayMap[$"{sName} - {gn}"] = sName;
-                        }
-                        else
-                        {
-                            sheetDisplayMap[sName] = sName;
-                        }
+                        catch { sheetDisplayMap[sName] = sName; }
                     }
-                    catch { sheetDisplayMap[sName] = sName; }
                 }
-
-                this.Cursor = Cursors.Default;
-
-                // Chuyển childProducts sang ConfigProductItem để hiển thị trong modal preview
-                var childItemsForModal = childProducts.Select(p =>
+                catch (Exception ex)
                 {
-                    decimal price = ParseCurrencyToDecimal(p.Price);
-                    decimal priceCost = ParseCurrencyToDecimal(p.PriceCost);
-                    if (priceCost <= 0) priceCost = price;
-                    int sl = p.SoLuong > 0 ? p.SoLuong : 1;
-                    return new ConfigProductItem
-                    {
-                        TenHang      = p.Name,
-                        MaHang       = p.SKU,
-                        XuatXu       = p.HÃNG ?? "",
-                        DonVi        = ConfigProductItem.IsPinned(p.Name) ? GetPinnedDonVi(p.Name) : "Cái",
-                        SoLuong      = sl,
-                        DonGiaVND    = price,
-                        ThanhTienVND = price * sl,
-                        GiaNhap      = priceCost,
-                        ThanhTien    = priceCost * sl,
-                        LoiNhuan     = (price - priceCost) * sl,
-                        BangGia      = 0,
-                        GhiChu       = "",
-                        IsHeader     = false
-                    };
-                }).ToList();
-
-                // Xác định item mặc định để select trong modal
-                string defaultDisplay = null;
-                if (!string.IsNullOrEmpty(lastSearchedSheet) && !string.IsNullOrEmpty(lastSearchedPkg))
-                    defaultDisplay = $"{lastSearchedSheet} - {lastSearchedPkg}";
-
-                // Mở Modal lưu đóng gói với sheetDisplayMap và các giá trị mặc định
-                using (var frm = new FrmSavePackage(childItemsForModal, sheetDisplayMap, defaultDisplay, lastSearchedPkg))
-                {
-                    if (frm.ShowDialog() == DialogResult.OK)
-                    {
-                        this.Cursor = Cursors.WaitCursor;
-                        bool saved = await SaveConfigToSpecificSheetAsync(frm.SheetName, frm.ConfigName, frm.IsOverwrite);
-                        this.Cursor = Cursors.Default;
-
-                        if (saved)
-                        {
-                            // Cập nhật lại list Donggoi_ ở comboBox1
-                            _ = LoadDonggoiSheetsToComboAsync();
-
-                            MessageBox.Show($"Đóng gói \"{frm.ConfigName}\" vào Sheet \"{frm.SheetName}\" thành công!",
-                                "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                    }
+                    MessageBox.Show("Lỗi khi tải danh sách gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
             }
-            catch (Exception ex)
+
+            // Chuyển childProducts sang ConfigProductItem để hiển thị trong modal preview
+            var childItemsForModal = childProducts.Select(p =>
             {
-                this.Cursor = Cursors.Default;
-                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                decimal price = ParseCurrencyToDecimal(p.Price);
+                decimal priceCost = ParseCurrencyToDecimal(p.PriceCost);
+                if (priceCost <= 0) priceCost = price;
+                int sl = p.SoLuong > 0 ? p.SoLuong : 1;
+                return new ConfigProductItem
+                {
+                    TenHang      = p.Name,
+                    MaHang       = p.SKU,
+                    XuatXu       = p.HÃNG ?? "",
+                    DonVi        = ConfigProductItem.IsPinned(p.Name) ? GetPinnedDonVi(p.Name) : "Cái",
+                    SoLuong      = sl,
+                    DonGiaVND    = price,
+                    ThanhTienVND = price * sl,
+                    GiaNhap      = priceCost,
+                    ThanhTien    = priceCost * sl,
+                    LoiNhuan     = (price - priceCost) * sl,
+                    BangGia      = 0,
+                    GhiChu       = "",
+                    IsHeader     = false
+                };
+            }).ToList();
+
+            string defaultDisplay = null;
+            if (!string.IsNullOrEmpty(lastSearchedSheet) && !string.IsNullOrEmpty(lastSearchedPkg))
+                defaultDisplay = $"{lastSearchedSheet} - {lastSearchedPkg}";
+
+            // Mở Modal lưu đóng gói với sheetDisplayMap và các giá trị mặc định
+            using (var frm = new FrmSavePackage(childItemsForModal, sheetDisplayMap, defaultDisplay, lastSearchedPkg))
+            {
+                if (frm.ShowDialog(this) == DialogResult.OK)
+                {
+                    using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang đóng gói \"{frm.ConfigName}\" lên Google Sheets..."))
+                    {
+                        try
+                        {
+                            bool saved = await SaveConfigToSpecificSheetAsync(frm.SheetName, frm.ConfigName, frm.IsOverwrite);
+                            if (saved)
+                            {
+                                // Cập nhật lại list Donggoi_ ở comboBox1
+                                await LoadDonggoiSheetsToComboAsync();
+
+                                MessageBox.Show($"Đóng gói \"{frm.ConfigName}\" vào Sheet \"{frm.SheetName}\" thành công!",
+                                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("Lỗi khi lưu đóng gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
             }
         }
 
@@ -2001,23 +2010,23 @@ namespace ECQ_Soft
                 return;
             }
 
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu báo giá lên Google Sheets..."))
             {
-                this.Cursor = Cursors.WaitCursor;
-                bool saved = await SaveCurrentQuotationToSheetAsync();
-                this.Cursor = Cursors.Default;
-
-                if (saved)
+                try
                 {
-                    await FetchConfigNamesAsync();
-                    await FetchSavedConfigsFullDataAsync();
-                    MessageBox.Show($"Đã lưu báo giá vào tab '{configSheetName}' thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    bool saved = await SaveCurrentQuotationToSheetAsync();
+
+                    if (saved)
+                    {
+                        await FetchConfigNamesAsync();
+                        await FetchSavedConfigsFullDataAsync();
+                        MessageBox.Show($"Đã lưu báo giá vào tab '{configSheetName}' thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                this.Cursor = Cursors.Default;
-                MessageBox.Show($"Lỗi khi lưu báo giá: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi lưu báo giá: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -3896,7 +3905,10 @@ namespace ECQ_Soft
         {
             using (var frm = new FrmAdvancedConfig())
             {
-                await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu cấu hình nâng cao..."))
+                {
+                    await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                }
                 if (frm.IsCanceled) return;
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
@@ -4735,23 +4747,27 @@ namespace ECQ_Soft
                 return;
             }
 
-            try
+            bool saved = false;
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu báo giá lên Google Sheets trước khi xuất..."))
             {
-                this.Cursor = Cursors.WaitCursor;
-                // Gọi hàm lưu dữ liệu lên Google Sheets trước khi xuất
-                bool saved = await SaveCurrentQuotationToSheetAsync();
-                this.Cursor = Cursors.Default;
-                
-                if (!saved) return; // Nếu lưu lỗi thì dừng lại, không xuất nữa
-            }
-            catch (Exception ex)
-            {
-                this.Cursor = Cursors.Default;
-                MessageBox.Show($"Lỗi khi tự động lưu báo giá trước khi xuất: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                try
+                {
+                    saved = await SaveCurrentQuotationToSheetAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi tự động lưu báo giá trước khi xuất: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
             }
 
-            var oldCustomers = await FetchOldCustomersAsync();
+            if (!saved) return; // Nếu lưu lỗi thì dừng lại, không xuất nữa
+
+            List<ExportInfo> oldCustomers = null;
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải danh sách khách hàng từ Google Sheets..."))
+            {
+                oldCustomers = await FetchOldCustomersAsync();
+            }
 
             using (FrmExportInfo frm = new FrmExportInfo(oldCustomers))
             {
@@ -4810,65 +4826,68 @@ namespace ECQ_Soft
                         }
 
                         // Lưu thông tin khách hàng lên sheet "Khach hang"
-                        try
+                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu thông tin khách hàng lên Google Sheets..."))
                         {
-                            string targetSheetName = "Khach hang";
-
-                            if (_sheetsService == null) InitGoogleSheetsService();
-
-                            // Kiểm tra xem sheet đã tồn tại chưa
-                            var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
-                            bool sheetExists = spreadsheet.Sheets.Any(s => s.Properties.Title == targetSheetName);
-
-                            if (!sheetExists)
+                            try
                             {
-                                // Tạo sheet mới
-                                var addSheetRequest = new Google.Apis.Sheets.v4.Data.Request
+                                string targetSheetName = "Khach hang";
+
+                                if (_sheetsService == null) InitGoogleSheetsService();
+
+                                // Kiểm tra xem sheet đã tồn tại chưa
+                                var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
+                                bool sheetExists = spreadsheet.Sheets.Any(s => s.Properties.Title == targetSheetName);
+
+                                if (!sheetExists)
                                 {
-                                    AddSheet = new Google.Apis.Sheets.v4.Data.AddSheetRequest
+                                    // Tạo sheet mới
+                                    var addSheetRequest = new Google.Apis.Sheets.v4.Data.Request
                                     {
-                                        Properties = new Google.Apis.Sheets.v4.Data.SheetProperties
+                                        AddSheet = new Google.Apis.Sheets.v4.Data.AddSheetRequest
                                         {
-                                            Title = targetSheetName
+                                            Properties = new Google.Apis.Sheets.v4.Data.SheetProperties
+                                            {
+                                                Title = targetSheetName
+                                            }
                                         }
+                                    };
+                                    var batchUpdateRequest = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest
+                                    {
+                                        Requests = new List<Google.Apis.Sheets.v4.Data.Request> { addSheetRequest }
+                                    };
+                                    await _sheetsService.Spreadsheets.BatchUpdate(batchUpdateRequest, spreadsheetId).ExecuteAsync();
+
+                                    // Thêm dòng tiêu đề
+                                    var headerRangeObj = new Google.Apis.Sheets.v4.Data.ValueRange();
+                                    headerRangeObj.Values = new List<IList<object>> {
+                                        new List<object> { "Kính gửi", "Địa chỉ", "Người nhận", "Mã số thuế", "Nội dung báo giá", "Tên cấu hình" }
+                                    };
+                                    var appendHeaderReq = _sheetsService.Spreadsheets.Values.Append(headerRangeObj, spreadsheetId, $"'{targetSheetName}'!A1:F1");
+                                    appendHeaderReq.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                                    await appendHeaderReq.ExecuteAsync();
+                                }
+
+                                string range = $"'{targetSheetName}'!A:F";
+                                var valueRange = new Google.Apis.Sheets.v4.Data.ValueRange();
+                                valueRange.Values = new List<IList<object>> {
+                                    new List<object> {
+                                        frm.ExportData.KinhGui ?? "",
+                                        frm.ExportData.DiaChi ?? "",
+                                        frm.ExportData.NguoiNhan ?? "",
+                                        frm.ExportData.MaSoThue ?? "",
+                                        frm.ExportData.NoiDung ?? "",
+                                        configSheetName ?? "Mặc định"
                                     }
                                 };
-                                var batchUpdateRequest = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest
-                                {
-                                    Requests = new List<Google.Apis.Sheets.v4.Data.Request> { addSheetRequest }
-                                };
-                                await _sheetsService.Spreadsheets.BatchUpdate(batchUpdateRequest, spreadsheetId).ExecuteAsync();
 
-                                // Thêm dòng tiêu đề
-                                var headerRangeObj = new Google.Apis.Sheets.v4.Data.ValueRange();
-                                headerRangeObj.Values = new List<IList<object>> {
-                                    new List<object> { "Kính gửi", "Địa chỉ", "Người nhận", "Mã số thuế", "Nội dung báo giá", "Tên cấu hình" }
-                                };
-                                var appendHeaderReq = _sheetsService.Spreadsheets.Values.Append(headerRangeObj, spreadsheetId, $"'{targetSheetName}'!A1:F1");
-                                appendHeaderReq.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-                                await appendHeaderReq.ExecuteAsync();
+                                var appendRequest = _sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
+                                appendRequest.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                                await appendRequest.ExecuteAsync();
                             }
-
-                            string range = $"'{targetSheetName}'!A:F";
-                            var valueRange = new Google.Apis.Sheets.v4.Data.ValueRange();
-                            valueRange.Values = new List<IList<object>> {
-                                new List<object> {
-                                    frm.ExportData.KinhGui ?? "",
-                                    frm.ExportData.DiaChi ?? "",
-                                    frm.ExportData.NguoiNhan ?? "",
-                                    frm.ExportData.MaSoThue ?? "",
-                                    frm.ExportData.NoiDung ?? "",
-                                    configSheetName ?? "Mặc định"
-                                }
-                            };
-
-                            var appendRequest = _sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
-                            appendRequest.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-                            await appendRequest.ExecuteAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show("Đã xuất file thành công nhưng không thể lưu thông tin lên sheet 'Khach hang': " + ex.Message, "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("Đã xuất file thành công nhưng không thể lưu thông tin lên sheet 'Khach hang': " + ex.Message, "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            }
                         }
                     }
                 }
@@ -4909,8 +4928,11 @@ namespace ECQ_Soft
 
             using (var frm = new FrmAdvancedConfig())
             {
-                // Tự động Maximized và load data
-                await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu cấu hình nâng cao..."))
+                {
+                    // Tự động Maximized và load data
+                    await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                }
 
                 if (frm.IsCanceled) return;
 
@@ -5018,8 +5040,11 @@ namespace ECQ_Soft
 
             using (var frm = new FrmAdvancedConfig())
             {
-                // Tải data
-                await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu cấu hình nâng cao..."))
+                {
+                    // Tải data
+                    await frm.LoadDataAsync(_sheetsService, spreadsheetId);
+                }
                 if (frm.IsCanceled) return;
 
                 if (frm.ShowDialog(this) == DialogResult.OK)

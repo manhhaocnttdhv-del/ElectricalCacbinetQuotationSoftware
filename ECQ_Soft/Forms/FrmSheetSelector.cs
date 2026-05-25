@@ -42,38 +42,38 @@ namespace ECQ_Soft
 
         private async Task LoadExistingSheetsAsync()
         {
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải danh sách tab từ Google Sheets..."))
             {
-                lblStatus.Text = "Đang tải danh sách tab...";
-                cboExisting.Enabled = false;
-
-                var spreadsheet = await _sheetsService.Spreadsheets.Get(_spreadsheetId).ExecuteAsync();
-
-                _sheetIdMap.Clear();
-                cboExisting.Items.Clear();
-
-            var sheetNames = spreadsheet.Sheets
-                .Where(s => s.Properties.Title.StartsWith("KH_", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(s => s.Properties.Title)
-                .ToList();
-
-                foreach (var sheet in sheetNames)
+                try
                 {
-                    cboExisting.Items.Add(sheet.Properties.Title);
-                    _sheetIdMap[sheet.Properties.Title] = sheet.Properties.SheetId.Value;
+                    cboExisting.Enabled = false;
+
+                    var spreadsheet = await _sheetsService.Spreadsheets.Get(_spreadsheetId).ExecuteAsync();
+
+                    _sheetIdMap.Clear();
+                    cboExisting.Items.Clear();
+
+                    var sheetNames = spreadsheet.Sheets
+                        .Where(s => s.Properties.Title.StartsWith("KH_", StringComparison.OrdinalIgnoreCase))
+                        .OrderBy(s => s.Properties.Title)
+                        .ToList();
+
+                    foreach (var sheet in sheetNames)
+                    {
+                        cboExisting.Items.Add(sheet.Properties.Title);
+                        _sheetIdMap[sheet.Properties.Title] = sheet.Properties.SheetId.Value;
+                    }
+
+                    if (cboExisting.Items.Count > 0)
+                        cboExisting.SelectedIndex = 0;
+
+                    cboExisting.Enabled = true;
                 }
-
-                if (cboExisting.Items.Count > 0)
-                    cboExisting.SelectedIndex = 0;
-
-                cboExisting.Enabled = true;
-                lblStatus.Text = $"Tìm thấy {sheetNames.Count} tab.";
-            }
-            catch (Exception ex)
-            {
-                lblStatus.Text = "Lỗi khi tải danh sách tab.";
-                MessageBox.Show("Không thể tải danh sách tab từ Google Sheets:\n" + ex.Message,
-                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Không thể tải danh sách tab từ Google Sheets:\n" + ex.Message,
+                        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -177,46 +177,46 @@ namespace ECQ_Soft
                     return;
                 }
 
-                // Tạo sheet mới
-                try
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang tạo tab mới '{newName}'..."))
                 {
-                    btnConfirm.Enabled = false;
-                    lblStatus.Text = $"Đang tạo tab '{newName}'...";
-
-                    // 1. Tạo sheet mới và lấy sheetId
-                    var addSheetRequest = new Google.Apis.Sheets.v4.Data.AddSheetRequest
+                    // Tạo sheet mới
+                    try
                     {
-                        Properties = new Google.Apis.Sheets.v4.Data.SheetProperties
-                        {
-                            Title = newName
-                        }
-                    };
+                        btnConfirm.Enabled = false;
 
-                    var batchRequest = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest
+                        // 1. Tạo sheet mới và lấy sheetId
+                        var addSheetRequest = new Google.Apis.Sheets.v4.Data.AddSheetRequest
+                        {
+                            Properties = new Google.Apis.Sheets.v4.Data.SheetProperties
+                            {
+                                Title = newName
+                            }
+                        };
+
+                        var batchRequest = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest
+                        {
+                            Requests = new List<Google.Apis.Sheets.v4.Data.Request>
+                            {
+                                new Google.Apis.Sheets.v4.Data.Request { AddSheet = addSheetRequest }
+                            }
+                        };
+
+                        var batchResponse = await _sheetsService.Spreadsheets.BatchUpdate(batchRequest, _spreadsheetId).ExecuteAsync();
+                        int newSheetId = batchResponse.Replies[0].AddSheet.Properties.SheetId.Value;
+
+                        // Ghi headers dùng method chung
+                        await EnsureHeadersAsync(newName, newSheetId);
+
+                        SelectedSheetName = newName;
+                        DialogResult = DialogResult.OK;
+                        Close();
+                    }
+                    catch (Exception ex)
                     {
-                        Requests = new List<Google.Apis.Sheets.v4.Data.Request>
-                        {
-                            new Google.Apis.Sheets.v4.Data.Request { AddSheet = addSheetRequest }
-                        }
-                    };
-
-                    var batchResponse = await _sheetsService.Spreadsheets.BatchUpdate(batchRequest, _spreadsheetId).ExecuteAsync();
-                    int newSheetId = batchResponse.Replies[0].AddSheet.Properties.SheetId.Value;
-
-                    // Ghi headers dùng method chung
-                    lblStatus.Text = "Đang tạo tiêu đề...";
-                    await EnsureHeadersAsync(newName, newSheetId);
-
-                    SelectedSheetName = newName;
-                    DialogResult = DialogResult.OK;
-                    Close();
-                }
-                catch (Exception ex)
-                {
-                    btnConfirm.Enabled = true;
-                    lblStatus.Text = "Lỗi khi tạo tab mới.";
-                    MessageBox.Show("Không thể tạo tab mới:\n" + ex.Message,
-                        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        btnConfirm.Enabled = true;
+                        MessageBox.Show("Không thể tạo tab mới:\n" + ex.Message,
+                            "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
 
             }
@@ -251,40 +251,41 @@ namespace ECQ_Soft
                     return;
                 }
 
-                try
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang đổi tên tab thành '{newName}'..."))
                 {
-                    btnConfirm.Enabled = false;
-                    lblStatus.Text = $"Đang đổi tên thành '{newName}'...";
-
-                    var requests = new List<Google.Apis.Sheets.v4.Data.Request>
+                    try
                     {
-                        new Google.Apis.Sheets.v4.Data.Request
+                        btnConfirm.Enabled = false;
+
+                        var requests = new List<Google.Apis.Sheets.v4.Data.Request>
                         {
-                            UpdateSheetProperties = new Google.Apis.Sheets.v4.Data.UpdateSheetPropertiesRequest
+                            new Google.Apis.Sheets.v4.Data.Request
                             {
-                                Properties = new Google.Apis.Sheets.v4.Data.SheetProperties
+                                UpdateSheetProperties = new Google.Apis.Sheets.v4.Data.UpdateSheetPropertiesRequest
                                 {
-                                    SheetId = sheetId,
-                                    Title = newName
-                                },
-                                Fields = "title"
+                                    Properties = new Google.Apis.Sheets.v4.Data.SheetProperties
+                                    {
+                                        SheetId = sheetId,
+                                        Title = newName
+                                    },
+                                    Fields = "title"
+                                }
                             }
-                        }
-                    };
+                        };
 
-                    var batchRequest = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = requests };
-                    await _sheetsService.Spreadsheets.BatchUpdate(batchRequest, _spreadsheetId).ExecuteAsync();
+                        var batchRequest = new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = requests };
+                        await _sheetsService.Spreadsheets.BatchUpdate(batchRequest, _spreadsheetId).ExecuteAsync();
 
-                    SelectedSheetName = newName;
-                    DialogResult = DialogResult.OK;
-                    Close();
-                }
-                catch (Exception ex)
-                {
-                    btnConfirm.Enabled = true;
-                    lblStatus.Text = "Lỗi khi đổi tên tab.";
-                    MessageBox.Show("Không thể đổi tên tab:\n" + ex.Message,
-                        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        SelectedSheetName = newName;
+                        DialogResult = DialogResult.OK;
+                        Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        btnConfirm.Enabled = true;
+                        MessageBox.Show("Không thể đổi tên tab:\n" + ex.Message,
+                            "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
             else // dùng tab cũ
@@ -305,21 +306,22 @@ namespace ECQ_Soft
                 }
                 try
                 {
-                    btnConfirm.Enabled = false;
-                    lblStatus.Text = "Đang kiểm tra tab...";
+                    using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang mở tab..."))
+                    {
+                        btnConfirm.Enabled = false;
 
-                    // Nếu tab đang rỗng thì tự động thêm header
-                    if (_sheetIdMap.TryGetValue(existingName, out int sid))
-                        await EnsureHeadersAsync(existingName, sid);
+                        // Nếu tab đang rỗng thì tự động thêm header
+                        if (_sheetIdMap.TryGetValue(existingName, out int sid))
+                            await EnsureHeadersAsync(existingName, sid);
 
-                    SelectedSheetName = existingName;
-                    DialogResult = DialogResult.OK;
-                    Close();
+                        SelectedSheetName = existingName;
+                        DialogResult = DialogResult.OK;
+                        Close();
+                    }
                 }
                 catch (Exception ex)
                 {
                     btnConfirm.Enabled = true;
-                    lblStatus.Text = "Lỗi.";
                     MessageBox.Show("Lỗi khi kiểm tra tab:\n" + ex.Message,
                         "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }

@@ -1,0 +1,5 @@
+24-05-2025
+- chưa thay đổi logic max̣̣(w102 * sl)
+25.05.2025 (10h)
+da thay doi logic *sl nghĩa là mỗi add * số lượng + át khác * số lượng
+- add spinner

@@ -1360,7 +1360,10 @@ namespace ECQ_Soft
                         && int.TryParse(txtGiaBanVPA.Text.Replace(",", ""), out int P4)
                         )
                     {
-                        GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "F", P1, P2, P3, P4);
+                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
+                        {
+                            GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "F", P1, P2, P3, P4);
+                        }
                         m.PCFee = P1;
                         m.OrtherFee = P2;
                         market.CommonPrice = P3;
@@ -1396,7 +1399,10 @@ namespace ECQ_Soft
                          && int.TryParse(txtGiaBanVPA.Text.Replace(",", ""), out int P4)
                         )
                     {
-                        GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "G", P1, P2, P3, P4);
+                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
+                        {
+                            GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "G", P1, P2, P3, P4);
+                        }
                         m.HDGFee = P1;
                         m.OrtherFee = P2;
                         market.CommonPrice = P3;
@@ -1427,7 +1433,10 @@ namespace ECQ_Soft
                          && int.TryParse(txtGiaBanVPA.Text.Replace(",", ""), out int P4)
                         )
                     {
-                        GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "", 0, P2, P3, P4);
+                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
+                        {
+                            GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "", 0, P2, P3, P4);
+                        }
                         m.OrtherFee = P2;
                         market.CommonPrice = P3;
                         market.VPAPrice = P4;
@@ -1476,17 +1485,20 @@ namespace ECQ_Soft
 
         public async Task LoadDataAsync()
         {
-            await Task.Run(() =>
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu báo giá từ Google Sheets..."))
             {
-                InitGoogleSheetsService();
-                GetMaterialInfor();
-                GetCabinetType();
-                GetMarketPrice();
-            });
+                await Task.Run(() =>
+                {
+                    InitGoogleSheetsService();
+                    GetMaterialInfor();
+                    GetCabinetType();
+                    GetMarketPrice();
+                });
 
-            // Sau khi Thread background chạy xong, ta cập nhật lại Control (UI Thread)
-            LoadMaterialtoCombobox();
-            LoadCabinetTypetoCombobox();
+                // Sau khi Thread background chạy xong, ta cập nhật lại Control (UI Thread)
+                LoadMaterialtoCombobox();
+                LoadCabinetTypetoCombobox();
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -1521,39 +1533,37 @@ namespace ECQ_Soft
                 string configSpreadsheetId = "10gNCH_pG4LmkQ1g109H1WEM4nwBk4UBff_IDHar0Hd8";
                 string productRange = "Products_Table!A2:M";
 
-                try
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải danh sách sản phẩm từ Google Sheets..."))
                 {
-                    this.Cursor = Cursors.WaitCursor;
-                    InitGoogleSheetsService();
-                    var response = await _sheetsService.Spreadsheets.Values.Get(configSpreadsheetId, productRange).ExecuteAsync();
-                    var rows = response.Values;
-
-                    if (rows != null)
+                    try
                     {
-                        for (int i = 0; i < rows.Count; i++)
+                        InitGoogleSheetsService();
+                        var response = await _sheetsService.Spreadsheets.Values.Get(configSpreadsheetId, productRange).ExecuteAsync();
+                        var rows = response.Values;
+
+                        if (rows != null)
                         {
-                            var row = rows[i];
-                            if (row.Count < 2) continue;
-                            _allProductsForSearch.Add(new Products
+                            for (int i = 0; i < rows.Count; i++)
                             {
-                                Id = (row.Count > 0 && int.TryParse(row[0]?.ToString(), out int id)) ? id : i + 1,
-                                Name = row.Count > 1 ? row[1]?.ToString() : "",
-                                Model = row.Count > 2 ? row[2]?.ToString() : "",
-                                SKU = row.Count > 3 ? row[3]?.ToString() : "",
-                                Price = row.Count > 4 ? row[4]?.ToString() : "0",
-                                PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
-                                Category = row.Count > 10 ? row[10]?.ToString() : ""
-                            });
+                                var row = rows[i];
+                                if (row.Count < 2) continue;
+                                _allProductsForSearch.Add(new Products
+                                {
+                                    Id = (row.Count > 0 && int.TryParse(row[0]?.ToString(), out int id)) ? id : i + 1,
+                                    Name = row.Count > 1 ? row[1]?.ToString() : "",
+                                    Model = row.Count > 2 ? row[2]?.ToString() : "",
+                                    SKU = row.Count > 3 ? row[3]?.ToString() : "",
+                                    Price = row.Count > 4 ? row[4]?.ToString() : "0",
+                                    PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
+                                    Category = row.Count > 10 ? row[10]?.ToString() : ""
+                                });
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Lỗi khi tải danh sách sản phẩm: " + ex.Message);
-                }
-                finally
-                {
-                    this.Cursor = Cursors.Default;
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Lỗi khi tải danh sách sản phẩm: " + ex.Message);
+                    }
                 }
             }
 

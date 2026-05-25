@@ -96,76 +96,79 @@ namespace ECQ_Soft
 
         public async Task LoadDataAsync()
         {
-            if (_sheetsService == null) InitGoogleSheetsService();
-
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu sản phẩm..."))
             {
-                var relationsTask = FetchProductRelationsAsync();
-                // Đọc dữ liệu từ Google Sheet (A2:M - 13 cột)
-                // 0:ID, 1:Tên, 2:Model, 3:SKU, 4:Giá, 5:Giá vốn, 6:Khối lượng, 7:Dài, 8:Rộng, 9:Cao, 10:Danh mục, 11:Hãng, 12:Bảng giá
-                string range = $"{sheetName}!A2:M";
-                var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
-                var response = await request.ExecuteAsync();
-                IList<IList<object>> rows = response.Values;
+                if (_sheetsService == null) InitGoogleSheetsService();
 
-                if (rows != null && rows.Count > 0)
+                try
                 {
-                    allProducts.Clear();
-                    List<string> rawCategories = new List<string>();
-                    HashSet<string> rawBrands = new HashSet<string>();
+                    var relationsTask = FetchProductRelationsAsync();
+                    // Đọc dữ liệu từ Google Sheet (A2:M - 13 cột)
+                    // 0:ID, 1:Tên, 2:Model, 3:SKU, 4:Giá, 5:Giá vốn, 6:Khối lượng, 7:Dài, 8:Rộng, 9:Cao, 10:Danh mục, 11:Hãng, 12:Bảng giá
+                    string range = $"{sheetName}!A2:M";
+                    var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
+                    var response = await request.ExecuteAsync();
+                    IList<IList<object>> rows = response.Values;
 
-                    for (int i = 0; i < rows.Count; i++)
+                    if (rows != null && rows.Count > 0)
                     {
-                        var row = rows[i];
-                        if (row.Count < 2) continue; 
+                        allProducts.Clear();
+                        List<string> rawCategories = new List<string>();
+                        HashSet<string> rawBrands = new HashSet<string>();
 
-                        var p = new Products
+                        for (int i = 0; i < rows.Count; i++)
                         {
-                            Id = (row.Count > 0 && int.TryParse(row[0]?.ToString(), out int id)) ? id : i + 1,
-                            Name = row.Count > 1 ? row[1]?.ToString() : "",
-                            Model = row.Count > 2 ? row[2]?.ToString() : "",
-                            SKU = row.Count > 3 ? row[3]?.ToString() : "",
-                            Price = row.Count > 4 ? row[4]?.ToString() : "0",
-                            PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
-                            Weight = row.Count > 6 ? row[6]?.ToString() : "0",
-                            Length = row.Count > 7 ? row[7]?.ToString() : "0",
-                            Width = row.Count > 8 ? row[8]?.ToString() : "0",
-                            Height = row.Count > 9 ? row[9]?.ToString() : "0",
-                            Category = row.Count > 10 ? row[10]?.ToString() : "",
-                            HÃNG = row.Count > 11 ? row[11]?.ToString() : "",
-                            PriceList = row.Count > 12 ? row[12]?.ToString() : ""
-                        };
+                            var row = rows[i];
+                            if (row.Count < 2) continue; 
 
-                        allProducts.Add(p);
+                            var p = new Products
+                            {
+                                Id = (row.Count > 0 && int.TryParse(row[0]?.ToString(), out int id)) ? id : i + 1,
+                                Name = row.Count > 1 ? row[1]?.ToString() : "",
+                                Model = row.Count > 2 ? row[2]?.ToString() : "",
+                                SKU = row.Count > 3 ? row[3]?.ToString() : "",
+                                Price = row.Count > 4 ? row[4]?.ToString() : "0",
+                                PriceCost = row.Count > 5 ? row[5]?.ToString() : "0",
+                                Weight = row.Count > 6 ? row[6]?.ToString() : "0",
+                                Length = row.Count > 7 ? row[7]?.ToString() : "0",
+                                Width = row.Count > 8 ? row[8]?.ToString() : "0",
+                                Height = row.Count > 9 ? row[9]?.ToString() : "0",
+                                Category = row.Count > 10 ? row[10]?.ToString() : "",
+                                HÃNG = row.Count > 11 ? row[11]?.ToString() : "",
+                                PriceList = row.Count > 12 ? row[12]?.ToString() : ""
+                            };
 
-                        if (!string.IsNullOrEmpty(p.Category)) rawCategories.Add(p.Category);
-                        if (!string.IsNullOrEmpty(p.HÃNG)) rawBrands.Add(p.HÃNG);
+                            allProducts.Add(p);
+
+                            if (!string.IsNullOrEmpty(p.Category)) rawCategories.Add(p.Category);
+                            if (!string.IsNullOrEmpty(p.HÃNG)) rawBrands.Add(p.HÃNG);
+                        }
+
+                        // 1. Load cây danh mục vào CategoryTreeDropdown (comboBox1)
+                        var treeNodes = CategoryParser.ParseToTreeNodes(rawCategories);
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            comboBox1.LoadTree(treeNodes);
+                        });
+
+                        // 2. Load Hãng vào comboBox2 (Bên trái - Hãng sản xuất)
+                        var brandList = rawBrands.OrderBy(b => b).ToList();
+                        brandList.Insert(0, "-- Tất cả hãng --");
+                        comboBox2.DataSource = null;
+                        comboBox2.DataSource = brandList;
+
+                        // 3. Hiển thị lên DataGridView
+                        dgvAllProducts.DataSource = null;
+                        dgvAllProducts.DataSource = allProducts;
+                        FormatDataGridView(dgvAllProducts);
                     }
 
-                    // 1. Load cây danh mục vào CategoryTreeDropdown (comboBox1)
-                    var treeNodes = CategoryParser.ParseToTreeNodes(rawCategories);
-                    this.Invoke((MethodInvoker)delegate
-                    {
-                        comboBox1.LoadTree(treeNodes);
-                    });
-
-                    // 2. Load Hãng vào comboBox2 (Bên trái - Hãng sản xuất)
-                    var brandList = rawBrands.OrderBy(b => b).ToList();
-                    brandList.Insert(0, "-- Tất cả hãng --");
-                    comboBox2.DataSource = null;
-                    comboBox2.DataSource = brandList;
-
-                    // 3. Hiển thị lên DataGridView
-                    dgvAllProducts.DataSource = null;
-                    dgvAllProducts.DataSource = allProducts;
-                    FormatDataGridView(dgvAllProducts);
+                    await Task.WhenAll(relationsTask);
                 }
-
-                await Task.WhenAll(relationsTask);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi tải dữ liệu cấu hình: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi tải dữ liệu cấu hình: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
         private async Task FetchProductRelationsAsync()
@@ -528,50 +531,53 @@ namespace ECQ_Soft
             btnSaveRelation.Enabled = false;
             btnSaveRelation.Text = "Đang lưu...";
 
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu quan hệ lên Google Sheets..."))
             {
-                // Chuẩn bị dữ liệu để append vào Sheet Products_Relatation
-                // Cấu trúc: A:ID, B:ID_Product_Main (SKU Cha), C:ID_Product_Child (SKU Con), D:Category_PR
-                var values = new List<IList<object>>();
-                int index = 1;
-                foreach (var parent in parentProducts)
+                try
                 {
-                    foreach (var child in childProducts)
+                    // Chuẩn bị dữ liệu để append vào Sheet Products_Relatation
+                    // Cấu trúc: A:ID, B:ID_Product_Main (SKU Cha), C:ID_Product_Child (SKU Con), D:Category_PR
+                    var values = new List<IList<object>>();
+                    int index = 1;
+                    foreach (var parent in parentProducts)
                     {
-                        var row = new List<object>
+                        foreach (var child in childProducts)
                         {
-                            index++, // ID (Để trống hoặc tự tăng nếu sheet có công thức)
-                            parent.Id,
-                            child.Id,
-                            relCategory
-                        };
-                        values.Add(row);
+                            var row = new List<object>
+                            {
+                                index++, // ID (Để trống hoặc tự tăng nếu sheet có công thức)
+                                parent.Id,
+                                child.Id,
+                                relCategory
+                            };
+                            values.Add(row);
+                        }
                     }
+
+                    var valueRange = new Google.Apis.Sheets.v4.Data.ValueRange { Values = values };
+                    var appendRequest = _sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, "Products_Relatation!A2:D");
+                    appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                    
+                    await appendRequest.ExecuteAsync();
+
+                    MessageBox.Show($"Đã lưu thành công {values.Count} mối quan hệ vào Google Sheets!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Clear sau khi lưu thành công
+                    parentProducts.Clear();
+                    childProducts.Clear();
+                    textBox2.Clear();
+                    UpdateGridSelector(dgvParentProducts, parentProducts);
+                    UpdateGridSelector(dgvChildProducts, childProducts);
                 }
-
-                var valueRange = new Google.Apis.Sheets.v4.Data.ValueRange { Values = values };
-                var appendRequest = _sheetsService.Spreadsheets.Values.Append(valueRange, spreadsheetId, "Products_Relatation!A2:D");
-                appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-                
-                await appendRequest.ExecuteAsync();
-
-                MessageBox.Show($"Đã lưu thành công {values.Count} mối quan hệ vào Google Sheets!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                
-                // Clear sau khi lưu thành công
-                parentProducts.Clear();
-                childProducts.Clear();
-                textBox2.Clear();
-                UpdateGridSelector(dgvParentProducts, parentProducts);
-                UpdateGridSelector(dgvChildProducts, childProducts);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi khi lưu quan hệ: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                btnSaveRelation.Enabled = true;
-                btnSaveRelation.Text = "Lưu";
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi lưu quan hệ: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    btnSaveRelation.Enabled = true;
+                    btnSaveRelation.Text = "Lưu";
+                }
             }
         }
     }

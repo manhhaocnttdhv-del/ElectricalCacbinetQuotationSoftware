@@ -216,31 +216,30 @@ namespace ECQ_Soft
 
         private async Task LoadBusbarSheetAsync()
         {
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu từ Google Sheets..."))
             {
-                _lblStatus.Text = "Đang tải dữ liệu từ Google Sheets...";
-                _grid.Enabled = false;
+                try
+                {
+                    var formulaReq = _service.Spreadsheets.Values.Get(_spreadsheetId, RANGE);
+                    formulaReq.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
+                    var valueReq = _service.Spreadsheets.Values.Get(_spreadsheetId, RANGE);
+                    valueReq.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMATTEDVALUE;
 
-                var formulaReq = _service.Spreadsheets.Values.Get(_spreadsheetId, RANGE);
-                formulaReq.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMULA;
-                var valueReq = _service.Spreadsheets.Values.Get(_spreadsheetId, RANGE);
-                valueReq.ValueRenderOption = SpreadsheetsResource.ValuesResource.GetRequest.ValueRenderOptionEnum.FORMATTEDVALUE;
+                    var formulaTask = formulaReq.ExecuteAsync();
+                    var valueTask = valueReq.ExecuteAsync();
+                    await Task.WhenAll(formulaTask, valueTask);
 
-                var formulaTask = formulaReq.ExecuteAsync();
-                var valueTask = valueReq.ExecuteAsync();
-                await Task.WhenAll(formulaTask, valueTask);
-
-                _formulaData = formulaTask.Result.Values ?? new List<IList<object>>();
-                _valueData = valueTask.Result.Values ?? new List<IList<object>>();
-                BindBusbarGrid();
-                _lblStatus.Text = $"Đã tải {_formulaData.Count} dòng. Bạn có thể chỉnh sửa trực tiếp và bấm Lưu.";
+                    _formulaData = formulaTask.Result.Values ?? new List<IList<object>>();
+                    _valueData = valueTask.Result.Values ?? new List<IList<object>>();
+                    BindBusbarGrid();
+                    _lblStatus.Text = $"Đã tải {_formulaData.Count} dòng. Bạn có thể chỉnh sửa trực tiếp và bấm Lưu.";
+                }
+                catch (Exception ex)
+                {
+                    _lblStatus.Text = "Lỗi tải sheet.";
+                    MessageBox.Show("Không thể tải sheet 'Tính toán đồng thanh cái'.\nLỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            catch (Exception ex)
-            {
-                _lblStatus.Text = "Lỗi tải sheet.";
-                MessageBox.Show("Không thể tải sheet 'Tính toán đồng thanh cái'.\nLỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally { _grid.Enabled = true; }
         }
 
         private void BindBusbarGrid()
@@ -420,51 +419,49 @@ namespace ECQ_Soft
         /// </summary>
         private async Task UploadFilesToDriveAsync(string[] filePaths, int rowIndex, int colIndex)
         {
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang upload {filePaths.Length} file lên Google Drive..."))
             {
-                _grid.Enabled = false;
-                int totalFiles = filePaths.Length;
-                _lblStatus.Text = $"Đang upload {totalFiles} file lên Google Drive (folder: file vnecco)...";
-
-                // Upload vào folder "file vnecco" trên Drive
-                var uploader = new GoogleDriveUploader();
-
-                var links = new List<string>();
-                for (int i = 0; i < filePaths.Length; i++)
+                try
                 {
-                    _lblStatus.Text = $"Đang upload ({i + 1}/{totalFiles}): {Path.GetFileName(filePaths[i])}...";
-                    var result = await uploader.UploadFileAsync(filePaths[i]);
-                    links.Add(result.WebViewLink);
+                    int totalFiles = filePaths.Length;
+                    _lblStatus.Text = $"Đang upload {totalFiles} file lên Google Drive (folder: file vnecco)...";
+
+                    // Upload vào folder "file vnecco" trên Drive
+                    var uploader = new GoogleDriveUploader();
+
+                    var links = new List<string>();
+                    for (int i = 0; i < filePaths.Length; i++)
+                    {
+                        _lblStatus.Text = $"Đang upload ({i + 1}/{totalFiles}): {Path.GetFileName(filePaths[i])}...";
+                        var result = await uploader.UploadFileAsync(filePaths[i]);
+                        links.Add(result.WebViewLink);
+                    }
+
+                    // Ghi tất cả link vào cell, phân cách bằng dấu xuống dòng
+                    string cellValue = string.Join("\n", links);
+                    _grid.Rows[rowIndex].Cells[colIndex].Value = cellValue;
+                    SetFormulaAt(rowIndex, colIndex, cellValue);
+
+                    _grid.Rows[rowIndex].Cells[colIndex].Tag = filePaths;
+
+                    _lblStatus.Text = $"✅ Đã upload {totalFiles} file thành công lên Google Drive.";
+                    _grid.InvalidateCell(colIndex, rowIndex);
+
+                    MessageBox.Show(
+                        $"Đã upload {totalFiles} file lên Google Drive (folder: file vnecco) thành công!\n\nLink đã được ghi vào ô {ColumnIndexToLetter(colIndex)}{rowIndex + 1}.\nBấm 'Lưu & Cập nhật' để đồng bộ lên Google Sheets.",
+                        "Upload thành công",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                 }
-
-                // Ghi tất cả link vào cell, phân cách bằng dấu xuống dòng
-                string cellValue = string.Join("\n", links);
-                _grid.Rows[rowIndex].Cells[colIndex].Value = cellValue;
-                SetFormulaAt(rowIndex, colIndex, cellValue);
-
-                _grid.Rows[rowIndex].Cells[colIndex].Tag = filePaths;
-
-                _lblStatus.Text = $"✅ Đã upload {totalFiles} file thành công lên Google Drive.";
-                _grid.InvalidateCell(colIndex, rowIndex);
-
-                MessageBox.Show(
-                    $"Đã upload {totalFiles} file lên Google Drive (folder: file vnecco) thành công!\n\nLink đã được ghi vào ô {ColumnIndexToLetter(colIndex)}{rowIndex + 1}.\nBấm 'Lưu & Cập nhật' để đồng bộ lên Google Sheets.",
-                    "Upload thành công",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                _lblStatus.Text = "❌ Upload thất bại.";
-                MessageBox.Show(
-                    $"Lỗi khi upload file lên Google Drive:\n{ex.Message}",
-                    "Lỗi Upload",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
-            finally
-            {
-                _grid.Enabled = true;
+                catch (Exception ex)
+                {
+                    _lblStatus.Text = "❌ Upload thất bại.";
+                    MessageBox.Show(
+                        $"Lỗi khi upload file lên Google Drive:\n{ex.Message}",
+                        "Lỗi Upload",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -472,43 +469,45 @@ namespace ECQ_Soft
         {
             var confirm = MessageBox.Show("Lưu toàn bộ thay đổi lên Google Sheets?\nSau khi lưu, sheet sẽ tự tính toán lại các công thức.", "Xác nhận lưu", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu thay đổi lên Google Sheets..."))
             {
-                _lblStatus.Text = "Đang lưu...";
-                _btnSave.Enabled = false;
-                _btnReload.Enabled = false;
-
-                var newValues = new List<IList<object>>();
-                if (_formulaData != null)
+                try
                 {
-                    foreach (var r in _formulaData)
+                    _btnSave.Enabled = false;
+                    _btnReload.Enabled = false;
+
+                    var newValues = new List<IList<object>>();
+                    if (_formulaData != null)
                     {
-                        if (r == null) { newValues.Add(new List<object>()); continue; }
-                        var rowValues = new List<object>(r);
-                        while (rowValues.Count > 0 && string.IsNullOrEmpty(rowValues[rowValues.Count - 1]?.ToString())) rowValues.RemoveAt(rowValues.Count - 1);
-                        newValues.Add(rowValues);
+                        foreach (var r in _formulaData)
+                        {
+                            if (r == null) { newValues.Add(new List<object>()); continue; }
+                            var rowValues = new List<object>(r);
+                            while (rowValues.Count > 0 && string.IsNullOrEmpty(rowValues[rowValues.Count - 1]?.ToString())) rowValues.RemoveAt(rowValues.Count - 1);
+                            newValues.Add(rowValues);
+                        }
                     }
-                }
 
-                await _service.Spreadsheets.Values.Clear(new ClearValuesRequest(), _spreadsheetId, RANGE).ExecuteAsync();
-                if (newValues.Count > 0)
+                    await _service.Spreadsheets.Values.Clear(new ClearValuesRequest(), _spreadsheetId, RANGE).ExecuteAsync();
+                    if (newValues.Count > 0)
+                    {
+                        var body = new ValueRange { Values = newValues };
+                        var update = _service.Spreadsheets.Values.Update(body, _spreadsheetId, SHEET_NAME + "!A1");
+                        update.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                        await update.ExecuteAsync();
+                    }
+
+                    _lblStatus.Text = "Đã lưu. Đang tải lại kết quả...";
+                    await LoadBusbarSheetAsync();
+                    MessageBox.Show("Đã lưu và cập nhật. Công thức đã được Google Sheets tính toán lại.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
                 {
-                    var body = new ValueRange { Values = newValues };
-                    var update = _service.Spreadsheets.Values.Update(body, _spreadsheetId, SHEET_NAME + "!A1");
-                    update.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
-                    await update.ExecuteAsync();
+                    _lblStatus.Text = "Lưu thất bại.";
+                    MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-
-                _lblStatus.Text = "Đã lưu. Đang tải lại kết quả...";
-                await LoadBusbarSheetAsync();
-                MessageBox.Show("Đã lưu và cập nhật. Công thức đã được Google Sheets tính toán lại.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                finally { _btnSave.Enabled = true; _btnReload.Enabled = true; }
             }
-            catch (Exception ex)
-            {
-                _lblStatus.Text = "Lưu thất bại.";
-                MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally { _btnSave.Enabled = true; _btnReload.Enabled = true; }
         }
 
         private static string ColumnIndexToLetter(int index)

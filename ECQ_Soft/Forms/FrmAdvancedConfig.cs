@@ -3347,133 +3347,136 @@ namespace ECQ_Soft
 
         private async Task<bool> CommitSaveDraftToSheetsAsync(string draftName, List<Tuple<string, string, string, string>> draftItems)
         {
-            try
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu cấu hình nháp lên Google Sheets..."))
             {
-                var spreadsheetInfo = await _service.Spreadsheets.Get(_spreadsheetId).ExecuteAsync();
-                var tSheet = spreadsheetInfo.Sheets.FirstOrDefault(s => s.Properties.Title == "Cấu hình nháp");
-                int shId = 0;
-                if (tSheet == null)
+                try
                 {
-                    var addReq = new Google.Apis.Sheets.v4.Data.Request { AddSheet = new Google.Apis.Sheets.v4.Data.AddSheetRequest { Properties = new Google.Apis.Sheets.v4.Data.SheetProperties { Title = "Cấu hình nháp" } } };
-                    var resp = await _service.Spreadsheets.BatchUpdate(new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = new List<Google.Apis.Sheets.v4.Data.Request> { addReq } }, _spreadsheetId).ExecuteAsync();
-                    shId = resp.Replies[0].AddSheet.Properties.SheetId ?? 0;
-                }
-                else shId = tSheet.Properties.SheetId ?? 0;
-
-                var hCheck = await _service.Spreadsheets.Values.Get(_spreadsheetId, "Cấu hình nháp!A1:A1").ExecuteAsync();
-                bool hasHeader = hCheck.Values != null && hCheck.Values.Count > 0 && hCheck.Values[0][0]?.ToString() == "Vị trí cấu hình";
-
-                // Xóa cũ if exists
-                await DeleteDraftFromSheetsAsync(draftName);
-
-                var values = new List<IList<object>>();
-                if (!hasHeader) values.Add(new List<object> { "Vị trí cấu hình", "Tên hàng", "Model", "Mã SKU", "Xuất xứ", "Đơn vị", "Số lượng", "Đơn giá", "Thành tiền", "Giá nhập", "Danh mục", "Type", "Hãng", "Tiến độ", "Các thuộc tính", "Chi tiết đồng thanh cái" });
-                values.Add(new List<object> { draftName, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" });
-
-                // Lấy Full Path từ TreeView cho Cột A (Vị trí cấu hình)
-                string path = "";
-                if (_modernTreeView?.SelectedNode != null)
-                {
-                    path = _modernTreeView.SelectedNode.FullPath.Replace(_modernTreeView.PathSeparator, " - ");
-                }
-                if (string.IsNullOrWhiteSpace(path)) path = SelectedHeader;
-                if (string.IsNullOrWhiteSpace(path)) path = (_modernTreeView?.SelectedNode?.Text ?? "Sản phẩm đã chọn").Trim();
-
-                foreach (DataGridViewRow row in dgvSelectedItems.Rows)
-                {
-                    if (row.IsNewRow) continue;
-                    string name = row.Cells["colTen"].Value?.ToString()?.Trim() ?? "";
-                    if (string.IsNullOrEmpty(name)) continue;
-
-                    var entry = draftItems.FirstOrDefault(x => string.Equals(x.Item2?.Trim(), name, StringComparison.OrdinalIgnoreCase));
-                    string nts = entry?.Item4 ?? "";
-                    
-                    string rowFormId = row.Cells["colFormId"].Value?.ToString() ?? "";
-                    string itemPath = entry?.Item1 ?? path;
-                    if (rowFormId == "GLOBAL")
+                    var spreadsheetInfo = await _service.Spreadsheets.Get(_spreadsheetId).ExecuteAsync();
+                    var tSheet = spreadsheetInfo.Sheets.FirstOrDefault(s => s.Properties.Title == "Cấu hình nháp");
+                    int shId = 0;
+                    if (tSheet == null)
                     {
-                        itemPath = "GLOBAL";
+                        var addReq = new Google.Apis.Sheets.v4.Data.Request { AddSheet = new Google.Apis.Sheets.v4.Data.AddSheetRequest { Properties = new Google.Apis.Sheets.v4.Data.SheetProperties { Title = "Cấu hình nháp" } } };
+                        var resp = await _service.Spreadsheets.BatchUpdate(new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = new List<Google.Apis.Sheets.v4.Data.Request> { addReq } }, _spreadsheetId).ExecuteAsync();
+                        shId = resp.Replies[0].AddSheet.Properties.SheetId ?? 0;
+                    }
+                    else shId = tSheet.Properties.SheetId ?? 0;
+
+                    var hCheck = await _service.Spreadsheets.Values.Get(_spreadsheetId, "Cấu hình nháp!A1:A1").ExecuteAsync();
+                    bool hasHeader = hCheck.Values != null && hCheck.Values.Count > 0 && hCheck.Values[0][0]?.ToString() == "Vị trí cấu hình";
+
+                    // Xóa cũ if exists
+                    await DeleteDraftFromSheetsAsync(draftName);
+
+                    var values = new List<IList<object>>();
+                    if (!hasHeader) values.Add(new List<object> { "Vị trí cấu hình", "Tên hàng", "Model", "Mã SKU", "Xuất xứ", "Đơn vị", "Số lượng", "Đơn giá", "Thành tiền", "Giá nhập", "Danh mục", "Type", "Hãng", "Tiến độ", "Các thuộc tính", "Chi tiết đồng thanh cái" });
+                    values.Add(new List<object> { draftName, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" });
+
+                    // Lấy Full Path từ TreeView cho Cột A (Vị trí cấu hình)
+                    string path = "";
+                    if (_modernTreeView?.SelectedNode != null)
+                    {
+                        path = _modernTreeView.SelectedNode.FullPath.Replace(_modernTreeView.PathSeparator, " - ");
+                    }
+                    if (string.IsNullOrWhiteSpace(path)) path = SelectedHeader;
+                    if (string.IsNullOrWhiteSpace(path)) path = (_modernTreeView?.SelectedNode?.Text ?? "Sản phẩm đã chọn").Trim();
+
+                    foreach (DataGridViewRow row in dgvSelectedItems.Rows)
+                    {
+                        if (row.IsNewRow) continue;
+                        string name = row.Cells["colTen"].Value?.ToString()?.Trim() ?? "";
+                        if (string.IsNullOrEmpty(name)) continue;
+
+                        var entry = draftItems.FirstOrDefault(x => string.Equals(x.Item2?.Trim(), name, StringComparison.OrdinalIgnoreCase));
+                        string nts = entry?.Item4 ?? "";
+                        
+                        string rowFormId = row.Cells["colFormId"].Value?.ToString() ?? "";
+                        string itemPath = entry?.Item1 ?? path;
+                        if (rowFormId == "GLOBAL")
+                        {
+                            itemPath = "GLOBAL";
+                        }
+
+                        values.Add(BuildDraftSheetRowFromGrid(row, itemPath, nts));
                     }
 
-                    values.Add(BuildDraftSheetRowFromGrid(row, itemPath, nts));
-                }
+                    var vRange = new Google.Apis.Sheets.v4.Data.ValueRange { Values = values };
+                    var appReq = _service.Spreadsheets.Values.Append(vRange, _spreadsheetId, "Cấu hình nháp!A:P");
+                    appReq.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                    var appResp = await appReq.ExecuteAsync();
 
-                var vRange = new Google.Apis.Sheets.v4.Data.ValueRange { Values = values };
-                var appReq = _service.Spreadsheets.Values.Append(vRange, _spreadsheetId, "Cấu hình nháp!A:P");
-                appReq.ValueInputOption = Google.Apis.Sheets.v4.SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
-                var appResp = await appReq.ExecuteAsync();
-
-                // Format nền + màu chữ keyword
-                var match = System.Text.RegularExpressions.Regex.Match(appResp.Updates.UpdatedRange ?? "", @"[A-Za-z]+(\d+)");
-                if (match.Success)
-                {
-                    int startI = int.Parse(match.Groups[1].Value) - 1;
-                    int gI = hasHeader ? startI : startI + 1;
-                    var cReqs = new List<Google.Apis.Sheets.v4.Data.Request>();
-
-                    // ── Row header (nếu chưa có) ──
-                    if (!hasHeader)
-                        cReqs.Add(new Google.Apis.Sheets.v4.Data.Request
-                        {
-                            RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
-                            {
-                                Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = shId, StartRowIndex = startI, EndRowIndex = startI + 1, StartColumnIndex = 0, EndColumnIndex = 16 },
-                                Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 1f, Green = 0.9f, Blue = 0f }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true }, HorizontalAlignment = "CENTER" } },
-                                Fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
-                            }
-                        });
-
-                    // ── Row tên nháp (màu nền xanh lá) ──
-                    cReqs.Add(new Google.Apis.Sheets.v4.Data.Request
+                    // Format nền + màu chữ keyword
+                    var match = System.Text.RegularExpressions.Regex.Match(appResp.Updates.UpdatedRange ?? "", @"[A-Za-z]+(\d+)");
+                    if (match.Success)
                     {
-                        RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
-                        {
-                            Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = shId, StartRowIndex = gI, EndRowIndex = gI + 1, StartColumnIndex = 0, EndColumnIndex = 16 },
-                            Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.2f, Green = 0.8f, Blue = 0.2f }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true } } },
-                            Fields = "userEnteredFormat(backgroundColor,textFormat)"
-                        }
-                    });
+                        int startI = int.Parse(match.Groups[1].Value) - 1;
+                        int gI = hasHeader ? startI : startI + 1;
+                        var cReqs = new List<Google.Apis.Sheets.v4.Data.Request>();
 
-                    int dataRowStart = gI + 1;
-                    int rowOffset = 0;
-                    foreach (DataGridViewRow dgvRow in dgvSelectedItems.Rows)
-                    {
-                        if (dgvRow.IsNewRow) continue;
-                        string cellText = dgvRow.Cells["colTen"].Value?.ToString() ?? "";
-                        if (string.IsNullOrEmpty(cellText)) continue;
-
-                        // Kiểm tra nếu row có chữ màu đỏ (các dòng mặc định như Phụ kiện, Nhân công...)
-                        // NHƯNG bỏ qua dòng Vỏ tủ điện vì Vỏ tủ điện cần tô màu từng chữ (Rich Text)
-                        if ((dgvRow.DefaultCellStyle.ForeColor == Color.Red || dgvRow.Cells["colTen"].Style.ForeColor == Color.Red) && !cellText.StartsWith("Vỏ tủ điện"))
-                        {
+                        // ── Row header (nếu chưa có) ──
+                        if (!hasHeader)
                             cReqs.Add(new Google.Apis.Sheets.v4.Data.Request
                             {
                                 RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
                                 {
-                                    Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = shId, StartRowIndex = dataRowStart + rowOffset, EndRowIndex = dataRowStart + rowOffset + 1, StartColumnIndex = 0, EndColumnIndex = 16 },
-                                    Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { ForegroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.85f, Green = 0f, Blue = 0f } } } },
-                                    Fields = "userEnteredFormat(textFormat.foregroundColor)"
+                                    Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = shId, StartRowIndex = startI, EndRowIndex = startI + 1, StartColumnIndex = 0, EndColumnIndex = 16 },
+                                    Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 1f, Green = 0.9f, Blue = 0f }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true }, HorizontalAlignment = "CENTER" } },
+                                    Fields = "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)"
                                 }
                             });
-                        }
-                        else
+
+                        // ── Row tên nháp (màu nền xanh lá) ──
+                        cReqs.Add(new Google.Apis.Sheets.v4.Data.Request
                         {
-                            // Nếu là dòng bình thường (chữ đen), áp dụng highlight đỏ cho các keyword ở cột B (như Vỏ tủ)
-                            var richReqs = BuildRichTextUpdateRequests(shId, dataRowStart + rowOffset, 1, cellText);
-                            cReqs.AddRange(richReqs);
+                            RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                            {
+                                Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = shId, StartRowIndex = gI, EndRowIndex = gI + 1, StartColumnIndex = 0, EndColumnIndex = 16 },
+                                Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { BackgroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.2f, Green = 0.8f, Blue = 0.2f }, TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { Bold = true } } },
+                                Fields = "userEnteredFormat(backgroundColor,textFormat)"
+                            }
+                        });
+
+                        int dataRowStart = gI + 1;
+                        int rowOffset = 0;
+                        foreach (DataGridViewRow dgvRow in dgvSelectedItems.Rows)
+                        {
+                            if (dgvRow.IsNewRow) continue;
+                            string cellText = dgvRow.Cells["colTen"].Value?.ToString() ?? "";
+                            if (string.IsNullOrEmpty(cellText)) continue;
+
+                            // Kiểm tra nếu row có chữ màu đỏ (các dòng mặc định như Phụ kiện, Nhân công...)
+                            // NHƯNG bỏ qua dòng Vỏ tủ điện vì Vỏ tủ điện cần tô màu từng chữ (Rich Text)
+                            if ((dgvRow.DefaultCellStyle.ForeColor == Color.Red || dgvRow.Cells["colTen"].Style.ForeColor == Color.Red) && !cellText.StartsWith("Vỏ tủ điện"))
+                            {
+                                cReqs.Add(new Google.Apis.Sheets.v4.Data.Request
+                                {
+                                    RepeatCell = new Google.Apis.Sheets.v4.Data.RepeatCellRequest
+                                    {
+                                        Range = new Google.Apis.Sheets.v4.Data.GridRange { SheetId = shId, StartRowIndex = dataRowStart + rowOffset, EndRowIndex = dataRowStart + rowOffset + 1, StartColumnIndex = 0, EndColumnIndex = 16 },
+                                        Cell = new Google.Apis.Sheets.v4.Data.CellData { UserEnteredFormat = new Google.Apis.Sheets.v4.Data.CellFormat { TextFormat = new Google.Apis.Sheets.v4.Data.TextFormat { ForegroundColor = new Google.Apis.Sheets.v4.Data.Color { Red = 0.85f, Green = 0f, Blue = 0f } } } },
+                                        Fields = "userEnteredFormat(textFormat.foregroundColor)"
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                // Nếu là dòng bình thường (chữ đen), áp dụng highlight đỏ cho các keyword ở cột B (như Vỏ tủ)
+                                var richReqs = BuildRichTextUpdateRequests(shId, dataRowStart + rowOffset, 1, cellText);
+                                cReqs.AddRange(richReqs);
+                            }
+
+                            rowOffset++;
                         }
 
-                        rowOffset++;
+                        await _service.Spreadsheets.BatchUpdate(new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = cReqs }, _spreadsheetId).ExecuteAsync();
                     }
 
-                    await _service.Spreadsheets.BatchUpdate(new Google.Apis.Sheets.v4.Data.BatchUpdateSpreadsheetRequest { Requests = cReqs }, _spreadsheetId).ExecuteAsync();
+                    _expandStateCache.Clear(); _formProductsCache.Clear(); _currentDraftName = draftName;
+                    SyncGridToDraftGroups(); // Cập nhật lại cache sau khi lưu thành công
+                    return true;
                 }
-
-                _expandStateCache.Clear(); _formProductsCache.Clear(); _currentDraftName = draftName;
-                SyncGridToDraftGroups(); // Cập nhật lại cache sau khi lưu thành công
-                return true;
+                catch (Exception ex) { MessageBox.Show("Lỗi lưu nháp: " + ex.Message); return false; }
             }
-            catch (Exception ex) { MessageBox.Show("Lỗi lưu nháp: " + ex.Message); return false; }
         }
 
         /// <summary>
@@ -3642,7 +3645,10 @@ namespace ECQ_Soft
 
             try
             {
-                await LoadDataAsync(_service, _spreadsheetId);
+                using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật dữ liệu cấu hình nâng cao..."))
+                {
+                    await LoadDataAsync(_service, _spreadsheetId);
+                }
             }
             catch (Exception ex)
             {
