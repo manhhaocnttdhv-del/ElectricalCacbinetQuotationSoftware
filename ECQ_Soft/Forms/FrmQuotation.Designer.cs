@@ -120,7 +120,7 @@ namespace ECQ_Soft
             // 
             this.gbGiaVon.Controls.Add(this.label9);
             this.gbGiaVon.Controls.Add(this.txtGiaVon);
-            this.gbGiaVon.Location = new System.Drawing.Point(684, 106);
+            this.gbGiaVon.Location = new System.Drawing.Point(529, 106);
             this.gbGiaVon.Margin = new System.Windows.Forms.Padding(2);
             this.gbGiaVon.Name = "gbGiaVon";
             this.gbGiaVon.Padding = new System.Windows.Forms.Padding(2);
@@ -154,7 +154,7 @@ namespace ECQ_Soft
             // 
             this.gbGiaBanVPA.Controls.Add(this.label8);
             this.gbGiaBanVPA.Controls.Add(this.txtGiaBanVPA);
-            this.gbGiaBanVPA.Location = new System.Drawing.Point(1023, 106);
+            this.gbGiaBanVPA.Location = new System.Drawing.Point(869, 106);
             this.gbGiaBanVPA.Margin = new System.Windows.Forms.Padding(2);
             this.gbGiaBanVPA.Name = "gbGiaBanVPA";
             this.gbGiaBanVPA.Padding = new System.Windows.Forms.Padding(2);
@@ -186,11 +186,11 @@ namespace ECQ_Soft
             // btnReload
             // 
             this.btnReload.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnReload.Location = new System.Drawing.Point(1224, 37);
+            this.btnReload.Location = new System.Drawing.Point(1044, 37);
             this.btnReload.Margin = new System.Windows.Forms.Padding(2);
             this.btnReload.Name = "btnReload";
             this.btnReload.Size = new System.Drawing.Size(128, 54);
-            this.btnReload.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnReload.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.btnReload.TabIndex = 24;
             this.btnReload.Text = "Tải lại";
             this.btnReload.UseVisualStyleBackColor = true;
@@ -200,7 +200,7 @@ namespace ECQ_Soft
             // 
             this.gpGiaBan.Controls.Add(this.label6);
             this.gpGiaBan.Controls.Add(this.txtGiaBan);
-            this.gpGiaBan.Location = new System.Drawing.Point(854, 106);
+            this.gpGiaBan.Location = new System.Drawing.Point(699, 106);
             this.gpGiaBan.Margin = new System.Windows.Forms.Padding(2);
             this.gpGiaBan.Name = "gpGiaBan";
             this.gpGiaBan.Padding = new System.Windows.Forms.Padding(2);
@@ -233,11 +233,11 @@ namespace ECQ_Soft
             // 
             this.gpSonMa.Controls.Add(this.label13);
             this.gpSonMa.Controls.Add(this.txtSonMa);
-            this.gpSonMa.Location = new System.Drawing.Point(345, 106);
+            this.gpSonMa.Location = new System.Drawing.Point(189, 106);
             this.gpSonMa.Margin = new System.Windows.Forms.Padding(2);
             this.gpSonMa.Name = "gpSonMa";
             this.gpSonMa.Padding = new System.Windows.Forms.Padding(2);
-            this.gpSonMa.Size = new System.Drawing.Size(165, 81);
+            this.gpSonMa.Size = new System.Drawing.Size(165, 88);
             this.gpSonMa.TabIndex = 33;
             this.gpSonMa.TabStop = false;
             this.gpSonMa.Text = "Chi phí Sơn/ Mạ";
@@ -246,7 +246,7 @@ namespace ECQ_Soft
             // 
             this.label13.AutoSize = true;
             this.label13.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular);
-            this.label13.Location = new System.Drawing.Point(8, 23);
+            this.label13.Location = new System.Drawing.Point(8, 24);
             this.label13.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(160, 19);
@@ -256,7 +256,7 @@ namespace ECQ_Soft
             // txtSonMa
             // 
             this.txtSonMa.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtSonMa.Location = new System.Drawing.Point(11, 48);
+            this.txtSonMa.Location = new System.Drawing.Point(11, 50);
             this.txtSonMa.Margin = new System.Windows.Forms.Padding(2);
             this.txtSonMa.Name = "txtSonMa";
             this.txtSonMa.Size = new System.Drawing.Size(138, 26);
@@ -265,11 +265,11 @@ namespace ECQ_Soft
             // btnUpdate
             // 
             this.btnUpdate.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnUpdate.Location = new System.Drawing.Point(1224, 162);
+            this.btnUpdate.Location = new System.Drawing.Point(1044, 162);
             this.btnUpdate.Margin = new System.Windows.Forms.Padding(2);
             this.btnUpdate.Name = "btnUpdate";
             this.btnUpdate.Size = new System.Drawing.Size(128, 31);
-            this.btnUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.btnUpdate.TabIndex = 24;
             this.btnUpdate.Text = "Cập nhật giá";
             this.btnUpdate.UseVisualStyleBackColor = true;
@@ -279,11 +279,11 @@ namespace ECQ_Soft
             // 
             this.gpChiPhiKhac.Controls.Add(this.label14);
             this.gpChiPhiKhac.Controls.Add(this.txtChiphikhac);
-            this.gpChiPhiKhac.Location = new System.Drawing.Point(514, 106);
+            this.gpChiPhiKhac.Location = new System.Drawing.Point(359, 106);
             this.gpChiPhiKhac.Margin = new System.Windows.Forms.Padding(2);
             this.gpChiPhiKhac.Name = "gpChiPhiKhac";
             this.gpChiPhiKhac.Padding = new System.Windows.Forms.Padding(2);
-            this.gpChiPhiKhac.Size = new System.Drawing.Size(165, 81);
+            this.gpChiPhiKhac.Size = new System.Drawing.Size(165, 88);
             this.gpChiPhiKhac.TabIndex = 26;
             this.gpChiPhiKhac.TabStop = false;
             this.gpChiPhiKhac.Text = "Chi phí khác";
@@ -317,7 +317,7 @@ namespace ECQ_Soft
             this.groupBox3.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox3.Size = new System.Drawing.Size(336, 88);
+            this.groupBox3.Size = new System.Drawing.Size(180, 88);
             this.groupBox3.TabIndex = 25;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Bề mặt Sơn/ Mạ";
@@ -326,7 +326,7 @@ namespace ECQ_Soft
             // 
             this.rbNone.AutoSize = true;
             this.rbNone.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.rbNone.Location = new System.Drawing.Point(7, 50);
+            this.rbNone.Location = new System.Drawing.Point(7, 62);
             this.rbNone.Margin = new System.Windows.Forms.Padding(2);
             this.rbNone.Name = "rbNone";
             this.rbNone.Size = new System.Drawing.Size(160, 23);
@@ -340,7 +340,7 @@ namespace ECQ_Soft
             // 
             this.rbMa.AutoSize = true;
             this.rbMa.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.rbMa.Location = new System.Drawing.Point(180, 24);
+            this.rbMa.Location = new System.Drawing.Point(7, 41);
             this.rbMa.Margin = new System.Windows.Forms.Padding(2);
             this.rbMa.Name = "rbMa";
             this.rbMa.Size = new System.Drawing.Size(150, 23);
@@ -354,7 +354,7 @@ namespace ECQ_Soft
             // 
             this.rbSon.AutoSize = true;
             this.rbSon.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.rbSon.Location = new System.Drawing.Point(7, 24);
+            this.rbSon.Location = new System.Drawing.Point(7, 20);
             this.rbSon.Margin = new System.Windows.Forms.Padding(2);
             this.rbSon.Name = "rbSon";
             this.rbSon.Size = new System.Drawing.Size(105, 23);
@@ -422,8 +422,8 @@ namespace ECQ_Soft
             this.cboCabinetType.Location = new System.Drawing.Point(247, 66);
             this.cboCabinetType.Margin = new System.Windows.Forms.Padding(2);
             this.cboCabinetType.Name = "cboCabinetType";
-            this.cboCabinetType.Size = new System.Drawing.Size(942, 27);
-            this.cboCabinetType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.cboCabinetType.Size = new System.Drawing.Size(780, 27);
+            this.cboCabinetType.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.cboCabinetType.TabIndex = 7;
             this.cboCabinetType.SelectedIndexChanged += new System.EventHandler(this.cboCabinetType_SelectedIndexChanged);
             // 
@@ -445,8 +445,8 @@ namespace ECQ_Soft
             this.cboMaterial.Location = new System.Drawing.Point(247, 37);
             this.cboMaterial.Margin = new System.Windows.Forms.Padding(2);
             this.cboMaterial.Name = "cboMaterial";
-            this.cboMaterial.Size = new System.Drawing.Size(942, 27);
-            this.cboMaterial.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.cboMaterial.Size = new System.Drawing.Size(780, 27);
+            this.cboMaterial.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.cboMaterial.TabIndex = 5;
             this.cboMaterial.SelectedIndexChanged += new System.EventHandler(this.cboMaterial_SelectedIndexChanged);
             // 

@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using System.ComponentModel;
 using Excel = Microsoft.Office.Interop.Excel;
 using ECQ_Soft.Helpers;
+using ECQ_Soft.Services;
 
 namespace ECQ_Soft
 {
@@ -147,6 +148,9 @@ namespace ECQ_Soft
         private List<ConfigProductItem> _displayList = new List<ConfigProductItem>();
 
         private Form _popupQuoteForm = null;
+        private TabControl _configTabs;
+        private TabPage _buildConfigTabPage;
+        private TabPage _quotationTabPage;
 
         // ══════════════════════════════════════════════════════════════════
         // KHỞI TẠO FORM
@@ -158,6 +162,8 @@ namespace ECQ_Soft
         public FrmConfig()
         {
             InitializeComponent();
+            Utils.FunctionUtils.SetDoubleBufferedRecursive(this);
+            ConfigureConfigTabs();
             dgvParentProducts.CellValueChanged += DgvParentProducts_CellValueChanged;
             dgvParentProducts.CurrentCellDirtyStateChanged += DgvParentProducts_CurrentCellDirtyStateChanged;
 
@@ -562,9 +568,49 @@ namespace ECQ_Soft
             };
         }
 
-        // ══════════════════════════════════════════════════════════════════
+        private void ConfigureConfigTabs()
+        {
+            if (_configTabs != null) return;
 
-        // Bỏ DgvParentProducts_RowPostPaint vì đã gộp vào CabinetCellPainting
+            Control parent = splitMain.Parent ?? this;
+            int childIndex = parent.Controls.GetChildIndex(splitMain);
+
+            splitMain.Panel1.Controls.Remove(groupBox1);
+            splitMain.Panel2.Controls.Remove(groupBox2);
+            parent.Controls.Remove(splitMain);
+
+            _configTabs = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Padding = new Point(18, 6),
+                HotTrack = true
+            };
+
+            _buildConfigTabPage = new TabPage("Xây dựng cấu hình")
+            {
+                BackColor = Color.White,
+                Padding = new Padding(6)
+            };
+
+            _quotationTabPage = new TabPage("Bảng báo giá / dự toán")
+            {
+                BackColor = Color.White,
+                Padding = new Padding(6)
+            };
+
+            groupBox1.Dock = DockStyle.Fill;
+            groupBox2.Dock = DockStyle.Fill;
+            _buildConfigTabPage.Controls.Add(groupBox1);
+            _quotationTabPage.Controls.Add(groupBox2);
+
+            _configTabs.TabPages.Add(_buildConfigTabPage);
+            _configTabs.TabPages.Add(_quotationTabPage);
+
+            parent.Controls.Add(_configTabs);
+            parent.Controls.SetChildIndex(_configTabs, childIndex);
+            splitMain.Visible = false;
+        }
 
         // EVENT HANDLERS – DataGridView
         // ══════════════════════════════════════════════════════════════════
@@ -607,6 +653,47 @@ namespace ECQ_Soft
         /// Chỉ gọi một lần; các lần sau dùng lại instance đã có.
         /// </summary>
         private void InitGoogleSheetsService()
+        {
+            if (_sheetsService != null) return;
+            try
+            {
+                var credential = Services.GoogleCredentialCache.GetCredential("config.json");
+
+                _sheetsService = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "GSheetConfig",
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi không xác định khi kết nối Google Sheets.\n\n" + ex.Message,
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void RestoreQuotationTab()
+        {
+            if (_quotationTabPage == null || groupBox2 == null || groupBox2.IsDisposed) return;
+
+            if (groupBox2.Parent != null)
+            {
+                groupBox2.Parent.Controls.Remove(groupBox2);
+            }
+
+            groupBox2.Dock = DockStyle.Fill;
+            _quotationTabPage.Controls.Add(groupBox2);
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // KẾT NỐI GOOGLE SHEETS
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Khởi tạo _sheetsService từ file config.json (Service Account credentials).
+        /// Chỉ gọi một lần; các lần sau dùng lại instance đã có.
+        /// </summary>
+        private void InitGoogleSheetsService_Legacy()
         {
             try
             {
@@ -667,6 +754,58 @@ namespace ECQ_Soft
             {
                 await SetConfigSheet(selectedSheet);
             }
+        }
+
+        private void ApplyPermissions()
+        {
+            bool hasAddProduct = ECQ_Soft.Helper.UserSession.HasPermission("quotation:add_product");
+            bool hasAdvancedConfig = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config");
+            bool hasSaveToQuote = ECQ_Soft.Helper.UserSession.HasPermission("quotation:save_to_quote");
+            bool hasClearAllConfig = ECQ_Soft.Helper.UserSession.HasPermission("quotation:clear_all");
+            bool hasPackConfig = ECQ_Soft.Helper.UserSession.HasPermission("config:pack_config");
+            bool hasLoadConfig = ECQ_Soft.Helper.UserSession.HasPermission("config:load_config");
+            bool hasSaveQuote = ECQ_Soft.Helper.UserSession.HasPermission("config:save_quote");
+            bool hasClearAllQuote = ECQ_Soft.Helper.UserSession.HasPermission("config:clear_all");
+            bool hasExportExcel = ECQ_Soft.Helper.UserSession.HasPermission("config:export_excel");
+            bool hasChangeSheet = ECQ_Soft.Helper.UserSession.HasPermission("config:change_sheet");
+
+            // Panel 1: XÂY DỰNG CẤU HÌNH
+            btnOpenSearchModal.Enabled = hasAddProduct;
+            if (!hasAddProduct) btnOpenSearchModal.BackColor = Color.Gray;
+
+            btnAdvancedConfigBuild.Enabled = hasAdvancedConfig;
+            if (!hasAdvancedConfig) btnAdvancedConfigBuild.BackColor = Color.Gray;
+
+            btn_baogia.Enabled = hasSaveToQuote;
+            if (!hasSaveToQuote) btn_baogia.BackColor = Color.Gray;
+
+            button7.Enabled = hasClearAllConfig;
+            if (!hasClearAllConfig) button7.BackColor = Color.Gray;
+
+            button3.Enabled = hasPackConfig;
+            if (!hasPackConfig) button3.BackColor = Color.Gray;
+
+            // Panel 2: BẢNG BÁO GIÁ/ DỰ TOÁN
+            btnOpenSearchModalForQuote.Enabled = hasAddProduct;
+            if (!hasAddProduct) btnOpenSearchModalForQuote.BackColor = Color.Gray;
+
+            btnAdvancedConfigForQuotation.Enabled = hasAdvancedConfig;
+            if (!hasAdvancedConfig) btnAdvancedConfigForQuotation.BackColor = Color.Gray;
+
+            button5.Enabled = hasSaveQuote;
+            if (!hasSaveQuote) button5.BackColor = Color.Gray;
+
+            button4.Enabled = hasClearAllQuote;
+            if (!hasClearAllQuote) button4.BackColor = Color.Gray;
+
+            button10.Enabled = hasExportExcel;
+            if (!hasExportExcel) button10.BackColor = Color.Gray;
+
+            btnChangeSheet.Enabled = hasChangeSheet;
+            if (!hasChangeSheet) btnChangeSheet.BackColor = Color.Gray;
+
+            button6.Enabled = hasLoadConfig;
+            if (!hasLoadConfig) button6.BackColor = Color.Gray;
         }
 
         private void FrmConfig_Load(object sender, EventArgs e)
@@ -744,6 +883,8 @@ namespace ECQ_Soft
 
             // Load danh sách Donggoi_ vào comboBox1
             _ = LoadDonggoiSheetsToComboAsync();
+
+            ApplyPermissions();
         }
 
 
@@ -1973,13 +2114,19 @@ namespace ECQ_Soft
             {
                 if (frm.ShowDialog(this) == DialogResult.OK)
                 {
-                    using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang đóng gói \"{frm.ConfigName}\" lên Google Sheets..."))
+                    using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang đóng gói \"{frm.ConfigName}\" lên Google Sheets và CSDL..."))
                     {
                         try
                         {
                             bool saved = await SaveConfigToSpecificSheetAsync(frm.SheetName, frm.ConfigName, frm.IsOverwrite);
                             if (saved)
                             {
+                                DatabaseService.SaveBuildConfigFromProducts(
+                                    frm.ConfigName,
+                                    frm.SheetName,
+                                    spreadsheetId,
+                                    childProducts.ToList(),
+                                    frm.IsOverwrite);
                                 // Cập nhật lại list Donggoi_ ở comboBox1
                                 await LoadDonggoiSheetsToComboAsync();
 
@@ -2010,7 +2157,11 @@ namespace ECQ_Soft
                 return;
             }
 
-            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu báo giá lên Google Sheets..."))
+            string originalSaveText = button5.Text;
+            button5.Enabled = false;
+            button5.Text = "Đang lưu...";
+
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang lưu báo giá lên Google Sheets và CSDL..."))
             {
                 try
                 {
@@ -2026,6 +2177,11 @@ namespace ECQ_Soft
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Lỗi khi lưu báo giá: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    button5.Text = originalSaveText;
+                    button5.Enabled = true;
                 }
             }
         }
@@ -2218,6 +2374,21 @@ namespace ECQ_Soft
 
             // 6. Formatting
             await ApplyQuotationFormattingAsync(configSheetName, headerRowIndices, summaryRowIndices, allRows, finalItems);
+
+            ECQ_Soft.Helper.LoadingOverlay.Show(this, "Đang lưu báo giá xuống CSDL...");
+            try
+            {
+                DatabaseService.SaveBuildConfigFromConfigItems(
+                    configSheetName,
+                    configSheetName,
+                    spreadsheetId,
+                    finalItems,
+                    allProducts);
+            }
+            finally
+            {
+                ECQ_Soft.Helper.LoadingOverlay.Hide();
+            }
 
             return true;
         }
@@ -4914,11 +5085,9 @@ namespace ECQ_Soft
             _popupQuoteForm.FormClosing += (s, ev) => {
                 if (!this.IsDisposed)
                 {
-                    splitMain.Panel2.Controls.Add(groupBox2);
+                    RestoreQuotationTab();
                 }
             };
-            
-            splitMain.Panel2Collapsed = true;
             _popupQuoteForm.Show();
         }
 

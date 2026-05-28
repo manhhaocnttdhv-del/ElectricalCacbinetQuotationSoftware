@@ -1,4 +1,4 @@
-﻿namespace ECQ_Soft
+namespace ECQ_Soft
 {
     partial class FrmLogin
     {
@@ -123,6 +123,7 @@
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // FrmLogin
             // 
@@ -130,6 +131,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(567, 806);
+            this.ControlBox = false;
             this.Controls.Add(this.btnLogin);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.pictureBox1);
@@ -138,7 +140,6 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "ECQ Soft";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FrmLogin_FormClosed);
-            this.Load += new System.EventHandler(this.FrmLogin_Load_1);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();

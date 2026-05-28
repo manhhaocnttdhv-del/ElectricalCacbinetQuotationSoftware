@@ -8,6 +8,8 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using ECQ_Soft.Helper;
+using ECQ_Soft.Services;
+using ECQ_Soft.Utils;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 
@@ -26,12 +28,16 @@ namespace ECQ_Soft
         /// <summary>Danh sách quan hệ sản phẩm chính – sản phẩm con (relation PR).</summary>
         private List<RelationItem> productRelations = new List<RelationItem>();
         string configSheetName = null;
+        private const string SearchPlaceholderText = "Nhập tên, model hoặc SKU...";
+        private bool _searchPlaceholderActive;
         /// <summary>Trả về đường dẫn file cache JSON cho một key dữ liệu cụ thể.</summary>
         private string GetCachePath(string key) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"cache_{key}_{configSheetName ?? "global"}.json");
 
         public FrmRelation()
         {
             InitializeComponent();
+            Utils.FunctionUtils.SetDoubleBufferedRecursive(this);
+            ConfigureSearchPanel();
 
             // Luôn format lại grid sau mỗi lần bind dữ liệu
             dgvAllProducts.DataBindingComplete += (s, e) => FormatDataGridView(dgvAllProducts);
@@ -39,18 +45,122 @@ namespace ECQ_Soft
             dgvChildProducts.DataBindingComplete += (s, e) => FormatDataGridView(dgvChildProducts);
         }
 
+        private void ConfigureSearchPanel()
+        {
+            pnlTop.SuspendLayout();
+            pnlTop.Controls.Clear();
+            pnlTop.Height = 72;
+            pnlTop.Padding = new Padding(12, 10, 12, 10);
+            pnlTop.BackColor = Color.White;
+
+            var filterPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoScroll = false,
+                BackColor = Color.White,
+                Padding = new Padding(0, 6, 0, 0),
+                Margin = Padding.Empty
+            };
+
+            StyleSearchLabel(label1, "Tên:");
+            StyleSearchLabel(label2, "Hãng:");
+            StyleSearchLabel(label3, "Danh mục:");
+            StyleSearchTextBox(textBox1, 260);
+            StyleSearchCombo(comboBox2, 190);
+            StyleSearchCombo(comboBox1, 260);
+            StyleSearchButton(btnSearch);
+
+            filterPanel.Controls.Add(label1);
+            filterPanel.Controls.Add(textBox1);
+            filterPanel.Controls.Add(label2);
+            filterPanel.Controls.Add(comboBox2);
+            filterPanel.Controls.Add(label3);
+            filterPanel.Controls.Add(comboBox1);
+            filterPanel.Controls.Add(btnSearch);
+            pnlTop.Controls.Add(filterPanel);
+
+            textBox1.Enter += (s, e) => ClearSearchPlaceholder();
+            textBox1.Leave += (s, e) => SetSearchPlaceholder();
+            textBox1.KeyDown += SearchTextBox_KeyDown;
+            SetSearchPlaceholder();
+
+            pnlTop.ResumeLayout();
+        }
+
+        private void StyleSearchLabel(Label label, string text)
+        {
+            label.Text = text;
+            label.AutoSize = true;
+            label.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+            label.ForeColor = Color.FromArgb(31, 41, 55);
+            label.Margin = new Padding(0, 8, 8, 0);
+        }
+
+        private void StyleSearchTextBox(TextBox textBox, int width)
+        {
+            textBox.Width = width;
+            textBox.Height = 30;
+            textBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+            textBox.Margin = new Padding(0, 4, 20, 0);
+        }
+
+        private void StyleSearchCombo(ComboBox comboBox, int width)
+        {
+            comboBox.Width = width;
+            comboBox.Height = 30;
+            comboBox.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+            comboBox.Margin = new Padding(0, 4, 20, 0);
+        }
+
+        private void StyleSearchButton(Button button)
+        {
+            button.Width = 116;
+            button.Height = 34;
+            button.Margin = new Padding(0, 2, 0, 0);
+            button.Text = "Tìm kiếm";
+            button.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
+            UIService.StyleFlatButton(button, primary: true);
+        }
+
+        private void SetSearchPlaceholder()
+        {
+            if (!string.IsNullOrWhiteSpace(textBox1.Text) && !_searchPlaceholderActive) return;
+
+            _searchPlaceholderActive = true;
+            textBox1.Text = SearchPlaceholderText;
+            textBox1.ForeColor = AppConstant.Ui.MutedTextColor;
+        }
+
+        private void ClearSearchPlaceholder()
+        {
+            if (!_searchPlaceholderActive) return;
+
+            _searchPlaceholderActive = false;
+            textBox1.Text = string.Empty;
+            textBox1.ForeColor = Color.FromArgb(17, 24, 39);
+        }
+
+        private string GetSearchText()
+        {
+            return _searchPlaceholderActive ? string.Empty : textBox1.Text.ToLower().Trim();
+        }
+
+        private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter) return;
+
+            e.SuppressKeyPress = true;
+            BtnSearch_Click(btnSearch, EventArgs.Empty);
+        }
+
         private void InitGoogleSheetsService()
         {
+            if (_sheetsService != null) return;
             try
             {
-                GoogleCredential credential;
-
-                using (var stream = new FileStream("config.json", FileMode.Open, FileAccess.Read))
-                {
-                    credential = GoogleCredential.FromStream(stream)
-                        .CreateScoped(SheetsService.Scope.Spreadsheets);
-                }
-
+                var credential = Services.GoogleCredentialCache.GetCredential("config.json");
 
                 _sheetsService = new SheetsService(new BaseClientService.Initializer()
                 {
@@ -80,6 +190,40 @@ namespace ECQ_Soft
             }
         }
 
+        private void ApplyPermissions()
+        {
+            bool canView = ECQ_Soft.Helper.UserSession.HasPermission("relation:view");
+            bool canEdit = ECQ_Soft.Helper.UserSession.HasPermission("relation:edit");
+            bool canSave = ECQ_Soft.Helper.UserSession.HasPermission("relation:save");
+
+            if (!canView)
+            {
+                btnSearch.Enabled = false;
+                btnSearch.BackColor = Color.Gray;
+                dgvAllProducts.Visible = false;
+                MessageBox.Show("Bạn không có quyền xem thông tin liên kết sản phẩm!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            btnAddParent.Enabled = canEdit;
+            btnAddChild.Enabled = canEdit;
+            btnRemoveParent.Enabled = canEdit;
+            btnRemoveChild.Enabled = canEdit;
+
+            if (!canEdit)
+            {
+                btnAddParent.BackColor = Color.Gray;
+                btnAddChild.BackColor = Color.Gray;
+                btnRemoveParent.BackColor = Color.Gray;
+                btnRemoveChild.BackColor = Color.Gray;
+            }
+
+            btnSaveRelation.Enabled = canSave;
+            if (!canSave)
+            {
+                btnSaveRelation.BackColor = Color.Gray;
+            }
+        }
+
         private void FrmRelation_Load(object sender, EventArgs e)
         {
             InitGoogleSheetsService();
@@ -92,6 +236,8 @@ namespace ECQ_Soft
             btnSaveRelation.Click += BtnSaveRelation_Click;
             btnRemoveParent.Click += BtnRemoveParent_Click;
             btnRemoveChild.Click += BtnRemoveChild_Click;
+
+            ApplyPermissions();
         }
 
         public async Task LoadDataAsync()
@@ -243,7 +389,7 @@ namespace ECQ_Soft
 
         private void BtnSearch_Click(object sender, EventArgs e)
         {
-            string searchText = textBox1.Text.ToLower().Trim();
+            string searchText = GetSearchText();
             string selectedBrand = comboBox2.SelectedItem?.ToString();
             // Dùng SelectedFullPath thay vì SelectedValue (CategoryTreeDropdown không có SelectedValue)
             string selectedCategoryPath = comboBox1.SelectedFullPath;

@@ -24,6 +24,7 @@ namespace ECQ_Soft
         private List<HierarchyNode> _rootNodes = new List<HierarchyNode>();
         private SheetsService _service;
         private string _spreadsheetId;
+        private bool _isLoadingDraftOrDefaults = false;
 
         // Danh sách sản phẩm để hỗ trợ tính năng search trong expand panel
         private List<Products> _allProducts = new List<Products>();
@@ -87,7 +88,16 @@ namespace ECQ_Soft
                 // Luôn mở form ở chế độ Full Màn Hình (Maximized)
                 this.WindowState = FormWindowState.Maximized;
 
-                InitDefaultRows();
+                _isLoadingDraftOrDefaults = true;
+                try
+                {
+                    InitDefaultRows();
+                }
+                finally
+                {
+                    _isLoadingDraftOrDefaults = false;
+                }
+                ApplyPermissions();
             };
         }
 
@@ -95,6 +105,12 @@ namespace ECQ_Soft
 
         private async void BtnUpdateDraft_Click(object sender, EventArgs e)
         {
+            if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:update_name"))
+            {
+                MessageBox.Show("Bạn không có quyền cập nhật tên cấu hình nháp!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string draftName = txtDraftName.Text.Trim();
             if (string.IsNullOrEmpty(draftName))
             {
@@ -928,10 +944,13 @@ namespace ECQ_Soft
                     {
                         if (dgvDrafts.CurrentRow != null)
                         {
-                            string selectedItem = dgvDrafts.CurrentRow.Cells["colInfo"].Value.ToString();
-                            string draftKey = selectedItem.Substring(0, selectedItem.LastIndexOf('(')).Trim();
-                            _currentDraftName = draftKey;
-                            _originalDraftName = draftKey;
+                            _isLoadingDraftOrDefaults = true;
+                            try
+                            {
+                                string selectedItem = dgvDrafts.CurrentRow.Cells["colInfo"].Value.ToString();
+                                string draftKey = selectedItem.Substring(0, selectedItem.LastIndexOf('(')).Trim();
+                                _currentDraftName = draftKey;
+                                _originalDraftName = draftKey;
                             txtDraftName.Text = draftKey;
 
                             // Xóa toàn bộ các dòng không phải là pinned/mặc định ra khỏi Grid trước khi tải
@@ -1108,6 +1127,11 @@ namespace ECQ_Soft
                             ScanAndFixCabinetRowHeights(); // đảm bảo hiển thị đúng màu sau khi load
                             modal.DialogResult = DialogResult.OK;
                             modal.Close();
+                            }
+                            finally
+                            {
+                                _isLoadingDraftOrDefaults = false;
+                            }
                         }
                     };
 
@@ -1385,6 +1409,12 @@ namespace ECQ_Soft
             // Nút XÁC NHẬN -> trả danh sách sản phẩm đã chọn
             btnApply.Click += async (s, e) =>
             {
+                if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:apply"))
+                {
+                    MessageBox.Show("Bạn không có quyền xác nhận cấu hình!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 // Thu thập tất cả các dòng trong grid kèm chi tiết
                 SelectedAdvancedItems = new List<AdvancedConfigResultItem>();
 
@@ -1470,6 +1500,11 @@ namespace ECQ_Soft
             {
                 if (e.ColumnIndex == dgvSelectedItems.Columns["colXoa"].Index && e.RowIndex >= 0)
                 {
+                    if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:delete_item"))
+                    {
+                        MessageBox.Show("Bạn không có quyền xóa thiết bị khỏi cấu hình!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
                     dgvSelectedItems.Rows.RemoveAt(e.RowIndex);
                     ResetCalculatedRows(); // Tự động reset Vỏ tủ & Busbar khi thay đổi thiết bị
                     btnApply.Enabled = dgvSelectedItems.Rows.Count > 0;
@@ -3023,10 +3058,6 @@ namespace ECQ_Soft
                             "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
-                    using (var editor = new FrmBusbarSheetEditor(_service, _spreadsheetId))
-                    {
-                        editor.ShowDialog(frm);
-                    }
                 });
                 ctxMenu.Items.Add("🌐 Mở Google Sheets (trực tiếp)", null, (s, ev) =>
                 {
@@ -3034,10 +3065,6 @@ namespace ECQ_Soft
                     {
                         MessageBox.Show("Chưa có thông tin Spreadsheet.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
-                    }
-                    using (var webFrm = new FrmBusbarWebView(_spreadsheetId, _service))
-                    {
-                        webFrm.ShowDialog(frm);
                     }
                 });
                 dgv.ContextMenuStrip = ctxMenu;
@@ -3218,6 +3245,11 @@ namespace ECQ_Soft
 
         private async void BtnLuuNhap_Click(object sender, EventArgs e)
         {
+            if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item"))
+            {
+                MessageBox.Show("Bạn không có quyền lưu cấu hình nháp!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             await HandleSaveDraftFlowAsync(null);
         }
 
@@ -3633,6 +3665,12 @@ namespace ECQ_Soft
         /// </summary>
         private async void BtnReload_Click(object sender, EventArgs e)
         {
+            if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:reload"))
+            {
+                MessageBox.Show("Bạn không có quyền tải lại dữ liệu từ Sheets!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             btnReload.Enabled = false;
             btnReload.Text = "⟳ Đang tải...";
 
@@ -4141,8 +4179,14 @@ namespace ECQ_Soft
                     Margin = new System.Windows.Forms.Padding(0, 5, 8, 0) // Giảm margin từ 10 -> 8
                 };
                 cbo.LoadData(products);
+                cbo.Enabled = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item");
                 cbo.ProductSelected += (s, p) =>
                 {
+                    if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item"))
+                    {
+                        MessageBox.Show("Bạn không có quyền thêm thiết bị vào danh sách cấu hình!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
                     row.SelectedProduct = p;
                     PopulateAttrPanelRow(row, p, attrKeys);
                     AutoAddProductToGrid(row, p, txtQty.Text, attrKeys, formula); // Tính năng auto add
@@ -4841,6 +4885,12 @@ namespace ECQ_Soft
 
         private void AddTextValueToList()
         {
+            if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item"))
+            {
+                MessageBox.Show("Bạn không có quyền thêm thiết bị vào danh sách cấu hình!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string val = _txtSearch?.Text?.Trim();
             if (string.IsNullOrEmpty(val)) return;
             string configVal = _expandedNode?.Config ?? "";
@@ -4918,10 +4968,13 @@ namespace ECQ_Soft
 
         private void SwitchFormContext(TreeNode oldForm, TreeNode newForm)
         {
-            string newPath = newForm?.FullPath ?? "";
-            var clearedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _isLoadingDraftOrDefaults = true;
+            try
+            {
+                string newPath = newForm?.FullPath ?? "";
+                var clearedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // 1. Lưu và xóa sản phẩm không thuộc về Form mới
+                // 1. Lưu và xóa sản phẩm không thuộc về Form mới
             var rowsToRemove = new List<DataGridViewRow>();
             foreach (DataGridViewRow row in dgvSelectedItems.Rows)
             {
@@ -5023,6 +5076,11 @@ namespace ECQ_Soft
             }
 
             RenumberGridSTT();
+            }
+            finally
+            {
+                _isLoadingDraftOrDefaults = false;
+            }
         }
 
         private void UpdateExpandStateGridReference(string itemName, DataGridViewRow newRow)
@@ -5165,6 +5223,12 @@ namespace ECQ_Soft
         /// </summary>
         private void DgvSearchResults_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item"))
+            {
+                MessageBox.Show("Bạn không có quyền thêm thiết bị vào danh sách cấu hình!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (e.RowIndex < 0) return;
             var row = _dgvSearchResults.Rows[e.RowIndex];
             if (!(row.Tag is Products p)) return;
@@ -5200,6 +5264,12 @@ namespace ECQ_Soft
 
         private void BtnThem_Phase2_Click(object sender, EventArgs e)
         {
+            if (!ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item"))
+            {
+                MessageBox.Show("Bạn không có quyền thêm thiết bị vào danh sách cấu hình!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string prefix = GetNodePathPrefix();
             string configRaw = _expandedNode?.Config ?? "";
             string formula = _expandedNode?.Formula ?? "";
@@ -5429,6 +5499,26 @@ namespace ECQ_Soft
             {
                 _modernTreeView.SelectedNode = lastFound;
                 lastFound.EnsureVisible();
+            }
+        }
+
+        private void ApplyPermissions()
+        {
+            bool hasUpdateName = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:update_name");
+            bool hasApply = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:apply");
+            bool hasReload = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:reload");
+            bool hasAddItem = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:add_item");
+            bool hasDeleteItem = ECQ_Soft.Helper.UserSession.HasPermission("quotation:advanced_config:delete_item");
+
+            txtDraftName.ReadOnly = !hasUpdateName;
+            btnUpdateDraft.Visible = hasUpdateName;
+            btnApply.Visible = hasApply;
+            btnReload.Visible = hasReload;
+            btnAddToGrid.Visible = hasAddItem;
+
+            if (dgvSelectedItems.Columns.Contains("colXoa"))
+            {
+                dgvSelectedItems.Columns["colXoa"].Visible = hasDeleteItem;
             }
         }
     }

@@ -15,6 +15,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Excel = Microsoft.Office.Interop.Excel;
+using Color = System.Drawing.Color;
+
 namespace ECQ_Soft
 {
     public partial class FrmQuotation : UserControl
@@ -54,24 +56,18 @@ namespace ECQ_Soft
         public FrmQuotation()
         {
             InitializeComponent();
+            Utils.FunctionUtils.SetDoubleBufferedRecursive(this);
             this.Load += Form1_Load;
             //SetupSearchButton();
         }
 
         
-
         private void InitGoogleSheetsService()
         {
+            if (_sheetsService != null) return;
             try
             {
-                GoogleCredential credential;
-
-                using (var stream = new FileStream("credential.json", FileMode.Open, FileAccess.Read))
-                {
-                    credential = GoogleCredential.FromStream(stream)
-                        .CreateScoped(SheetsService.Scope.Spreadsheets);
-                }
-
+                var credential = Services.GoogleCredentialCache.GetCredential("credential.json");
 
                 _sheetsService = new SheetsService(new BaseClientService.Initializer()
                 {
@@ -103,8 +99,9 @@ namespace ECQ_Soft
 
 
 
-        private void GetMaterialInfor()
+        private List<Material> GetMaterialInfor()
         {
+            var list = new List<Material>();
             try
             {
                 // Đọc dữ liệu từ Google Sheet
@@ -112,6 +109,7 @@ namespace ECQ_Soft
                 var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
                 var response = request.Execute();
                 IList<IList<object>> rows = response.Values;
+                if (rows == null) return list;
 
                 int Stt = 0;
                 for (int i = 0; i < rows.Count; i++)
@@ -149,7 +147,7 @@ namespace ECQ_Soft
                             HDGFee = HDGFee,
                             OrtherFee = OtherFee,
                         };
-                        materials.Add(m);
+                        list.Add(m);
                     }
                     else
                     {
@@ -177,11 +175,12 @@ namespace ECQ_Soft
                 MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
                     "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
+            return list;
         }
 
-        private void GetCabinetType()
+        private List<CabinetType> GetCabinetType()
         {
+            var list = new List<CabinetType>();
             try
             {
                 // Đọc dữ liệu từ Google Sheet
@@ -189,6 +188,7 @@ namespace ECQ_Soft
                 var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
                 var response = request.Execute();
                 IList<IList<object>> rows = response.Values;
+                if (rows == null) return list;
 
                 int Stt = 0;
                 for (int i = 0; i < rows.Count; i++)
@@ -209,7 +209,7 @@ namespace ECQ_Soft
                         Formula = formula,
                         FormulaType = formulaType
                     };
-                    cabinetTypes.Add(f);
+                    list.Add(f);
                 }
             }
             catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
@@ -227,10 +227,12 @@ namespace ECQ_Soft
                 MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
                     "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            return list;
         }
 
-        private void GetMarketPrice()
+        private List<MarketPrice> GetMarketPrice()
         {
+            var list = new List<MarketPrice>();
             try
             {
                 // Đọc dữ liệu từ Google Sheet
@@ -238,6 +240,7 @@ namespace ECQ_Soft
                 var request = _sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
                 var response = request.Execute();
                 IList<IList<object>> rows = response.Values;
+                if (rows == null) return list;
 
                 int Stt = 0;
 
@@ -267,7 +270,7 @@ namespace ECQ_Soft
                             CommonPrice = marketprice,
                             VPAPrice = VPAprice,
                         };
-                        marketPrices.Add(mPrice);
+                        list.Add(mPrice);
                     }
                     else
                     {
@@ -295,6 +298,7 @@ namespace ECQ_Soft
                 MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
                     "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            return list;
         }
 
         private void LoadMaterialtoCombobox()
@@ -826,8 +830,8 @@ namespace ECQ_Soft
 
         private void btnTinhGia_Click(object sender, EventArgs e)
         {
-            var type = cabinetTypes.Where(t => t.Id == _selectedCabinetTypeId).First();
-            if (type.Id == 0 || type == null)
+            var type = cabinetTypes.FirstOrDefault(t => t.Id == _selectedCabinetTypeId);
+            if (type == null || type.Id == 0)
             {
                 MessageBox.Show(
                     "Chọn lại kiểu tủ điện",
@@ -841,7 +845,7 @@ namespace ECQ_Soft
             formula = type.Formula;
 
             var m = materials.FirstOrDefault(t => t.Id == _selectedMaterialId);
-            if (m.Id == 0 || m == null)
+            if (m == null || m.Id == 0)
             {
                 MessageBox.Show(
                     "Chọn lại vật liệu tủ điện",
@@ -1312,33 +1316,11 @@ namespace ECQ_Soft
 
         }
 
-        private void btnReload_Click(object sender, EventArgs e)
+        private async void btnReload_Click(object sender, EventArgs e)
         {
-            FrmSplashScreen frm = new FrmSplashScreen();
-            frm.Show();
-
-            materials.Clear();
-            cabinetTypes.Clear();
-            marketPrices.Clear();
-            GetMaterialInfor();
-            LoadMaterialtoCombobox();
-            GetCabinetType();
-            LoadCabinetTypetoCombobox();
-            GetMarketPrice();
-            _selectedCabinetTypeId = 0;
-            _selectedMaterialId = 0;
-            _selectedCoatingTypeId = 0;
-            txtChiphikhac.Text = "";
-            txtGiaBan.Text = "";
-            txtGiaBanVPA.Text = "";
-            txtSonMa.Text = "";
-            txtGiaVon.Text = "";
-            rbMa.Checked = false;
-            rbSon.Checked = false;
-            rbNone.Checked = false;
-
-            frm.Close();
+            await LoadDataAsync();
         }
+
 
         private void btnUpdate_Click_1(object sender, EventArgs e)
         {
@@ -1487,17 +1469,62 @@ namespace ECQ_Soft
         {
             using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu báo giá từ Google Sheets..."))
             {
+                List<Material> tempMaterials = null;
+                List<CabinetType> tempCabinetTypes = null;
+                List<MarketPrice> tempMarketPrices = null;
+
                 await Task.Run(() =>
                 {
                     InitGoogleSheetsService();
-                    GetMaterialInfor();
-                    GetCabinetType();
-                    GetMarketPrice();
+                    tempMaterials = GetMaterialInfor();
+                    tempCabinetTypes = GetCabinetType();
+                    tempMarketPrices = GetMarketPrice();
                 });
+
+                materials = tempMaterials ?? new List<Material>();
+                cabinetTypes = tempCabinetTypes ?? new List<CabinetType>();
+                marketPrices = tempMarketPrices ?? new List<MarketPrice>();
+
+                _selectedCabinetTypeId = 0;
+                _selectedMaterialId = 0;
+                _selectedCoatingTypeId = 0;
 
                 // Sau khi Thread background chạy xong, ta cập nhật lại Control (UI Thread)
                 LoadMaterialtoCombobox();
                 LoadCabinetTypetoCombobox();
+
+                txtChiphikhac.Text = "";
+                txtGiaBan.Text = "";
+                txtGiaBanVPA.Text = "";
+                txtSonMa.Text = "";
+                txtGiaVon.Text = "";
+                rbMa.Checked = false;
+                rbSon.Checked = false;
+                rbNone.Checked = false;
+            }
+        }
+
+        private void ApplyPermissions()
+        {
+            bool hasUpdatePrice = ECQ_Soft.Helper.UserSession.HasPermission("quotation:update_price");
+            bool hasAddRecord = ECQ_Soft.Helper.UserSession.HasPermission("quotation:add_record");
+            bool hasDeleteRecord = ECQ_Soft.Helper.UserSession.HasPermission("quotation:delete_record");
+            bool hasExport = ECQ_Soft.Helper.UserSession.HasPermission("quotation:export_excel");
+
+            gbGiaVon.Visible = hasUpdatePrice;
+            btnUpdate.Visible = hasUpdatePrice;
+
+            btnAdd.Visible = hasAddRecord;
+            button1.Visible = hasDeleteRecord;
+            btnExporttoExcel.Visible = hasExport;
+
+            // Kiểm tra phân quyền ẩn thông tin giá HME (dành cho vnecco)
+            if (!string.IsNullOrEmpty(Settings.Default.Role) && Settings.Default.Role.ToLower() == "vnecco")
+            {
+                lbDonGiaHME.Visible = false;
+                lbHME.Visible = false;
+                lbGiabanTTText.Text = "Giá bán thị trường (VNĐ):";
+                lbGiabanVPAText.Text = "Giá nhập VPA (VNĐ):";
             }
         }
 
@@ -1505,19 +1532,7 @@ namespace ECQ_Soft
         {
             try
             {
-                if (Settings.Default.isAdmin == false)
-                {
-                    gbGiaVon.Visible = false;
-                    btnUpdate.Visible = false;
-
-                    if (!string.IsNullOrEmpty(Settings.Default.Role) && Settings.Default.Role.ToLower() == "vnecco")
-                    {
-                        lbDonGiaHME.Visible = false;
-                        lbHME.Visible = false;
-                        lbGiabanTTText.Text = "Giá bán thị trường (VNĐ):";
-                        lbGiabanVPAText.Text = "Giá nhập VPA (VNĐ):";
-                    }
-                }
+                ApplyPermissions();
             }
             catch (Exception ex)
             {

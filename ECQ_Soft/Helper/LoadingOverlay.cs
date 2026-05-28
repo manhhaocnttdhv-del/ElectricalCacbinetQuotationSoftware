@@ -8,6 +8,7 @@ namespace ECQ_Soft.Helper
 {
     public class LoadingOverlay : IDisposable
     {
+        private static FrmLoadingBackdrop _backdropForm;
         private static FrmSpinner _spinnerForm;
         private static Thread _spinnerThread;
         private static readonly object _lock = new object();
@@ -26,23 +27,6 @@ namespace ECQ_Soft.Helper
                 _showCount++;
                 if (_showCount > 1)
                 {
-                    // Nếu đang hiển thị rồi, chỉ cần cập nhật tin nhắn
-                    var currentSpinner = _spinnerForm;
-                    if (currentSpinner != null && currentSpinner.IsHandleCreated)
-                    {
-                        try
-                        {
-                            currentSpinner.BeginInvoke(new Action(() =>
-                            {
-                                try
-                                {
-                                    currentSpinner.Message = message;
-                                }
-                                catch { }
-                            }));
-                        }
-                        catch { }
-                    }
                     return;
                 }
 
@@ -93,8 +77,11 @@ namespace ECQ_Soft.Helper
                 // Khởi chạy Spinner Form trên một luồng phụ riêng biệt (Background UI Thread)
                 _spinnerThread = new Thread(() =>
                 {
+                    _backdropForm = new FrmLoadingBackdrop(bounds);
                     _spinnerForm = new FrmSpinner(bounds, message);
-                    Application.Run(_spinnerForm);
+                    _backdropForm.Show();
+                    _spinnerForm.Show();
+                    Application.Run();
                 });
                 _spinnerThread.SetApartmentState(ApartmentState.STA);
                 _spinnerThread.IsBackground = true;
@@ -134,24 +121,36 @@ namespace ECQ_Soft.Helper
 
                 // Tắt Spinner Form
                 var formToClose = _spinnerForm;
-                if (formToClose != null)
+                var backdropToClose = _backdropForm;
+                var invokeForm = (Form)formToClose ?? backdropToClose;
+                if (invokeForm != null)
                 {
                     try
                     {
-                        if (formToClose.IsHandleCreated)
+                        if (invokeForm.IsHandleCreated)
                         {
-                            formToClose.BeginInvoke(new Action(() =>
+                            invokeForm.BeginInvoke(new Action(() =>
                             {
                                 try
                                 {
-                                    formToClose.Close();
-                                    formToClose.Dispose();
+                                    if (formToClose != null && !formToClose.IsDisposed)
+                                    {
+                                        formToClose.Close();
+                                    }
+
+                                    if (backdropToClose != null && !backdropToClose.IsDisposed)
+                                    {
+                                        backdropToClose.Close();
+                                    }
+
+                                    Application.ExitThread();
                                 }
                                 catch { }
                             }));
                         }
                     }
                     catch { }
+                    _backdropForm = null;
                     _spinnerForm = null;
                 }
 
