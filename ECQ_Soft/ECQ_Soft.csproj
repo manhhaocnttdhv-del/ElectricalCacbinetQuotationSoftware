@@ -224,6 +224,9 @@
     <Compile Include="Forms\FrmProductSearch.Designer.cs">
       <DependentUpon>FrmProductSearch.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\FrmCreateBuildConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\FrmSheetSelector.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -260,6 +263,11 @@
     <Compile Include="Services\GoogleCredentialCache.cs" />
     <Compile Include="Services\GoogleDriveUploader.cs" />
     <Compile Include="Services\DatabaseService.cs" />
+    <Compile Include="Services\Database\DbHelpers.cs" />
+    <Compile Include="Services\Database\EcqBuildConfigSchema.cs" />
+    <Compile Include="Services\Database\BuildConfigItemSnapshot.cs" />
+    <Compile Include="Services\Database\BuildConfigRepository.cs" />
+    <Compile Include="Services\Database\UserPermissionRepository.cs" />
     <Compile Include="Services\UIService.cs" />
     <Compile Include="Utils\AppConstant.cs" />
     <Compile Include="Utils\FunctionUtils.cs" />

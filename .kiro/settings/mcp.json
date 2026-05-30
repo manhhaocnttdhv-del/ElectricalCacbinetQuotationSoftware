@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "mssql-vnecco": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-node-mssql"
+      ],
+      "env": {
+        "DB_HOST": "103.121.91.94",
+        "DB_PORT": "1433",
+        "DB_USERNAME": "erp_vnecco",
+        "DB_PASSWORD": "@vnecco123",
+        "DB_DATABASE": "vnecco_erp",
+        "DB_ENCRYPT": "true",
+        "DB_TRUST_SERVER_CERTIFICATE": "true",
+        "DB_ENABLE_ARITH_ABORT": "false",
+        "TRUSTED_CONNECTION": "false",
+        "CONNECTION_TIMEOUT": "30000",
+        "REQUEST_TIMEOUT": "60000"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "list_tables",
+        "describe_table",
+        "execute_query"
+      ]
+    }
+  }
+}

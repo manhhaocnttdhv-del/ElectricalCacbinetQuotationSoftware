@@ -151,6 +151,10 @@ namespace ECQ_Soft
         private TabControl _configTabs;
         private TabPage _buildConfigTabPage;
         private TabPage _quotationTabPage;
+        // Container thật sự của UI sau khi áp layout MISA. Popup reparent các container này
+        // thay vì groupBox1/groupBox2 (giờ chỉ còn là field placeholder của Designer).
+        private Panel _buildConfigCard;
+        private Panel _quotationCard;
 
         // ══════════════════════════════════════════════════════════════════
         // KHỞI TẠO FORM
@@ -164,6 +168,7 @@ namespace ECQ_Soft
             InitializeComponent();
             Utils.FunctionUtils.SetDoubleBufferedRecursive(this);
             ConfigureConfigTabs();
+            ConfigureToolbarButtons();
             dgvParentProducts.CellValueChanged += DgvParentProducts_CellValueChanged;
             dgvParentProducts.CurrentCellDirtyStateChanged += DgvParentProducts_CurrentCellDirtyStateChanged;
 
@@ -187,6 +192,11 @@ namespace ECQ_Soft
             dataGridView1.CellPainting += DataGridView1_CabinetCellPainting;
             dgvParentProducts.CellPainting += DgvParentProducts_CabinetCellPainting;
             SetupHeaderCheckBox(dataGridView1, chkSelectAllChildProducts, "IsSelected");
+
+            // Tree mode: click vào dòng header để toggle expand/collapse
+            dataGridView1.CellClick += DataGridView1_ConfigTree_CellClick;
+            dataGridView1.CellFormatting += DataGridView1_ConfigTree_CellFormatting;
+            dataGridView1.DataBindingComplete += (s, ev) => ApplyConfigTreeRowStyles();
 
             dataGridView1.DataSource = childProducts;
 
@@ -584,32 +594,329 @@ namespace ECQ_Soft
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Padding = new Point(18, 6),
-                HotTrack = true
+                HotTrack = true,
+                SizeMode = TabSizeMode.Normal
             };
 
             _buildConfigTabPage = new TabPage("Xây dựng cấu hình")
             {
-                BackColor = Color.White,
-                Padding = new Padding(6)
+                BackColor = MisaPalette.PageBackground,
+                Padding = new Padding(0)
             };
 
             _quotationTabPage = new TabPage("Bảng báo giá / dự toán")
             {
-                BackColor = Color.White,
-                Padding = new Padding(6)
+                BackColor = MisaPalette.PageBackground,
+                Padding = new Padding(0)
             };
 
-            groupBox1.Dock = DockStyle.Fill;
-            groupBox2.Dock = DockStyle.Fill;
-            _buildConfigTabPage.Controls.Add(groupBox1);
-            _quotationTabPage.Controls.Add(groupBox2);
+            // Build card kiểu MISA cho từng tab. groupBox1/groupBox2 không còn được dùng để hiển thị.
+            _buildConfigCard = BuildToolbarCard(
+                leftItems: new Control[] { CreateToolbarLabel("Đóng gói cấu hình:"), comboBox1, btnSearch, button3 },
+                rightItems: new Control[] { btnAdvancedConfigBuild, btn_baogia, button7, btnOpenSearchModal },
+                gridContent: dataGridView1,
+                legacyControls: new Control[] { label3 });
+
+            _quotationCard = BuildToolbarCard(
+                leftItems: new Control[] { lblCurrentTab, lstSavedConfigs, button6 },
+                rightItems: new Control[] { btnAdvancedConfigForQuotation, button5, button4, button10, btnChangeSheet, btnOpenSearchModalForQuote },
+                gridContent: dgvParentProducts,
+                legacyControls: null);
+
+            // Tinh chỉnh combobox: cố định width hợp lý + cho dropdown rộng hơn để không cắt text
+            ApplyComboToolbarStyle(comboBox1, width: 240, dropDownWidth: 360);
+            ApplyComboToolbarStyle(lstSavedConfigs, width: 240, dropDownWidth: 360);
+
+            // Cho phép user gõ text vào combobox để filter tree (search)
+            comboBox1.DropDownStyle = ComboBoxStyle.DropDown;
+            comboBox1.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            comboBox1.AutoCompleteSource = AutoCompleteSource.ListItems;
+
+            // Wire nút "Tìm" → filter tree theo text
+            btnSearch.Click -= BtnSearchConfigTree_Click;
+            btnSearch.Click += BtnSearchConfigTree_Click;
+            comboBox1.KeyDown -= ComboBox1_SearchKeyDown;
+            comboBox1.KeyDown += ComboBox1_SearchKeyDown;
+
+            // Style lại lblCurrentTab cho inline đẹp hơn
+            lblCurrentTab.AutoSize = true;
+            lblCurrentTab.Padding = Padding.Empty;
+            lblCurrentTab.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblCurrentTab.ForeColor = Color.FromArgb(37, 99, 235);
+
+            _buildConfigTabPage.Controls.Add(_buildConfigCard);
+            _quotationTabPage.Controls.Add(_quotationCard);
 
             _configTabs.TabPages.Add(_buildConfigTabPage);
             _configTabs.TabPages.Add(_quotationTabPage);
 
+            _configTabs.SelectedIndexChanged += ConfigTabs_SelectedIndexChanged;
+
             parent.Controls.Add(_configTabs);
             parent.Controls.SetChildIndex(_configTabs, childIndex);
             splitMain.Visible = false;
+            // groupBox1/groupBox2 không còn dùng để vẽ, ẩn hẳn để tránh viền/title đè lên
+            groupBox1.Visible = false;
+            groupBox2.Visible = false;
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // MISA-STYLE LAYOUT
+        // ══════════════════════════════════════════════════════════════════
+
+        private static class MisaPalette
+        {
+            public static readonly Color PageBackground = Color.FromArgb(244, 246, 250);
+            public static readonly Color CardBackground = Color.White;
+            public static readonly Color ToolbarBackground = Color.White;
+            public static readonly Color ToolbarSeparator = Color.FromArgb(226, 232, 240);
+            public static readonly Color LabelMuted = Color.FromArgb(100, 116, 139);
+        }
+
+        /// <summary>
+        /// Card MISA: padding bao quanh, toolbar (left|right) phía trên, separator 1px,
+        /// grid chiếm phần còn lại.
+        /// </summary>
+        private Panel BuildToolbarCard(Control[] leftItems, Control[] rightItems, Control gridContent, Control[] legacyControls)
+        {
+            // Detach mọi control khỏi parent cũ
+            DetachFromParent(gridContent);
+            foreach (var c in leftItems) DetachFromParent(c);
+            foreach (var c in rightItems) DetachFromParent(c);
+            if (legacyControls != null)
+            {
+                foreach (var c in legacyControls)
+                {
+                    DetachFromParent(c);
+                    c.Visible = false;
+                }
+            }
+
+            var card = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = MisaPalette.CardBackground,
+                Padding = new Padding(16, 12, 16, 12),
+                Margin = Padding.Empty
+            };
+
+            var root = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                BackColor = MisaPalette.CardBackground,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None
+            };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48F));   // toolbar
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 1F));    // separator
+            root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));   // grid
+
+            var toolbar = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = MisaPalette.ToolbarBackground,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
+            };
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            toolbar.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+            var leftFlow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoScroll = false,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = MisaPalette.ToolbarBackground,
+                Padding = Padding.Empty,
+                Margin = Padding.Empty
+            };
+            foreach (var c in leftItems)
+            {
+                NormalizeToolbarControl(c);
+                leftFlow.Controls.Add(c);
+            }
+
+            var rightFlow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                AutoScroll = false,
+                BackColor = MisaPalette.ToolbarBackground,
+                Padding = Padding.Empty,
+                Margin = Padding.Empty
+            };
+            // FlowDirection.RightToLeft: control thêm trước nằm bên phải nhất → duyệt ngược
+            for (int i = rightItems.Length - 1; i >= 0; i--)
+            {
+                var c = rightItems[i];
+                NormalizeToolbarControl(c);
+                rightFlow.Controls.Add(c);
+            }
+
+            toolbar.Controls.Add(leftFlow, 0, 0);
+            toolbar.Controls.Add(rightFlow, 1, 0);
+
+            var separator = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = MisaPalette.ToolbarSeparator,
+                Margin = Padding.Empty
+            };
+
+            var gridHost = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = MisaPalette.CardBackground,
+                Padding = new Padding(0, 8, 0, 0),
+                Margin = Padding.Empty
+            };
+            gridContent.Dock = DockStyle.Fill;
+            gridContent.Margin = Padding.Empty;
+            gridHost.Controls.Add(gridContent);
+
+            root.Controls.Add(toolbar, 0, 0);
+            root.Controls.Add(separator, 0, 1);
+            root.Controls.Add(gridHost, 0, 2);
+
+            card.Controls.Add(root);
+            return card;
+        }
+
+        private static Label CreateToolbarLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                ForeColor = MisaPalette.LabelMuted,
+                Margin = new Padding(0, 14, 8, 0),
+                Padding = Padding.Empty
+            };
+        }
+
+        /// <summary>
+        /// Đảm bảo combobox trên toolbar không bị bóp ngắn khi nằm trong FlowLayoutPanel
+        /// và dropdown đủ rộng để hiện hết các item dài.
+        /// </summary>
+        private static void ApplyComboToolbarStyle(ComboBox combo, int width = 240, int dropDownWidth = 360)
+        {
+            if (combo == null) return;
+            combo.Anchor = AnchorStyles.None;
+            combo.Dock = DockStyle.None;
+            combo.AutoSize = false;
+            combo.Width = width;
+            combo.MinimumSize = new Size(width, combo.Height);
+            combo.DropDownWidth = dropDownWidth;
+            combo.Font = new Font("Segoe UI", 9F);
+            // Standard giữ được border native; Flat sẽ bị mất border khi đặt trên Panel màu trắng
+            combo.FlatStyle = FlatStyle.Standard;
+            combo.IntegralHeight = false;
+            combo.MaxDropDownItems = 12;
+        }
+
+        private static void NormalizeToolbarControl(Control c)
+        {
+            if (c == null) return;
+            c.Anchor = AnchorStyles.None;
+            c.Dock = DockStyle.None;
+            // Toolbar 48px, button 32px → top margin 8 để căn giữa
+            c.Margin = new Padding(0, 8, 6, 0);
+        }
+
+        private static void DetachFromParent(Control c)
+        {
+            if (c == null || c.Parent == null) return;
+            c.Parent.Controls.Remove(c);
+        }
+
+        private bool _isHandlingConfigTabChange = false;
+
+        private async void ConfigTabs_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isHandlingConfigTabChange) return;
+
+            // Chỉ hiện dialog khi chuyển sang tab "Bảng báo giá / dự toán"
+            if (_configTabs.SelectedTab != _quotationTabPage) return;
+
+            _isHandlingConfigTabChange = true;
+            try
+            {
+                if (_sheetsService == null) InitGoogleSheetsService();
+
+                string selectedSheet = null;
+                bool cancelled = false;
+
+                using (var selector = new FrmSheetSelector(spreadsheetId, _sheetsService))
+                {
+                    var result = selector.ShowDialog(this);
+                    if (result == DialogResult.OK && !string.IsNullOrEmpty(selector.SelectedSheetName))
+                        selectedSheet = selector.SelectedSheetName;
+                    else
+                        cancelled = true;
+                }
+
+                if (cancelled)
+                    _configTabs.SelectedTab = _buildConfigTabPage;
+                else
+                    await SetConfigSheet(selectedSheet);
+            }
+            finally
+            {
+                _isHandlingConfigTabChange = false;
+            }
+        }
+
+        private void ConfigureToolbarButtons()
+        {
+            StyleIconButton(button3, FontAwesome.Sharp.IconChar.Plus, "Thêm cấu hình", 175);
+            StyleIconButton(button7, FontAwesome.Sharp.IconChar.TrashAlt, "Xóa tất cả", 130);
+            StyleIconButton(btnOpenSearchModal, FontAwesome.Sharp.IconChar.Plus, "Thêm sản phẩm", 175);
+            StyleIconButton(btn_baogia, FontAwesome.Sharp.IconChar.ArrowCircleDown, "Lưu xuống báo giá", 195);
+            StyleIconButton(btnAdvancedConfigBuild, FontAwesome.Sharp.IconChar.Tools, "Cấu hình nâng cao", 195);
+
+            StyleIconButton(button6, FontAwesome.Sharp.IconChar.FolderOpen, "Tải cấu hình", 145);
+            StyleIconButton(btnAdvancedConfigForQuotation, FontAwesome.Sharp.IconChar.Cog, "Cấu hình nâng cao", 195);
+            StyleIconButton(button5, FontAwesome.Sharp.IconChar.Save, "Lưu báo giá", 145);
+            StyleIconButton(button4, FontAwesome.Sharp.IconChar.TrashAlt, "Xóa tất cả", 130);
+            StyleIconButton(button10, FontAwesome.Sharp.IconChar.FileExcel, "Xuất file", 120);
+            StyleIconButton(btnChangeSheet, FontAwesome.Sharp.IconChar.Sync, "Đổi tab", 115);
+            StyleIconButton(btnOpenSearchModalForQuote, FontAwesome.Sharp.IconChar.Plus, "Thêm sản phẩm", 175);
+        }
+
+        private static void StyleIconButton(FontAwesome.Sharp.IconButton button, FontAwesome.Sharp.IconChar icon, string text, int width)
+        {
+            if (button == null) return;
+
+            button.Text = text;
+            button.Width = width;
+            button.MinimumSize = new Size(width, 32);
+            button.AutoSize = false;
+            button.Height = 32;
+            button.IconChar = icon;
+            button.IconColor = Color.White;
+            button.IconFont = FontAwesome.Sharp.IconFont.Solid;
+            button.IconSize = 16;
+            button.ImageAlign = ContentAlignment.MiddleLeft;
+            button.TextAlign = ContentAlignment.MiddleCenter;
+            button.TextImageRelation = TextImageRelation.ImageBeforeText;
+            button.Padding = new Padding(8, 0, 8, 0);
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 0;
+            button.UseVisualStyleBackColor = false;
+            button.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            button.AutoEllipsis = false;
         }
 
         // EVENT HANDLERS – DataGridView
@@ -657,13 +964,7 @@ namespace ECQ_Soft
             if (_sheetsService != null) return;
             try
             {
-                var credential = Services.GoogleCredentialCache.GetCredential("config.json");
-
-                _sheetsService = new SheetsService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "GSheetConfig",
-                });
+                _sheetsService = Services.GoogleCredentialCache.CreateSheetsService("config.json", "GSheetConfig");
             }
             catch (Exception ex)
             {
@@ -674,15 +975,15 @@ namespace ECQ_Soft
 
         private void RestoreQuotationTab()
         {
-            if (_quotationTabPage == null || groupBox2 == null || groupBox2.IsDisposed) return;
+            if (_quotationTabPage == null || _quotationCard == null || _quotationCard.IsDisposed) return;
 
-            if (groupBox2.Parent != null)
+            if (_quotationCard.Parent != null)
             {
-                groupBox2.Parent.Controls.Remove(groupBox2);
+                _quotationCard.Parent.Controls.Remove(_quotationCard);
             }
 
-            groupBox2.Dock = DockStyle.Fill;
-            _quotationTabPage.Controls.Add(groupBox2);
+            _quotationCard.Dock = DockStyle.Fill;
+            _quotationTabPage.Controls.Add(_quotationCard);
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -812,12 +1113,25 @@ namespace ECQ_Soft
         {
             // Không gọi LoadDataAsync() ở đây vì FrmMain đã gọi trước đó.
             
+            btn_baogia.Click -= btn_baogia_Click;
             btn_baogia.Click += btn_baogia_Click;
             
             btnOpenSearchModal.Click += (s, ev) => OpenProductSearch(toConfigurationArea: true);
             btnOpenSearchModalForQuote.Click += (s, ev) => OpenProductSearch(toConfigurationArea: false);
 
             var ctxConfig = new ContextMenuStrip();
+            var miEditConfig = new ToolStripMenuItem("Sửa cấu hình");
+            miEditConfig.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            miEditConfig.Click += (s, ev) => EditSelectedConfig();
+            ctxConfig.Items.Add(miEditConfig);
+
+            var miDeleteWholeConfig = new ToolStripMenuItem("Xóa cấu hình");
+            miDeleteWholeConfig.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            miDeleteWholeConfig.Click += (s, ev) => DeleteSelectedConfig();
+            ctxConfig.Items.Add(miDeleteWholeConfig);
+
+            ctxConfig.Items.Add(new ToolStripSeparator());
+
             var miDeleteConfig = new ToolStripMenuItem("Xóa dòng đã chọn");
             miDeleteConfig.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             miDeleteConfig.Click += (s, ev) => 
@@ -832,7 +1146,18 @@ namespace ECQ_Soft
                     {
                         if (row.DataBoundItem is Products p)
                         {
-                            childProducts.Remove(p);
+                            // Bỏ qua dòng header (không cho xóa trực tiếp)
+                            if (p.IsConfigHeader) continue;
+
+                            if (_configTreeMode && !string.IsNullOrEmpty(p.ConfigGroupKey))
+                            {
+                                // Xóa theo Id trong group hiện tại
+                                RemoveConfigChildById(p.Id, p.ConfigGroupKey);
+                            }
+                            else
+                            {
+                                childProducts.Remove(p);
+                            }
                         }
                     }
                     AdjustDataGridView1RowHeights();
@@ -842,6 +1167,21 @@ namespace ECQ_Soft
             };
             ctxConfig.Items.Add(miDeleteConfig);
             dataGridView1.ContextMenuStrip = ctxConfig;
+
+            // Bật/tắt menu theo dòng được chọn
+            ctxConfig.Opening += (s, ev) =>
+            {
+                bool onHeader = false;
+                if (dataGridView1.SelectedRows.Count > 0)
+                {
+                    var row = dataGridView1.SelectedRows[0];
+                    if (row.DataBoundItem is Products p && p.IsConfigHeader)
+                        onHeader = true;
+                }
+                miEditConfig.Visible = onHeader;
+                miDeleteWholeConfig.Visible = onHeader;
+                miDeleteConfig.Visible = !onHeader;
+            };
             
             dataGridView1.CellMouseDown += (s, ev) =>
             {
@@ -1263,6 +1603,9 @@ namespace ECQ_Soft
                     UpdateHeaderSum();
                     UpdateConfigGrid();
                     // dataGridView1.DataSource is already bound to childProducts in constructor
+
+                    // Build tree view các cấu hình từ Donggoi_* sheets cho tab "Xây dựng cấu hình"
+                    await LoadAllConfigGroupsToTreeAsync();
                 }
             }
             catch (Exception ex)
@@ -1429,56 +1772,24 @@ namespace ECQ_Soft
         }
 
         /// <summary>
-        /// Load tất cả Donggoi_ sheets từ Google Sheets vào comboBox1,
-        /// hiển thị format: "Donggoi_1 - tên cấu hình 1, tên cấu hình 2".
+        /// <summary>
+        /// Load danh sách cấu hình BUILD_PACKAGE từ SQL Server vào comboBox1.
+        /// Format hiển thị: "Tên cấu hình" (ConfigName từ bảng ECQ_BuildConfig).
         /// </summary>
         private async Task LoadDonggoiSheetsToComboAsync()
         {
-            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải cấu hình đóng gói từ Google Sheets..."))
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải cấu hình đóng gói từ SQL Server..."))
             {
                 try
                 {
-                    if (_sheetsService == null) InitGoogleSheetsService();
-
-                    var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
-                    var donggoiSheetNames = spreadsheet.Sheets
-                        .Select(s => s.Properties.Title)
-                        .Where(t => t.StartsWith("Donggoi_"))
-                        .OrderBy(t => t)
-                        .ToList();
+                    var packages = await Task.Run(() =>
+                        Services.DatabaseService.GetAllBuildConfigPackages("BUILD_PACKAGE"));
 
                     var displayItems = new List<string> { "-- Chọn cấu hình đóng gói --" };
-
-                    foreach (var sName in donggoiSheetNames)
+                    foreach (var pkg in packages)
                     {
-                        try
-                        {
-                            var resp = await _sheetsService.Spreadsheets.Values
-                                .Get(spreadsheetId, $"{sName}!A2:B100").ExecuteAsync();
-                            var rows = resp.Values;
-                            var groupNames = new List<string>();
-                            if (rows != null)
-                            {
-                                foreach (var row in rows)
-                                {
-                                    string col0 = row.Count > 0 ? row[0]?.ToString() ?? "" : "";
-                                    string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
-                                    if (!string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1))
-                                        groupNames.Add(col0);
-                                }
-                            }
-
-                            if (groupNames.Count > 0)
-                            {
-                                foreach (var gn in groupNames)
-                                    displayItems.Add($"{sName} - {gn}");
-                            }
-                            else
-                            {
-                                displayItems.Add(sName);
-                            }
-                        }
-                        catch { displayItems.Add(sName); }
+                        if (!string.IsNullOrWhiteSpace(pkg.ConfigName))
+                            displayItems.Add(pkg.ConfigName);
                     }
 
                     if (InvokeRequired)
@@ -1486,7 +1797,10 @@ namespace ECQ_Soft
                     else
                         RefreshComboBox1(displayItems);
                 }
-                catch { /* Không crash nếu chưa connect được Sheets */ }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("LoadDonggoiSheetsToComboAsync (SQL) error: " + ex.Message);
+                }
             }
         }
 
@@ -1895,252 +2209,188 @@ namespace ECQ_Soft
             string selectedPkg = comboBox1.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(selectedPkg) || selectedPkg == "-- Chọn cấu hình đóng gói --") return;
 
-            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu đóng gói..."))
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải dữ liệu đóng gói từ SQL Server..."))
             {
                 try
                 {
-                    // Tách Tên sheet và Tên cấu hình (ví dụ: "Donggoi_1 - tủ điện" -> sName="Donggoi_1", pkgName="tủ điện")
-                    string sName = selectedPkg;
-                    string pkgName = "";
-                    int splitIdx = selectedPkg.IndexOf(" - ");
-                    if (splitIdx > 0)
+                    // Load tất cả packages từ SQL, tìm package có tên trùng selectedPkg
+                    var packages = await Task.Run(() =>
+                        Services.DatabaseService.GetAllBuildConfigPackages("BUILD_PACKAGE"));
+
+                    var pkg = packages.FirstOrDefault(p =>
+                        string.Equals(p.ConfigName?.Trim(), selectedPkg.Trim(),
+                            StringComparison.OrdinalIgnoreCase));
+
+                    if (pkg == null)
                     {
-                        sName = selectedPkg.Substring(0, splitIdx);
-                        pkgName = selectedPkg.Substring(splitIdx + 3);
+                        MessageBox.Show($"Không tìm thấy cấu hình \"{selectedPkg}\" trong SQL Server.",
+                            "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
 
-                    if (_sheetsService == null) InitGoogleSheetsService();
-
-                    // Đọc dữ liệu từ Sheet
-                    var resp = await _sheetsService.Spreadsheets.Values.Get(spreadsheetId, $"{sName}!A2:I2000").ExecuteAsync();
-                    var rows = resp.Values ?? new List<IList<object>>();
-
+                    // Enrich các field còn thiếu từ allProducts (Type, Pole, Icu, ExtraAttributes...)
                     var foundProducts = new List<Products>();
-                    bool inTargetGroup = false;
-
-                    foreach (var row in rows)
+                    foreach (var src in pkg.Items)
                     {
-                        if (row.Count == 0) continue;
-                        string col0 = row[0]?.ToString() ?? "";
-                        string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
-
-                        bool isGroupHeader = !string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1);
-
-                        if (isGroupHeader)
+                        Products enriched = src;
+                        if (allProducts != null && allProducts.Count > 0)
                         {
-                            // Nếu đúng nhóm cần tìm -> bật flag, nếu sang nhóm khác -> tắt flag (thoát)
-                            if (string.Equals(col0.Trim(), pkgName.Trim(), StringComparison.OrdinalIgnoreCase))
-                            {
-                                inTargetGroup = true;
-                                continue;
-                            }
-                            else if (inTargetGroup)
-                            {
-                                break; // Đã đọc xong nhóm target
-                            }
-                        }
-                        else if (inTargetGroup)
-                        {
-                            // Là dòng sản phẩm của nhóm cần tìm
-                            int id = 0; int.TryParse(col0, out id);
-                            string ten = col1;
-                            string model = row.Count > 2 ? row[2]?.ToString() ?? "" : "";
-                            string sku = row.Count > 3 ? row[3]?.ToString() ?? "" : "";
-                            string price = row.Count > 4 ? row[4]?.ToString() ?? "0" : "0";
-                            string cost = row.Count > 5 ? row[5]?.ToString() ?? "0" : "0";
-                            string cat = row.Count > 6 ? row[6]?.ToString() ?? "" : "";
-                            string hang = row.Count > 7 ? row[7]?.ToString() ?? "" : "";
-                            int soLuong = 1; int.TryParse(row.Count > 8 ? row[8]?.ToString() : "1", out soLuong);
-                            if (soLuong <= 0) soLuong = 1;
+                            Products master = null;
+                            if (src.Id > 0)
+                                master = allProducts.FirstOrDefault(p => p.Id == src.Id);
+                            if (master == null && !string.IsNullOrWhiteSpace(src.SKU))
+                                master = allProducts.FirstOrDefault(p =>
+                                    string.Equals(p.SKU, src.SKU, StringComparison.OrdinalIgnoreCase));
 
-                            // Cố gắng map ID gốc nếu có trong allProducts, nếu không thì tạo mới
-                            // CLONE để không mutate allProducts gốc
-                            Products existing = null;
-                            if (!string.IsNullOrWhiteSpace(sku) || id > 0)
-                            {
-                                existing = allProducts.FirstOrDefault(p =>
-                                    (!string.IsNullOrWhiteSpace(sku) && p.SKU == sku) ||
-                                    (id > 0 && p.Id == id));
-                            }
-
-                            if (existing != null)
-                            {
-                                // Clone để tránh sửa object gốc trong allProducts
-                                foundProducts.Add(new Products
-                                {
-                                    Id = existing.Id, Name = existing.Name, Model = existing.Model,
-                                    SKU = existing.SKU, Price = existing.Price, PriceCost = existing.PriceCost,
-                                    Category = existing.Category, HÃNG = existing.HÃNG,
-                                    Type = existing.Type, PriceList = existing.PriceList,
-                                    SoLuong = soLuong, IsSelected = false
-                                });
-                            }
-                            else
-                            {
-                                foundProducts.Add(new Products
-                                {
-                                    Id = id, Name = ten, Model = model, SKU = sku,
-                                    Price = price, PriceCost = cost, Category = cat, HÃNG = hang,
-                                    SoLuong = soLuong, IsSelected = false
-                                });
-                            }
+                            if (master != null) enriched = MergeProductFields(src, master);
                         }
+                        foundProducts.Add(enriched);
                     }
 
                     if (foundProducts.Count > 0)
                     {
-                        lastSearchedSheet = sName;
-                        lastSearchedPkg = pkgName;
+                        lastSearchedSheet = pkg.GoogleSheetName;
+                        lastSearchedPkg = pkg.ConfigName;
+
+                        // Tắt tree mode để hiển thị flat list khi user chọn 1 cấu hình cụ thể
+                        _configTreeMode = false;
 
                         childProducts.Clear();
                         foreach (var p in foundProducts) childProducts.Add(p);
 
-                        UpdateConfigGrid(); // Update the dataGridView1
-                        AdjustDataGridView1RowHeights(); // Điều chỉnh chiều cao dòng multiline
-                        MessageBox.Show($"Đã nạp {foundProducts.Count} sản phẩm từ gói \"{pkgName}\"!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        UpdateConfigGrid();
+                        AdjustDataGridView1RowHeights();
+                        MessageBox.Show($"Đã nạp {foundProducts.Count} sản phẩm từ cấu hình \"{pkg.ConfigName}\"!",
+                            "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show("Không tìm thấy sản phẩm nào trong gói này.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("Cấu hình này chưa có sản phẩm nào.",
+                            "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Lỗi khi tải dữ liệu gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Lỗi khi tải dữ liệu cấu hình: " + ex.Message,
+                        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
 
-        private async void Button3_Click(object sender, EventArgs e)
+        private void Button3_Click(object sender, EventArgs e)
         {
-            // Nếu không có sản phẩm nào trong childProducts, hỏi user xác nhận
-            bool hasProducts = childProducts.Any();
-            if (!hasProducts)
+            // Đảm bảo có dữ liệu sản phẩm để chọn
+            if (allProducts == null || allProducts.Count == 0)
             {
-                var confirm = MessageBox.Show(
-                    "Danh sách sản phẩm chưa có gì.\nBạn vẫn muốn mở form đóng gói?",
-                    "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (confirm != DialogResult.Yes) return;
+                MessageBox.Show("Danh sách sản phẩm đang trống. Vui lòng nhấn Tải lại để nạp dữ liệu!",
+                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
-            var sheetDisplayMap = new Dictionary<string, string>();
-            List<string> donggoiSheetNames = null;
-
-            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang đọc danh sách gói đóng gói từ Google Sheets..."))
+            // Mở popup "Đóng gói cấu hình mới" fullscreen.
+            // User thêm sản phẩm bằng nút trong popup → mở FrmProductSearch riêng.
+            // Nút "Lưu cấu hình" lưu thẳng vào SQL Server.
+            using (var frmCreate = new ECQ_Soft.Forms.FrmCreateBuildConfig(
+                allProducts.ToList(), defaultConfigName: lastSearchedPkg))
             {
-                try
+                var result = frmCreate.ShowDialog(this);
+                if (result == DialogResult.OK && frmCreate.Saved)
                 {
-                    if (_sheetsService == null) InitGoogleSheetsService();
-
-                    // Lấy danh sách Sheet hiện tại bắt đầu bằng Donggoi_
-                    var spreadsheet = await _sheetsService.Spreadsheets.Get(spreadsheetId).ExecuteAsync();
-                    donggoiSheetNames = spreadsheet.Sheets
-                        .Select(s => s.Properties.Title)
-                        .Where(t => t.StartsWith("Donggoi_"))
-                        .ToList();
-
-                    sheetDisplayMap["-- Tạo sheet mới --"] = "";
-
-                    foreach (var sName in donggoiSheetNames)
-                    {
-                        try
-                        {
-                            var resp = await _sheetsService.Spreadsheets.Values
-                                .Get(spreadsheetId, $"{sName}!A2:B100").ExecuteAsync();
-                            var rows = resp.Values;
-                            var groupNames = new List<string>();
-                            if (rows != null)
-                            {
-                                foreach (var row in rows)
-                                {
-                                    string col0 = row.Count > 0 ? row[0]?.ToString() ?? "" : "";
-                                    string col1 = row.Count > 1 ? row[1]?.ToString() ?? "" : "";
-                                    if (!string.IsNullOrEmpty(col0) && string.IsNullOrEmpty(col1))
-                                        groupNames.Add(col0);
-                                }
-                            }
-
-                            if (groupNames.Any())
-                            {
-                                foreach (var gn in groupNames)
-                                    sheetDisplayMap[$"{sName} - {gn}"] = sName;
-                            }
-                            else
-                            {
-                                sheetDisplayMap[sName] = sName;
-                            }
-                        }
-                        catch { sheetDisplayMap[sName] = sName; }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Lỗi khi tải danh sách gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    // Reload combo + tree sau khi lưu
+                    _ = ReloadAfterCreateConfigAsync();
                 }
             }
+        }
 
-            // Chuyển childProducts sang ConfigProductItem để hiển thị trong modal preview
-            var childItemsForModal = childProducts.Select(p =>
+        private async Task ReloadAfterCreateConfigAsync()
+        {
+            try
             {
-                decimal price = ParseCurrencyToDecimal(p.Price);
-                decimal priceCost = ParseCurrencyToDecimal(p.PriceCost);
-                if (priceCost <= 0) priceCost = price;
-                int sl = p.SoLuong > 0 ? p.SoLuong : 1;
-                return new ConfigProductItem
-                {
-                    TenHang      = p.Name,
-                    MaHang       = p.SKU,
-                    XuatXu       = p.HÃNG ?? "",
-                    DonVi        = ConfigProductItem.IsPinned(p.Name) ? GetPinnedDonVi(p.Name) : "Cái",
-                    SoLuong      = sl,
-                    DonGiaVND    = price,
-                    ThanhTienVND = price * sl,
-                    GiaNhap      = priceCost,
-                    ThanhTien    = priceCost * sl,
-                    LoiNhuan     = (price - priceCost) * sl,
-                    BangGia      = 0,
-                    GhiChu       = "",
-                    IsHeader     = false
-                };
-            }).ToList();
-
-            string defaultDisplay = null;
-            if (!string.IsNullOrEmpty(lastSearchedSheet) && !string.IsNullOrEmpty(lastSearchedPkg))
-                defaultDisplay = $"{lastSearchedSheet} - {lastSearchedPkg}";
-
-            // Mở Modal lưu đóng gói với sheetDisplayMap và các giá trị mặc định
-            using (var frm = new FrmSavePackage(childItemsForModal, sheetDisplayMap, defaultDisplay, lastSearchedPkg))
+                await LoadDonggoiSheetsToComboAsync();
+                await LoadAllConfigGroupsToTreeAsync();
+            }
+            catch (Exception ex)
             {
-                if (frm.ShowDialog(this) == DialogResult.OK)
-                {
-                    using (new ECQ_Soft.Helper.LoadingOverlay(this, $"Đang đóng gói \"{frm.ConfigName}\" lên Google Sheets và CSDL..."))
-                    {
-                        try
-                        {
-                            bool saved = await SaveConfigToSpecificSheetAsync(frm.SheetName, frm.ConfigName, frm.IsOverwrite);
-                            if (saved)
-                            {
-                                DatabaseService.SaveBuildConfigFromProducts(
-                                    frm.ConfigName,
-                                    frm.SheetName,
-                                    spreadsheetId,
-                                    childProducts.ToList(),
-                                    frm.IsOverwrite);
-                                // Cập nhật lại list Donggoi_ ở comboBox1
-                                await LoadDonggoiSheetsToComboAsync();
+                System.Diagnostics.Debug.WriteLine("ReloadAfterCreateConfigAsync error: " + ex.Message);
+            }
+        }
 
-                                MessageBox.Show($"Đóng gói \"{frm.ConfigName}\" vào Sheet \"{frm.SheetName}\" thành công!",
-                                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show("Lỗi khi lưu đóng gói: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
+        /// <summary>Mở popup Edit cho cấu hình đang được chọn (dòng header).</summary>
+        private void EditSelectedConfig()
+        {
+            if (dataGridView1.SelectedRows.Count == 0) return;
+            var row = dataGridView1.SelectedRows[0];
+            if (!(row.DataBoundItem is Products p) || !p.IsConfigHeader) return;
+
+            // Tìm Id thật của cấu hình từ ConfigGroupKey "sql_{id}|{name}"
+            int configId = ParseConfigIdFromGroupKey(p.ConfigGroupKey);
+            if (configId <= 0)
+            {
+                MessageBox.Show("Không xác định được cấu hình để chỉnh sửa.",
+                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Lấy danh sách items hiện có của cấu hình
+            List<Products> existingItems = new List<Products>();
+            if (_configGroupChildren.TryGetValue(p.ConfigGroupKey, out var children))
+                existingItems = children.Where(c => !c.IsConfigHeader).ToList();
+
+            using (var frmEdit = new ECQ_Soft.Forms.FrmCreateBuildConfig(allProducts.ToList(), defaultConfigName: p.Name))
+            {
+                frmEdit.LoadForEdit(configId, p.Name, existingItems);
+                if (frmEdit.ShowDialog(this) == DialogResult.OK && frmEdit.Saved)
+                {
+                    _ = ReloadAfterCreateConfigAsync();
                 }
             }
+        }
+
+        /// <summary>Xóa cấu hình đang được chọn (dòng header).</summary>
+        private async void DeleteSelectedConfig()
+        {
+            if (dataGridView1.SelectedRows.Count == 0) return;
+            var row = dataGridView1.SelectedRows[0];
+            if (!(row.DataBoundItem is Products p) || !p.IsConfigHeader) return;
+
+            int configId = ParseConfigIdFromGroupKey(p.ConfigGroupKey);
+            if (configId <= 0)
+            {
+                MessageBox.Show("Không xác định được cấu hình để xóa.",
+                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Bạn chắc chắn muốn xóa cấu hình \"{p.Name}\"?\nThao tác này không thể hoàn tác.",
+                "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                await Task.Run(() => Services.DatabaseService.DeleteBuildConfig(configId));
+                await ReloadAfterCreateConfigAsync();
+                MessageBox.Show($"Đã xóa cấu hình \"{p.Name}\".",
+                    "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi xóa cấu hình:\n" + ex.Message,
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>Tách Id từ ConfigGroupKey có format "sql_{id}|{name}".</summary>
+        private static int ParseConfigIdFromGroupKey(string groupKey)
+        {
+            if (string.IsNullOrEmpty(groupKey)) return 0;
+            const string prefix = "sql_";
+            if (!groupKey.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return 0;
+            int pipeIdx = groupKey.IndexOf('|');
+            string idStr = pipeIdx > 0
+                ? groupKey.Substring(prefix.Length, pipeIdx - prefix.Length)
+                : groupKey.Substring(prefix.Length);
+            return int.TryParse(idStr, out int id) ? id : 0;
         }
 
         private async void Button5_Click(object sender, EventArgs e)
@@ -3294,12 +3544,12 @@ namespace ECQ_Soft
             };
 
             // Lưu parent gốc để trả lại khi đóng
-            var originalParent = groupBox2.Parent;
+            var originalParent = _quotationCard.Parent;
 
-            // Di chuyển groupBox2 sang popup
-            originalParent.Controls.Remove(groupBox2);
-            groupBox2.Dock = DockStyle.Fill;
-            popupQuote.Controls.Add(groupBox2);
+            // Di chuyển card báo giá sang popup
+            originalParent.Controls.Remove(_quotationCard);
+            _quotationCard.Dock = DockStyle.Fill;
+            popupQuote.Controls.Add(_quotationCard);
 
             // ════════════════════════════════════════════════════════════
             // POPUP 2: Tìm kiếm sản phẩm (cửa sổ riêng)
@@ -3354,10 +3604,10 @@ namespace ECQ_Soft
 
             popupQuote.FormClosed += (s, ev) =>
             {
-                // Trả groupBox2 về vị trí gốc
-                popupQuote.Controls.Remove(groupBox2);
-                groupBox2.Dock = DockStyle.Fill;
-                originalParent.Controls.Add(groupBox2);
+                // Trả card báo giá về vị trí gốc
+                popupQuote.Controls.Remove(_quotationCard);
+                _quotationCard.Dock = DockStyle.Fill;
+                originalParent.Controls.Add(_quotationCard);
 
                 btnOpenSearchModalForQuote.Enabled = true;
                 btnOpenSearchModal.Enabled = true;
@@ -4191,11 +4441,28 @@ namespace ECQ_Soft
             chkSelectAllChildProducts.Checked = false;
         }
 
+        private void FocusQuotationTab()
+        {
+            if (_configTabs != null && _quotationTabPage != null)
+            {
+                _configTabs.SelectedTab = _quotationTabPage;
+            }
+        }
+
         private void btn_baogia_Click(object sender, EventArgs e)
         {
             // Lấy TẤT CẢ sản phẩm từ bảng trên (tránh trùng lặp)
             var allItems = childProducts.ToList();
-            if (allItems.Count == 0) return;
+            if (allItems.Count == 0)
+            {
+                MessageBox.Show(
+                    "Chưa có sản phẩm để lưu xuống báo giá.",
+                    "Thông báo",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+                return;
+            }
 
             // Lấy tên nhóm từ ComboBox hiện tại, hoặc gán chi tiết tên mặc định
             string catPR = comboBox1.SelectedItem?.ToString();
@@ -4310,6 +4577,7 @@ namespace ECQ_Soft
             // Tính tổng nhóm và refresh form
             UpdateHeaderSum();
             UpdateConfigGrid();
+            FocusQuotationTab();
 
             // Nhảy xuống dòng cuối cùng trên grid để user dễ nhìn
             if (dgvParentProducts.Rows.Count > 0)
@@ -5079,8 +5347,8 @@ namespace ECQ_Soft
             _popupQuoteForm.StartPosition = FormStartPosition.CenterScreen;
             _popupQuoteForm.Icon = this.ParentForm?.Icon;
             
-            _popupQuoteForm.Controls.Add(groupBox2);
-            groupBox2.Dock = DockStyle.Fill;
+            _popupQuoteForm.Controls.Add(_quotationCard);
+            _quotationCard.Dock = DockStyle.Fill;
             
             _popupQuoteForm.FormClosing += (s, ev) => {
                 if (!this.IsDisposed)
@@ -5257,6 +5525,423 @@ namespace ECQ_Soft
                         "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // TREE VIEW cho tab "Xây dựng cấu hình"
+        //   - Mặc định grid hiển thị danh sách CẤU HÌNH (header dòng).
+        //   - Click vào header → expand ra các sản phẩm con của cấu hình.
+        //   - Click lần nữa → collapse.
+        //   - Xóa sản phẩm: dùng Id để xác định (BindingList.Remove theo reference).
+        // ══════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Lưu các group cấu hình đã load. Mỗi group: header (Products with IsConfigHeader=true)
+        /// + danh sách sản phẩm con (Products thường, có cùng ConfigGroupKey).
+        /// </summary>
+        private readonly Dictionary<string, List<Products>> _configGroupChildren =
+            new Dictionary<string, List<Products>>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<Products> _configGroupHeaders = new List<Products>();
+        private bool _configTreeMode = false;
+        private string _configTreeSearchTerm = string.Empty;
+
+        // Bảng màu cho các group, lặp lại khi vượt quá số màu
+        private static readonly Color[] ConfigGroupHeaderColors = new[]
+        {
+            Color.FromArgb(241, 245, 249), // xám rất nhạt (slate-100) - dùng duy nhất 1 màu cho gọn
+        };
+
+        /// <summary>
+        /// Load tất cả cấu hình BUILD_PACKAGE từ SQL Server (bảng ECQ_BuildConfig + ECQ_BuildConfigItem)
+        /// và hiển thị dạng tree trong dataGridView1. KHÔNG còn gọi Google Sheets ở tab Xây dựng cấu hình.
+        /// </summary>
+        private async Task LoadAllConfigGroupsToTreeAsync()
+        {
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang tải cấu hình từ SQL Server..."))
+            {
+                try
+                {
+                    _configGroupChildren.Clear();
+                    _configGroupHeaders.Clear();
+
+                    // Load packages từ SQL trên thread pool, tránh block UI
+                    var packages = await Task.Run(() =>
+                        Services.DatabaseService.GetAllBuildConfigPackages("BUILD_PACKAGE"));
+
+                    foreach (var pkg in packages)
+                    {
+                        // Key duy nhất: gộp cả Id + Name để không bị trùng khi 2 cấu hình cùng tên
+                        string key = $"sql_{pkg.Id}|{pkg.ConfigName}";
+
+                        var children = new List<Products>();
+                        foreach (var srcChild in pkg.Items)
+                        {
+                            // Nếu có Id sản phẩm trong allProducts → enrich thêm các field thiếu
+                            Products enriched = srcChild;
+                            if (srcChild.Id > 0 && allProducts != null)
+                            {
+                                var match = allProducts.FirstOrDefault(p => p.Id == srcChild.Id);
+                                if (match != null)
+                                {
+                                    enriched = MergeProductFields(srcChild, match);
+                                }
+                            }
+                            else if (!string.IsNullOrWhiteSpace(srcChild.SKU) && allProducts != null)
+                            {
+                                var match = allProducts.FirstOrDefault(p =>
+                                    string.Equals(p.SKU, srcChild.SKU, StringComparison.OrdinalIgnoreCase));
+                                if (match != null)
+                                {
+                                    enriched = MergeProductFields(srcChild, match);
+                                }
+                            }
+
+                            enriched.ConfigGroupKey = key;
+                            children.Add(enriched);
+                        }
+
+                        _configGroupChildren[key] = children;
+
+                        var header = new Products
+                        {
+                            Name = pkg.ConfigName,
+                            IsConfigHeader = true,
+                            ConfigGroupKey = key,
+                            IsConfigExpanded = false,
+                            ConfigChildCount = children.Count
+                        };
+                        _configGroupHeaders.Add(header);
+                    }
+
+                    _configTreeMode = true;
+                    RefreshConfigTreeGrid();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi tải cấu hình từ SQL Server: " + ex.Message,
+                        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Bổ sung các field còn thiếu của <paramref name="src"/> bằng dữ liệu từ <paramref name="master"/>
+        /// (lấy từ allProducts). Field nào trong src đã có giá trị thì giữ nguyên.
+        /// </summary>
+        private static Products MergeProductFields(Products src, Products master)
+        {
+            string Pick(string a, string b) => string.IsNullOrWhiteSpace(a) ? b : a;
+
+            var merged = new Products
+            {
+                Id = src.Id > 0 ? src.Id : master.Id,
+                SheetRowIndex = src.SheetRowIndex > 0 ? src.SheetRowIndex : master.SheetRowIndex,
+                Name = Pick(src.Name, master.Name),
+                Model = Pick(src.Model, master.Model),
+                SKU = Pick(src.SKU, master.SKU),
+                Price = Pick(src.Price, master.Price),
+                PriceCost = Pick(src.PriceCost, master.PriceCost),
+                Weight = Pick(src.Weight, master.Weight),
+                Length = Pick(src.Length, master.Length),
+                Width = Pick(src.Width, master.Width),
+                Height = Pick(src.Height, master.Height),
+                Category = Pick(src.Category, master.Category),
+                Type = Pick(src.Type, master.Type),
+                HÃNG = Pick(src.HÃNG, master.HÃNG),
+                TrangThai = Pick(src.TrangThai, master.TrangThai),
+                Pole = Pick(src.Pole, master.Pole),
+                Ir = Pick(src.Ir, master.Ir),
+                Icu = Pick(src.Icu, master.Icu),
+                PriceList = Pick(src.PriceList, master.PriceList),
+                SoLuong = src.SoLuong > 0 ? src.SoLuong : 1,
+                IsSelected = src.IsSelected,
+                IsHeader = src.IsHeader,
+                ConfigGroupKey = src.ConfigGroupKey,
+                IsConfigHeader = src.IsConfigHeader,
+                IsConfigExpanded = src.IsConfigExpanded,
+                ConfigChildCount = src.ConfigChildCount
+            };
+
+            // Merge ExtraAttributes (master cung cấp các key chưa có trong src)
+            if (master.ExtraAttributes != null)
+            {
+                foreach (var kvp in master.ExtraAttributes)
+                {
+                    if (!merged.ExtraAttributes.ContainsKey(kvp.Key))
+                        merged.ExtraAttributes[kvp.Key] = kvp.Value;
+                }
+            }
+            if (src.ExtraAttributes != null)
+            {
+                foreach (var kvp in src.ExtraAttributes)
+                {
+                    merged.ExtraAttributes[kvp.Key] = kvp.Value;
+                }
+            }
+
+            return merged;
+        }
+
+        /// <summary>
+        /// Render lại childProducts theo cấu trúc tree (header + sản phẩm con của các group đang expand).
+        /// Nếu có _configTreeSearchTerm: chỉ hiện các group có tên match (case-insensitive, không dấu).
+        /// </summary>
+        private void RefreshConfigTreeGrid()
+        {
+            if (!_configTreeMode) return;
+
+            string term = (_configTreeSearchTerm ?? string.Empty).Trim();
+            string normTerm = NormalizeForSearch(term);
+
+            childProducts.RaiseListChangedEvents = false;
+            try
+            {
+                childProducts.Clear();
+                foreach (var header in _configGroupHeaders)
+                {
+                    // Filter: nếu có term mà tên header không chứa term → bỏ qua
+                    if (normTerm.Length > 0)
+                    {
+                        string normName = NormalizeForSearch(header.Name);
+                        if (normName.IndexOf(normTerm, StringComparison.Ordinal) < 0)
+                            continue;
+                    }
+
+                    childProducts.Add(header);
+                    if (header.IsConfigExpanded
+                        && _configGroupChildren.TryGetValue(header.ConfigGroupKey, out var children))
+                    {
+                        foreach (var c in children)
+                            childProducts.Add(c);
+                    }
+                }
+            }
+            finally
+            {
+                childProducts.RaiseListChangedEvents = true;
+                childProducts.ResetBindings();
+            }
+
+            ApplyConfigTreeRowStyles();
+        }
+
+        /// <summary>Bỏ dấu + lowercase để so sánh search không dấu.</summary>
+        private static string NormalizeForSearch(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return string.Empty;
+            string formD = s.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+            foreach (var ch in formD)
+            {
+                var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+                    sb.Append(ch);
+            }
+            return sb.ToString().Replace("đ", "d").Replace("Đ", "d").ToLowerInvariant();
+        }
+
+        /// <summary>Click nút "Tìm": lấy text từ combobox → filter tree.</summary>
+        private void BtnSearchConfigTree_Click(object sender, EventArgs e)
+        {
+            ApplyConfigTreeSearchFromCombo();
+        }
+
+        /// <summary>Enter trong combobox cũng kích hoạt tìm.</summary>
+        private void ComboBox1_SearchKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                ApplyConfigTreeSearchFromCombo();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void ApplyConfigTreeSearchFromCombo()
+        {
+            // Đảm bảo đang ở tree mode
+            if (!_configTreeMode)
+            {
+                // Nếu user đã click "Tìm" sau khi flat-load 1 cấu hình → bật lại tree
+                _configTreeMode = true;
+            }
+
+            string raw = comboBox1.Text?.Trim() ?? string.Empty;
+            if (raw.Equals("-- Chọn cấu hình đóng gói --", StringComparison.OrdinalIgnoreCase))
+                raw = string.Empty;
+
+            _configTreeSearchTerm = raw;
+            RefreshConfigTreeGrid();
+        }
+
+        /// <summary>Áp style cho từng dòng dataGridView1 theo IsConfigHeader.</summary>
+        private void ApplyConfigTreeRowStyles()
+        {
+            if (dataGridView1 == null || dataGridView1.IsDisposed) return;
+
+            // Tăng chiều cao dòng cho thoáng
+            if (dataGridView1.RowTemplate.Height < 36)
+                dataGridView1.RowTemplate.Height = 36;
+
+            for (int i = 0; i < dataGridView1.Rows.Count; i++)
+            {
+                if (i >= childProducts.Count) break;
+                var item = childProducts[i];
+                var row = dataGridView1.Rows[i];
+
+                if (item.IsConfigHeader)
+                {
+                    Color bg = ConfigGroupHeaderColors[0];
+                    row.DefaultCellStyle.BackColor = bg;
+                    row.DefaultCellStyle.SelectionBackColor = bg;
+                    row.DefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+                    row.DefaultCellStyle.SelectionForeColor = Color.FromArgb(15, 23, 42);
+                    row.DefaultCellStyle.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+                    row.Height = 38;
+                }
+                else
+                {
+                    row.DefaultCellStyle.BackColor = Color.White;
+                    row.DefaultCellStyle.ForeColor = Color.Black;
+                    row.DefaultCellStyle.Font = new Font("Segoe UI", 8.75f);
+                    row.Height = 34;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Vẽ dòng header cấu hình thành 1 thanh ngang liền không có grid line, giống MISA/SAP.
+        /// </summary>
+        private void DataGridView1_ConfigTree_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
+        {
+            if (!_configTreeMode) return;
+            if (e.RowIndex < 0 || e.RowIndex >= childProducts.Count) return;
+
+            var item = childProducts[e.RowIndex];
+            if (!item.IsConfigHeader) return;
+
+            var dgv = (DataGridView)sender;
+            var rowBounds = new Rectangle(
+                e.RowBounds.Left,
+                e.RowBounds.Top,
+                e.RowBounds.Width,
+                e.RowBounds.Height);
+
+            // 1. Tô nền liền cả dòng (không cell border)
+            using (var bg = new SolidBrush(ConfigGroupHeaderColors[0]))
+            {
+                e.Graphics.FillRectangle(bg, rowBounds);
+            }
+
+            // 2. Đường gạch dưới mảnh để tách group, và border trái dày 3px màu nhấn
+            using (var accent = new SolidBrush(Color.FromArgb(37, 99, 235)))
+            {
+                e.Graphics.FillRectangle(accent, rowBounds.Left, rowBounds.Top, 3, rowBounds.Height);
+            }
+            using (var bottomLine = new Pen(Color.FromArgb(203, 213, 225), 1))
+            {
+                e.Graphics.DrawLine(bottomLine,
+                    rowBounds.Left, rowBounds.Bottom - 1,
+                    rowBounds.Right, rowBounds.Bottom - 1);
+            }
+
+            // 3. Vẽ icon mở/đóng + tên cấu hình + số sản phẩm
+            string indicator = item.IsConfigExpanded ? "▼" : "▶";
+            string title = $"{indicator}   {item.Name}";
+            string subtitle = $"({item.ConfigChildCount} sản phẩm)";
+
+            using (var titleFont = new Font("Segoe UI", 10F, FontStyle.Bold))
+            using (var subtitleFont = new Font("Segoe UI", 9F, FontStyle.Regular))
+            using (var titleBrush = new SolidBrush(Color.FromArgb(15, 23, 42)))
+            using (var subtitleBrush = new SolidBrush(Color.FromArgb(100, 116, 139)))
+            {
+                int textTop = rowBounds.Top + (rowBounds.Height -
+                    (int)e.Graphics.MeasureString(title, titleFont).Height) / 2;
+
+                int x = rowBounds.Left + 18;
+                e.Graphics.DrawString(title, titleFont, titleBrush, x, textTop);
+
+                var titleSize = e.Graphics.MeasureString(title, titleFont);
+                e.Graphics.DrawString(subtitle, subtitleFont, subtitleBrush,
+                    x + titleSize.Width + 12, textTop + 1);
+            }
+
+            // 4. Báo cho DataGridView không vẽ background/border mặc định
+            e.PaintParts &= ~(DataGridViewPaintParts.Background
+                              | DataGridViewPaintParts.SelectionBackground
+                              | DataGridViewPaintParts.ContentBackground
+                              | DataGridViewPaintParts.ContentForeground
+                              | DataGridViewPaintParts.Border);
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Format giá trị hiển thị: chỉ với dòng header, cột Name → "▶ Tên cấu hình  (N sản phẩm)".
+        /// Dùng CellFormatting (không mutate data) để tránh lặp text khi refresh nhiều lần.
+        /// Các cột khác trên dòng header hiển thị rỗng.
+        /// </summary>
+        private void DataGridView1_ConfigTree_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (!_configTreeMode) return;
+            if (e.RowIndex < 0 || e.RowIndex >= childProducts.Count) return;
+
+            var item = childProducts[e.RowIndex];
+            if (!item.IsConfigHeader) return;
+
+            string colName = dataGridView1.Columns[e.ColumnIndex].Name;
+            if (colName == "Name")
+            {
+                string indicator = item.IsConfigExpanded ? "▼" : "▶";
+                e.Value = $"   {indicator}   {item.Name}    ({item.ConfigChildCount} sản phẩm)";
+                e.FormattingApplied = true;
+            }
+            else if (colName != "STT" && colName != "IsSelected"
+                     && !colName.StartsWith("colMove", StringComparison.OrdinalIgnoreCase))
+            {
+                // Ẩn giá trị các cột khác trên dòng header
+                e.Value = string.Empty;
+                e.FormattingApplied = true;
+            }
+        }
+
+        /// <summary>Toggle mở/đóng 1 group khi click vào dòng header.</summary>
+        private void ToggleConfigGroupExpand(Products header)
+        {
+            if (header == null || !header.IsConfigHeader) return;
+            header.IsConfigExpanded = !header.IsConfigExpanded;
+            RefreshConfigTreeGrid();
+        }
+
+        /// <summary>Xử lý click vào dataGridView1: nếu click trúng dòng header → toggle expand.</summary>
+        private void DataGridView1_ConfigTree_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (!_configTreeMode) return;
+            if (e.RowIndex < 0 || e.RowIndex >= childProducts.Count) return;
+
+            var item = childProducts[e.RowIndex];
+            if (item.IsConfigHeader)
+            {
+                ToggleConfigGroupExpand(item);
+            }
+        }
+
+        /// <summary>
+        /// Xóa 1 sản phẩm con (theo Id) khỏi group đang chứa nó. Áp dụng cho tree mode.
+        /// </summary>
+        private void RemoveConfigChildById(int id, string groupKey)
+        {
+            if (!_configTreeMode) return;
+            if (string.IsNullOrEmpty(groupKey)) return;
+            if (!_configGroupChildren.TryGetValue(groupKey, out var children)) return;
+
+            var toRemove = children.Where(p => p.Id == id).ToList();
+            foreach (var p in toRemove) children.Remove(p);
+
+            // Cập nhật ConfigChildCount
+            var header = _configGroupHeaders.FirstOrDefault(h => h.ConfigGroupKey == groupKey);
+            if (header != null) header.ConfigChildCount = children.Count;
+
+            RefreshConfigTreeGrid();
         }
     }
 }

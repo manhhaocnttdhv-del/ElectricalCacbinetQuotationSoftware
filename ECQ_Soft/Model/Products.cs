@@ -31,6 +31,22 @@ namespace ECQ_Soft.Model
         public bool IsSelected { get; set; }
         [Browsable(false)]
         public bool IsHeader { get; set; }
+
+        /// <summary>True nếu đây là dòng tiêu đề cấu hình (group). Chỉ dùng cho UI tree trong tab Xây dựng cấu hình.</summary>
+        [Browsable(false)]
+        public bool IsConfigHeader { get; set; }
+
+        /// <summary>Key gom nhóm các sản phẩm con vào cùng một header (ví dụ: "Donggoi_1|tủ điện").</summary>
+        [Browsable(false)]
+        public string ConfigGroupKey { get; set; }
+
+        /// <summary>True nếu group đang được expand (hiển thị sản phẩm con).</summary>
+        [Browsable(false)]
+        public bool IsConfigExpanded { get; set; }
+
+        /// <summary>Số lượng sản phẩm con trong group (chỉ set cho dòng header).</summary>
+        [Browsable(false)]
+        public int ConfigChildCount { get; set; }
         /// <summary>Số lượng từ gói đóng gói khi tải về dataGridView1.</summary>
         public int SoLuong { get; set; } = 1;
         // public string TienDo { get; set; }

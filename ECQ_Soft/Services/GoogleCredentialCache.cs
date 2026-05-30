@@ -1,4 +1,5 @@
 using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using System.Collections.Concurrent;
 using System.IO;
@@ -19,6 +20,16 @@ namespace ECQ_Soft.Services
                     return GoogleCredential.FromStream(stream)
                         .CreateScoped(SheetsService.Scope.Spreadsheets);
                 }
+            });
+        }
+
+        public static SheetsService CreateSheetsService(string fileName, string applicationName)
+        {
+            var credential = GetCredential(fileName);
+            return new SheetsService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = applicationName,
             });
         }
     }

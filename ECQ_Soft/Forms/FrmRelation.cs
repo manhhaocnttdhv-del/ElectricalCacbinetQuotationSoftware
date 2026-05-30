@@ -160,13 +160,7 @@ namespace ECQ_Soft
             if (_sheetsService != null) return;
             try
             {
-                var credential = Services.GoogleCredentialCache.GetCredential("config.json");
-
-                _sheetsService = new SheetsService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "GSheetConfig",
-                });
+                _sheetsService = Services.GoogleCredentialCache.CreateSheetsService("config.json", "GSheetConfig");
             }
             catch (FileNotFoundException ex)
             {

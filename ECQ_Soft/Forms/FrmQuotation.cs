@@ -67,13 +67,7 @@ namespace ECQ_Soft
             if (_sheetsService != null) return;
             try
             {
-                var credential = Services.GoogleCredentialCache.GetCredential("credential.json");
-
-                _sheetsService = new SheetsService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "GSheetUpdater",
-                });
+                _sheetsService = Services.GoogleCredentialCache.CreateSheetsService("credential.json", "GSheetUpdater");
             }
             catch (FileNotFoundException ex)
             {
@@ -97,7 +91,25 @@ namespace ECQ_Soft
             }
         }
 
+        private void ShowGoogleSheetReadError(Exception ex)
+        {
+            if (ex is Google.GoogleApiException && ex.Message.Contains("Unable to parse range"))
+            {
+                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
+            if (ex is Google.GoogleApiException)
+            {
+                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
+                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
+                "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
 
         private List<Material> GetMaterialInfor()
         {
@@ -160,20 +172,9 @@ namespace ECQ_Soft
                     }
                 }
             }
-            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
-            {
-                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Google.GoogleApiException ex)
-            {
-                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowGoogleSheetReadError(ex);
             }
             return list;
         }
@@ -212,20 +213,9 @@ namespace ECQ_Soft
                     list.Add(f);
                 }
             }
-            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
-            {
-                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Google.GoogleApiException ex)
-            {
-                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowGoogleSheetReadError(ex);
             }
             return list;
         }
@@ -283,20 +273,9 @@ namespace ECQ_Soft
                     }
                 }
             }
-            catch (Google.GoogleApiException ex) when (ex.Message.Contains("Unable to parse range"))
-            {
-                MessageBox.Show($"Không tìm thấy sheet có tên '{sheetName}'. Vui lòng kiểm tra lại.\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Google.GoogleApiException ex)
-            {
-                MessageBox.Show($"Lỗi khi truy cập Google Sheets:\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi không xác định khi đọc Google Sheet:\n\n{ex.Message}",
-                    "Lỗi Google Sheets", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowGoogleSheetReadError(ex);
             }
             return list;
         }
@@ -563,6 +542,50 @@ namespace ECQ_Soft
             }
         }
 
+        private static string FormatVnd(int value)
+        {
+            return value.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
+        }
+
+        private MarketPrice FindSelectedMarketPrice()
+        {
+            return marketPrices
+                .Where(t => t.MaterialId == _selectedMaterialId || t.MaterialId == 0)
+                .Where(t => t.CabinetId == _selectedCabinetTypeId)
+                .Where(t => t.CoatingTypeId == _selectedCoatingTypeId || t.CoatingTypeId == 4)
+                .FirstOrDefault();
+        }
+
+        private bool TryApplySelectedMarketPrice()
+        {
+            var marketPrice = FindSelectedMarketPrice();
+            if (marketPrice == null)
+            {
+                MessageBox.Show(
+                    "Chọn lại nguyên vật liệu và loại tủ điện, thang máng cáp",
+                    "Lỗi Google Sheet. Bảng giá thị trường",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return false;
+            }
+
+            _selectedMarketPriceId = marketPrice.Stt;
+            txtGiaBan.Text = FormatVnd(marketPrice.CommonPrice);
+            txtGiaBanVPA.Text = FormatVnd(marketPrice.VPAPrice);
+            return true;
+        }
+
+        private void ApplyMaterialCost(Material material, int coatingType)
+        {
+            int coatingFee = 0;
+            if (coatingType == 1) coatingFee = material.PCFee;
+            if (coatingType == 2) coatingFee = material.HDGFee;
+
+            txtSonMa.Text = FormatVnd(coatingFee);
+            txtGiaVon.Text = FormatVnd(coatingFee + material.OrtherFee + material.Price);
+        }
+
         private void GetAdditionFee(int type)
         {
             if (_selectedMaterialId != 0)
@@ -580,24 +603,7 @@ namespace ECQ_Soft
                     return;
                 }
 
-                if (type == 1)
-                {
-                    txtSonMa.Text = m.PCFee.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                    int Von = m.PCFee + m.OrtherFee + m.Price;
-                    txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                }
-                if (type == 2)
-                {
-                    txtSonMa.Text = m.HDGFee.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                    int Von = m.HDGFee + m.OrtherFee + m.Price;
-                    txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                }
-                if (type == 3)
-                {
-                    txtSonMa.Text = "0";
-                    int Von = m.OrtherFee + m.Price;
-                    txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                }
+                ApplyMaterialCost(m, type);
 
                 if (_selectedCabinetTypeId != 0)
                 {
@@ -613,26 +619,7 @@ namespace ECQ_Soft
                         return;
                     }
 
-                    var marketPrice = marketPrices
-                                .Where(t => t.MaterialId == _selectedMaterialId || t.MaterialId == 0)
-                                .Where(t => t.CabinetId == _selectedCabinetTypeId)
-                                .Where(t => t.CoatingTypeId == _selectedCoatingTypeId || t.CoatingTypeId == 4)
-                                .FirstOrDefault();
-                    if (marketPrice == null)
-                    {
-                        MessageBox.Show(
-                            "Chọn lại nguyên vật liệu và loại tủ điện, thang máng cáp",
-                            "Lỗi Google Sheet. Bảng giá thị trường",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
-                        );
-                        return;
-                    }
-
-                    _selectedMarketPriceId = marketPrice.Stt;
-                    txtGiaBan.Text = marketPrice.CommonPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                    txtGiaBanVPA.Text = marketPrice.VPAPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-
+                    TryApplySelectedMarketPrice();
                 }
             }
             else
@@ -738,53 +725,27 @@ namespace ECQ_Soft
                     _selectedMaterialId = ID;
 
                     var m = materials.Where(t => t.Id == ID).FirstOrDefault();
+                    if (m == null) return;
+
                     Chiphikhac = m.OrtherFee;
-                    txtChiphikhac.Text = Chiphikhac.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
+                    txtChiphikhac.Text = FormatVnd(Chiphikhac);
 
                     if (rbMa.Checked)
                     {
-                        txtSonMa.Text = m.HDGFee.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                        int Von = m.HDGFee + m.OrtherFee + m.Price;
-                        txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-
+                        ApplyMaterialCost(m, 2);
                     }
                     if (rbSon.Checked)
                     {
-                        txtSonMa.Text = m.PCFee.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                        int Von = m.PCFee + m.OrtherFee + m.Price;
-                        txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
+                        ApplyMaterialCost(m, 1);
                     }
                     if (rbNone.Checked)
                     {
-                        txtSonMa.Text = "0";
-                        int Von = m.OrtherFee + m.Price;
-                        txtGiaVon.Text = Von.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
+                        ApplyMaterialCost(m, 3);
                     }
 
-                    if (_selectedCabinetTypeId != 0)
+                    if (_selectedCabinetTypeId != 0 && _selectedCoatingTypeId != 0)
                     {
-                        if (_selectedCoatingTypeId != 0)
-                        {
-                            var marketPrice = marketPrices
-                                .Where(t => t.MaterialId == _selectedMaterialId || t.MaterialId == 0)
-                                .Where(t => t.CabinetId == _selectedCabinetTypeId)
-                                .Where(t => t.CoatingTypeId == _selectedCoatingTypeId || t.CoatingTypeId == 4)
-                                .FirstOrDefault();
-                            if (marketPrice == null)
-                            {
-                                MessageBox.Show(
-                                    "Chọn lại nguyên vật liệu và loại tủ điện, thang máng cáp",
-                                    "Lỗi Google Sheet. Bảng giá thị trường",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error
-                                );
-                                return;
-                            }
-
-                            _selectedMarketPriceId = marketPrice.Stt;
-                            txtGiaBan.Text = marketPrice.CommonPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                            txtGiaBanVPA.Text = marketPrice.VPAPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                        }
+                        TryApplySelectedMarketPrice();
                     }
                 }
             }
@@ -799,30 +760,9 @@ namespace ECQ_Soft
                 {
                     _selectedCabinetTypeId = ID;
 
-                    if (_selectedMaterialId != 0)
+                    if (_selectedMaterialId != 0 && _selectedCoatingTypeId != 0)
                     {
-                        if (_selectedCoatingTypeId != 0)
-                        {
-                            var marketPrice = marketPrices
-                                .Where(t => t.MaterialId == _selectedMaterialId || t.MaterialId == 0)
-                                .Where(t => t.CabinetId == _selectedCabinetTypeId)
-                                .Where(t => t.CoatingTypeId == _selectedCoatingTypeId || t.CoatingTypeId == 4)
-                                .FirstOrDefault();
-                            if (marketPrice == null)
-                            {
-                                MessageBox.Show(
-                                    "Chọn lại nguyên vật liệu và loại tủ điện, thang máng cáp",
-                                    "Lỗi Google Sheet. Bảng giá thị trường",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error
-                                );
-                                return;
-                            }
-
-                            _selectedMarketPriceId = marketPrice.Stt;
-                            txtGiaBan.Text = marketPrice.CommonPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                            txtGiaBanVPA.Text = marketPrice.VPAPrice.ToString("N0", CultureInfo.GetCultureInfo("en-US"));
-                        }
+                        TryApplySelectedMarketPrice();
                     }
                 }
             }
@@ -1321,6 +1261,56 @@ namespace ECQ_Soft
             await LoadDataAsync();
         }
 
+        private static bool TryParseCurrencyText(string text, out int value)
+        {
+            return int.TryParse((text ?? "").Replace(",", ""), out value);
+        }
+
+        private bool TryParseUpdatePrices(bool includeCoatingFee, out int coatingFee, out int otherFee, out int commonPrice, out int vpaPrice)
+        {
+            coatingFee = 0;
+            otherFee = 0;
+            commonPrice = 0;
+            vpaPrice = 0;
+
+            bool hasValidCoatingFee = !includeCoatingFee || TryParseCurrencyText(txtSonMa.Text, out coatingFee);
+            return hasValidCoatingFee
+                && TryParseCurrencyText(txtChiphikhac.Text, out otherFee)
+                && TryParseCurrencyText(txtGiaBan.Text, out commonPrice)
+                && TryParseCurrencyText(txtGiaBanVPA.Text, out vpaPrice);
+        }
+
+        private static void ShowInvalidUpdatePriceWarning()
+        {
+            MessageBox.Show(
+                "Nhập lại Giá Sơn/ Mạ, Chi phí khác, và Giá thị trường",
+                "Cảnh báo",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            );
+        }
+
+        private void UpdateSelectedPriceValues(Material material, MarketPrice market, string coatingColumn, int coatingFee, int otherFee, int commonPrice, int vpaPrice)
+        {
+            using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
+            {
+                GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, coatingColumn, coatingFee, otherFee, commonPrice, vpaPrice);
+            }
+
+            if (coatingColumn == "F") material.PCFee = coatingFee;
+            if (coatingColumn == "G") material.HDGFee = coatingFee;
+
+            material.OrtherFee = otherFee;
+            market.CommonPrice = commonPrice;
+            market.VPAPrice = vpaPrice;
+
+            MessageBox.Show(
+                "Cập nhật giá thành công",
+                "Thông báo",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+        }
 
         private void btnUpdate_Click_1(object sender, EventArgs e)
         {
@@ -1328,46 +1318,28 @@ namespace ECQ_Soft
             if (_selectedCabinetTypeId != 0 && _selectedMaterialId != 0)
             {
                 var m = materials.Where(t => t.Id == _selectedMaterialId).FirstOrDefault();
-                var market = marketPrices
-                    .Where(t => t.MaterialId == _selectedMaterialId || t.MaterialId == 0)
-                    .Where(t => t.CabinetId == _selectedCabinetTypeId)
-                    .Where(t => t.CoatingTypeId == _selectedCoatingTypeId || t.CoatingTypeId == 4)
-                    .FirstOrDefault();
+                var market = FindSelectedMarketPrice();
+
+                if (m == null || market == null)
+                {
+                    MessageBox.Show(
+                        "Chọn lại nguyên vật liệu và loại tủ điện, thang máng cáp",
+                        "Lỗi Google Sheet. Bảng giá thị trường",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    return;
+                }
 
                 if (rbSon.Checked)
                 {
-                    if (int.TryParse(txtSonMa.Text.Replace(",", ""), out int P1)
-                        && int.TryParse(txtChiphikhac.Text.Replace(",", ""), out int P2)
-                        && int.TryParse(txtGiaBan.Text.Replace(",", ""), out int P3)
-                        && int.TryParse(txtGiaBanVPA.Text.Replace(",", ""), out int P4)
-                        )
+                    if (TryParseUpdatePrices(true, out int P1, out int P2, out int P3, out int P4))
                     {
-                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
-                        {
-                            GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "F", P1, P2, P3, P4);
-                        }
-                        m.PCFee = P1;
-                        m.OrtherFee = P2;
-                        market.CommonPrice = P3;
-                        market.VPAPrice = P4;
-
-                        MessageBox.Show(
-                            "Cập nhật giá thành công",
-                            "Thông báo",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Information
-                        );
-
+                        UpdateSelectedPriceValues(m, market, "F", P1, P2, P3, P4);
                     }
                     else
                     {
-                        MessageBox.Show(
-                            "Nhập lại Giá Sơn/ Mạ, Chi phí khác, và Giá thị trường",
-                            "Cảnh báo",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning
-                        );
-
+                        ShowInvalidUpdatePriceWarning();
                         return;
                     }
 
@@ -1375,68 +1347,26 @@ namespace ECQ_Soft
                 }
                 else if (rbMa.Checked)
                 {
-                    if (int.TryParse(txtSonMa.Text.Replace(",", ""), out int P1)
-                        && int.TryParse(txtChiphikhac.Text.Replace(",", ""), out int P2)
-                         && int.TryParse(txtGiaBan.Text.Replace(",", ""), out int P3)
-                         && int.TryParse(txtGiaBanVPA.Text.Replace(",", ""), out int P4)
-                        )
+                    if (TryParseUpdatePrices(true, out int P1, out int P2, out int P3, out int P4))
                     {
-                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
-                        {
-                            GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "G", P1, P2, P3, P4);
-                        }
-                        m.HDGFee = P1;
-                        m.OrtherFee = P2;
-                        market.CommonPrice = P3;
-                        market.VPAPrice = P4;
-                        MessageBox.Show(
-                            "Cập nhật giá thành công",
-                            "Thông báo",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Information
-                        );
+                        UpdateSelectedPriceValues(m, market, "G", P1, P2, P3, P4);
                     }
                     else
                     {
-                        MessageBox.Show(
-                           "Nhập lại Giá Sơn/ Mạ, Chi phí khác, và Giá thị trường",
-                            "Cảnh báo",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning
-                        );
+                        ShowInvalidUpdatePriceWarning();
                         return;
                     }
                 }
                 else
                 {
 
-                    if (int.TryParse(txtChiphikhac.Text.Replace(",", ""), out int P2)
-                         && int.TryParse(txtGiaBan.Text.Replace(",", ""), out int P3)
-                         && int.TryParse(txtGiaBanVPA.Text.Replace(",", ""), out int P4)
-                        )
+                    if (TryParseUpdatePrices(false, out _, out int P2, out int P3, out int P4))
                     {
-                        using (new ECQ_Soft.Helper.LoadingOverlay(this, "Đang cập nhật giá lên Google Sheets..."))
-                        {
-                            GoogleSheetUpdate(_selectedMaterialId, _selectedMarketPriceId, "", 0, P2, P3, P4);
-                        }
-                        m.OrtherFee = P2;
-                        market.CommonPrice = P3;
-                        market.VPAPrice = P4;
-                        MessageBox.Show(
-                            "Cập nhật giá thành công",
-                            "Thông báo",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Information
-                        );
+                        UpdateSelectedPriceValues(m, market, "", 0, P2, P3, P4);
                     }
                     else
                     {
-                        MessageBox.Show(
-                           "Nhập lại Giá Sơn/ Mạ, Chi phí khác, và Giá thị trường",
-                            "Cảnh báo",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning
-                        );
+                        ShowInvalidUpdatePriceWarning();
                         return;
                     }
                 }
